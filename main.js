@@ -10,8 +10,14 @@ import './addons/scroll-progress.js';
 import './addons/gallery-hover.js';
 import './addons/gallery-filter.js';
 
+// Homepage only
+import './addons/scroll-reveal.js';
+import './addons/hero-reveal.js';
+import './addons/testimonial-rotator.js';
+import './addons/parallax.js';
+
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '1.3.2';
+export const VERSION = '1.4.0';
 
 log(`ready — v${VERSION}`);
