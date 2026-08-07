@@ -12,7 +12,11 @@
 // The homepage carries two hero variants (Squarespace "content mode" swaps a
 // desktop and a mobile copy), so this picks whichever one is visible.
 
-import { defineAddon, css, LEAN } from '../lib/util.js';
+import { defineAddon, css } from '../lib/util.js';
+// Declared locally rather than imported: see the note in lib/util.js about
+// per-file cache skew breaking the module graph.
+const LEAN = window.matchMedia('(hover: none)').matches;
+
 
 const START_DELAY_MS = 220;
 const LINE_MS = 1900;

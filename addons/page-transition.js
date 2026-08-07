@@ -36,6 +36,12 @@ function isInternalNavigation(e, link) {
 defineAddon('page-transition', () => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+  // Deliberately off on touch. This intercepts every link tap and holds
+  // navigation for a third of a second, and there is an unreproduced scroll
+  // fault reported on mobile. Until that is understood, phones get fewer
+  // moving parts; the transition matters less there anyway.
+  if (window.matchMedia('(hover: none)').matches) return;
+
   css('page-transition', `
     .taro-veil {
       position: fixed;

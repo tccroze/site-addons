@@ -11,7 +11,11 @@
 // Progressive enhancement matters: the hidden state is scoped to a class this
 // file puts on <html>, so if the script never loads nothing is ever hidden.
 
-import { defineAddon, css, LEAN } from '../lib/util.js';
+import { defineAddon, css } from '../lib/util.js';
+// Declared locally rather than imported: see the note in lib/util.js about
+// per-file cache skew breaking the module graph.
+const LEAN = window.matchMedia('(hover: none)').matches;
+
 
 // Slow enough to register as movement rather than a flicker. The earlier
 // timings were quick enough that the reveal was over before it was noticed.
