@@ -17,7 +17,7 @@ const STAGGER_MS = 110;
 
 defineAddon('scroll-reveal', () => {
   if (location.pathname !== '/') return;
-  if (!('IntersectionObserver' in window)) return;
+  
 
   const sections = [...document.querySelectorAll('section[data-section-id]')];
   const hero = sections.find((s) => s.getBoundingClientRect().height > 0);
@@ -74,25 +74,39 @@ defineAddon('scroll-reveal', () => {
   });
   document.documentElement.classList.add('taro-reveal-on');
 
-  let observerWorks = false;
-  const io = new IntersectionObserver((entries) => {
-    observerWorks = true;
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      entry.target.setAttribute('data-taro-reveal', 'in');
-      io.unobserve(entry.target);       // reveal once, never re-hide
+  // Driven by scroll position rather than IntersectionObserver, deliberately.
+  // The reveal hides images until triggered, so anything that stops the trigger
+  // firing leaves a blank frame on a live page — and an observer has failure
+  // modes that are invisible until they bite. A direct measurement against the
+  // viewport cannot silently not-happen, and with a handful of elements the
+  // cost of checking is nothing.
+  let pending = targets.slice();
+  let queued = false;
+
+  const check = () => {
+    queued = false;
+    const limit = window.innerHeight * 0.9;   // trigger a little before the edge
+    pending = pending.filter((el) => {
+      const r = el.getBoundingClientRect();
+      // Squarespace ships hidden desktop/mobile duplicates; those have no box
+      // and must stay pending in case a resize brings them into play.
+      if (r.width === 0 && r.height === 0) return true;
+      if (r.top < limit && r.bottom > 0) {
+        el.setAttribute('data-taro-reveal', 'in');
+        return false;
+      }
+      return true;
     });
-  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+  };
 
-  targets.forEach((el) => io.observe(el));
+  const request = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(check);
+  };
 
-  // Failsafe for the case where the observer never runs at all — otherwise the
-  // homepage would stay blank. Crucially this checks first: an earlier version
-  // revealed everything unconditionally, which fired before the reader had
-  // scrolled anywhere and so cancelled the effect entirely.
-  setTimeout(() => {
-    if (observerWorks) return;
-    targets.forEach((el) => el.setAttribute('data-taro-reveal', 'in'));
-    io.disconnect();
-  }, 4000);
+  window.addEventListener('scroll', request, { passive: true });
+  window.addEventListener('resize', request, { passive: true });
+  window.addEventListener('load', request);
+  check();
 });
