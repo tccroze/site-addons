@@ -109,6 +109,40 @@ check the number in the console.
 GitHub Pages sends `Cache-Control: max-age=600`, so a browser may hold a stale copy
 for up to ten minutes. Hard-refresh (`Cmd+Shift+R`) to bypass it.
 
+## If something looks wrong on the live site
+
+Two levers, in order of severity.
+
+**1. Diagnose — is it us or Squarespace?**
+
+Add `?taro=off` to any URL:
+
+```
+https://www.tarocroze.com/?taro=off
+```
+
+Every add-on stands down and you get the stock Squarespace site. If the problem
+persists with the switch on, it is not our code.
+
+**2. Disable everything, permanently**
+
+Squarespace → Website → Website Tools → Code Injection → HEADER, delete the two
+tags, Save. The site returns to stock immediately. Nothing else needs undoing —
+the add-ons only ever add behaviour on top; they change no Squarespace content.
+
+## Known limitations
+
+- **Two heroes.** Squarespace ships a desktop and a mobile copy of some sections
+  and hides one. Add-ons therefore skip elements with no box, and re-check on
+  resize in case a breakpoint brings them into play.
+- **Per-file caching.** Pages serves each file with `max-age=600`, independently.
+  A visitor can pair a fresh `main.js` with a stale `lib/util.js`, so **never add
+  a new export to `lib/util.js`** — an add-on importing a name the cached copy
+  lacks fails to resolve and takes the whole module graph down. Declare one-off
+  checks inside the add-on that needs them.
+- **Touch devices run lighter**: no cursor, no parallax, no page transitions, and
+  no blur in the reveals.
+
 ## Notes
 
 - **The demo add-on is disposable.** `addons/scroll-progress.js` exists to prove the
