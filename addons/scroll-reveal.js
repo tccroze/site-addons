@@ -26,8 +26,10 @@ defineAddon('scroll-reveal', () => {
   const sections = [...document.querySelectorAll('section[data-section-id]')];
   const hero = sections.find((s) => s.getBoundingClientRect().height > 0);
 
+  const footer = document.querySelector('footer');
   const targets = [...document.querySelectorAll('[data-animation-role]')]
-    .filter((el) => !hero || !hero.contains(el));   // hero has its own reveal
+    .filter((el) => !hero || !hero.contains(el))        // hero has its own reveal
+    .filter((el) => !footer || !footer.contains(el));   // signature has its own
 
   if (!targets.length) return;
 

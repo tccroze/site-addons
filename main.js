@@ -11,6 +11,7 @@ import './addons/gallery-hover.js';
 import './addons/gallery-filter.js';
 import './addons/cursor.js';
 import './addons/page-transition.js';
+import './addons/signature.js';
 
 // Homepage only
 import './addons/scroll-reveal.js';
@@ -20,6 +21,6 @@ import './addons/parallax.js';
 
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '1.7.0';
+export const VERSION = '1.8.0';
 
 log(`ready — v${VERSION}`);
