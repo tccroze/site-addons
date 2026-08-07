@@ -56,6 +56,14 @@ defineAddon('scroll-reveal', () => {
        alongside the text — one motion language across the page is calmer.
        Nothing here touches transform on the <img> itself: that belongs to the
        parallax add-on, which rewrites it every frame. */
+    /* Images travel further than text. Sharing the text distance made the
+       movement almost imperceptible on a large picture — the same 30px reads
+       as a lot on a line of type and as nothing on a 400px-tall photograph.
+       Same easing and timing, so it is still one motion language. */
+    .taro-reveal-on [data-taro-reveal][data-taro-kind="image"] {
+      transform: translateY(${LEAN ? 46 : 72}px);
+    }
+
     .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: none; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -83,6 +91,9 @@ defineAddon('scroll-reveal', () => {
   };
 
   targets.forEach((el) => {
+    if (el.getAttribute('data-animation-role') === 'image') {
+      el.setAttribute('data-taro-kind', 'image');   // travels further, see CSS
+    }
     el.setAttribute('data-taro-reveal', startsVisible(el) ? 'in' : '');
   });
   document.documentElement.classList.add('taro-reveal-on');

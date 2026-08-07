@@ -23,7 +23,15 @@ defineAddon('parallax', () => {
   if (window.matchMedia('(hover: none)').matches) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+  // The footer is excluded outright. Parallax scales an image up so its drift
+  // never exposes a bare edge, but the footer signature sits in a tightly
+  // fitted, overflow:hidden box — so scaling it by 1.24 simply cropped 42px off
+  // each side and made a perfectly good asset look badly cropped. It has its
+  // own animation in signature.js.
+  const footer = document.querySelector('footer');
+
   const imgs = [...document.querySelectorAll('[data-animation-role="image"] img')]
+    .filter((img) => !footer || !footer.contains(img))
     .filter((img) => {
       const box = img.closest('.fluid-image-container, .sqs-image-content') || img.parentElement;
       return box && getComputedStyle(box).overflow !== 'visible';
