@@ -15,7 +15,9 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-const SOFT_EDGE = 9;    // % of width over which the ink fades in
+const SOFT_EDGE = 9;            // % of width over which the ink fades in
+const START_FROM_BOTTOM = 340;  // px from the page bottom where signing begins
+const FINISH_FROM_BOTTOM = 70;  // px from the page bottom where it is complete
 
 defineAddon('signature', () => {
   const footer = document.querySelector('footer');
@@ -69,14 +71,16 @@ defineAddon('signature', () => {
       sig.style.setProperty('--taro-sig-mask', 'none');
       return;
     }
-    // Normalised against the signature's own height, not a fraction of the
-    // viewport. It lives in the footer, so at maximum scroll it only ever rises
-    // a little above the bottom edge — any viewport-relative target is simply
-    // unreachable and the name would stop half-written. Measuring its own
-    // travel means it finishes exactly as it comes fully into view, whatever
-    // the screen size. The 0.85 lands the last stroke a fraction early.
-    const travel = window.innerHeight - r.top;
-    const progress = Math.max(0, Math.min(1, travel / (r.height * 0.85)));
+    // Measured as distance from the bottom of the page, not from the element.
+    // The signature sits in the footer, so it can only ever rise a little above
+    // the viewport edge — tying completion to its own travel meant the last
+    // stroke landed within ~37px of the absolute bottom, and anyone stopping
+    // short of that saw a half-written name and read it as a cropped image.
+    // This finishes it a clear 70px before the end of the page.
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const remaining = maxScroll - window.scrollY;
+    const span = START_FROM_BOTTOM - FINISH_FROM_BOTTOM;
+    const progress = Math.max(0, Math.min(1, (START_FROM_BOTTOM - remaining) / span));
     draw(progress);
   };
   const request = () => {

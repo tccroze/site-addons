@@ -19,8 +19,8 @@ const LEAN = window.matchMedia('(hover: none)').matches;
 
 
 const START_DELAY_MS = 220;
-const LINE_MS = 1900;
-const LINE_GAP_MS = 240;
+const LINE_MS = 2100;
+const LINE_GAP_MS = 300;
 
 defineAddon('hero-reveal', () => {
   if (location.pathname !== '/') return;
@@ -38,8 +38,8 @@ defineAddon('hero-reveal', () => {
   css('hero-reveal', `
     .taro-hero-line {
       opacity: 0;
-      transform: translateY(${LEAN ? 18 : 26}px);
-      ${LEAN ? '' : 'filter: blur(9px);'}
+      transform: translateY(${LEAN ? 14 : 20}px);
+      ${LEAN ? '' : 'filter: blur(6px);'}
       transition: opacity ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms),
                   transform ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)
                   ${LEAN ? '' : `, filter ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)`};
@@ -51,10 +51,22 @@ defineAddon('hero-reveal', () => {
     }
   `);
 
-  lines.forEach((el, i) => {
+  // Delay is assigned per Squarespace block, not per element. Both headline
+  // lines sit inside a single block, so staggering per element had one chasing
+  // the other and the pair never read as one statement. Grouped, they move
+  // together and the supporting lines follow.
+  const groups = [];
+  lines.forEach((el) => {
+    const key = el.closest('.sqs-block') || el.parentElement;
+    let group = groups.find((g) => g.key === key);
+    if (!group) groups.push((group = { key, els: [] }));
+    group.els.push(el);
+  });
+
+  groups.forEach((group, i) => group.els.forEach((el) => {
     el.classList.add('taro-hero-line');
     el.style.setProperty('--d', `${i * LINE_GAP_MS}ms`);
-  });
+  }));
 
   // Failsafe: the hero is the first thing anyone sees, so it must never be left
   // hidden by a missed frame or an interrupted load.

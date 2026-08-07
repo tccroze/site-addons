@@ -4,9 +4,9 @@
 // the right elements with data-animation-role (headings, images, buttons). We
 // drive off those hooks rather than inventing selectors.
 //
-// Images get a filmic clip wipe rather than a plain fade — they are the point
-// of the site, so they earn the more interesting treatment. Text and buttons
-// rise and fade.
+// Everything — headings, images, buttons — uses the same fade and rise. An
+// earlier version gave images their own clip wipe, which read as a second,
+// more mechanical effect competing with the text.
 //
 // Progressive enhancement matters: the hidden state is scoped to a class this
 // file puts on <html>, so if the script never loads nothing is ever hidden.
@@ -20,7 +20,6 @@ const LEAN = window.matchMedia('(hover: none)').matches;
 // Slow enough to register as movement rather than a flicker. The earlier
 // timings were quick enough that the reveal was over before it was noticed.
 const TEXT_MS = 2300;
-const IMAGE_MS = 1900;
 const STAGGER_MS = 155;
 
 defineAddon('scroll-reveal', () => {
@@ -52,19 +51,11 @@ defineAddon('scroll-reveal', () => {
                   ${LEAN ? '' : `, filter ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms)`};
     }
 
-    /* --- images: a wipe that uncovers the frame from the bottom up ---
-       Only clip-path is animated here. The img's transform belongs to the
-       parallax add-on, which rewrites it every frame; two owners on one
-       property would fight. */
-    .taro-reveal-on [data-taro-reveal][data-taro-kind="image"] {
-      opacity: 1;
-      transform: none;
-      filter: none;
-      clip-path: inset(0 0 100% 0);
-      transition: clip-path ${IMAGE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
-    }
-    .taro-reveal-on [data-taro-reveal="in"][data-taro-kind="image"] { clip-path: inset(0 0 0 0); }
-
+    /* Images use the same fade-and-rise as everything else. They previously had
+       a clip wipe, which read as a different, more mechanical effect sitting
+       alongside the text — one motion language across the page is calmer.
+       Nothing here touches transform on the <img> itself: that belongs to the
+       parallax add-on, which rewrites it every frame. */
     .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: none; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -92,9 +83,6 @@ defineAddon('scroll-reveal', () => {
   };
 
   targets.forEach((el) => {
-    if (el.getAttribute('data-animation-role') === 'image') {
-      el.setAttribute('data-taro-kind', 'image');
-    }
     el.setAttribute('data-taro-reveal', startsVisible(el) ? 'in' : '');
   });
   document.documentElement.classList.add('taro-reveal-on');
