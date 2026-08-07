@@ -25,7 +25,7 @@ needs a paid GitHub plan, and visitors' browsers have to fetch these files regar
 so there is nothing to hide here. Then, from this directory:
 
 ```bash
-git remote add origin https://github.com/YOUR-USERNAME/site-addons.git && git branch -M main && git push -u origin main
+git remote add origin https://github.com/tccroze/site-addons.git && git branch -M main && git push -u origin main
 ```
 
 ### 3. Turn on GitHub Pages
@@ -33,12 +33,12 @@ git remote add origin https://github.com/YOUR-USERNAME/site-addons.git && git br
 Repo → **Settings → Pages → Source: Deploy from a branch → Branch: `main` / `root` → Save**.
 
 Wait ~60 seconds, then confirm this loads in a browser:
-`https://YOUR-USERNAME.github.io/site-addons/main.js`
+`https://tccroze.github.io/site-addons/main.js`
 
 ### 4. Paste the snippet into Squarespace
 
-Copy the two tags from [`SNIPPET.html`](SNIPPET.html), replacing `YOUR-USERNAME`, into
-Squarespace → **Settings → Developer Tools → Code Injection → HEADER** → Save.
+Copy the two tags from [`SNIPPET.html`](SNIPPET.html) — the URLs are already filled in —
+into Squarespace → **Settings → Developer Tools → Code Injection → HEADER** → Save.
 
 Done. That is the last time the Squarespace editor is involved.
 
