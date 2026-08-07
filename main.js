@@ -7,9 +7,11 @@
 import { log } from './lib/util.js';
 
 import './addons/scroll-progress.js';
+import './addons/gallery-hover.js';
+import './addons/gallery-filter.js';
 
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '1.0.1';
+export const VERSION = '1.1.0';
 
 log(`ready — v${VERSION}`);
