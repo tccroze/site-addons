@@ -27,12 +27,6 @@ defineAddon('gallery-hover', () => {
       filter: saturate(1.08) contrast(1.03);
     }
 
-    /* Dimmed-out tiles from the subject filter must not react to hover. */
-    .gallery-masonry-item[data-taro-dim="1"]:hover .gallery-masonry-item-wrapper {
-      transform: none;
-      filter: none;
-    }
-
     /* ---- shop product cards ---- */
     .grid-item .grid-image,
     .grid-item .grid-image-wrapper {

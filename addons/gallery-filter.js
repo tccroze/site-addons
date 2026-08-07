@@ -1,16 +1,17 @@
 // Subject filters for the masonry gallery pages.
 //
-// Squarespace positions masonry items absolutely via JS-computed translate3d,
-// inside a wrapper with a hardcoded pixel height. Hiding items with display:none
-// therefore leaves holes in the grid and a wrapper that is the wrong height, and
-// Squarespace recomputes positions on resize so any layout we did ourselves gets
-// overwritten. So filtering dims non-matches instead of removing them: no layout
-// involvement at all, and it survives Squarespace's own relayout.
-//
 // Tags come from each image's alt text, which on this site is genuinely
 // descriptive. Raw word frequency is not usable — the alt text describes whole
 // scenes, so the commonest words are "grassy", "cloudy", "trees". Hence the
 // curated keyword lists below.
+//
+// Layout: Squarespace positions masonry items with inline
+// `position:absolute; width:…; transform:translate3d(…)` inside a wrapper with
+// an inline pixel height, and recomputes all of it on resize. Rather than
+// rewriting those inline styles (which Squarespace would overwrite), the
+// collapsed state is a stylesheet whose rules carry !important — that beats a
+// plain inline style, so it holds no matter how often Squarespace relayouts.
+// Filtering is then just a class toggle, with nothing to save or restore.
 
 import { defineAddon, css } from '../lib/util.js';
 
@@ -57,6 +58,26 @@ const TAXONOMIES = {
   ],
 };
 
+/** Read the live masonry geometry so the collapsed grid matches it. */
+function measure(items) {
+  const rects = items.map((el) => el.getBoundingClientRect());
+  const colWidth = Math.round(rects[0]?.width) || 300;
+
+  // Gutter = horizontal space between two tiles sharing a row.
+  let gutter = 4;
+  const topOf = (r) => Math.round(r.top);
+  for (let i = 0; i < rects.length - 1; i++) {
+    const sameRow = rects.filter((r) => Math.abs(topOf(r) - topOf(rects[i])) < 2);
+    if (sameRow.length > 1) {
+      sameRow.sort((a, b) => a.left - b.left);
+      const g = Math.round(sameRow[1].left - sameRow[0].right);
+      if (g >= 0 && g < 60) gutter = g;
+      break;
+    }
+  }
+  return { colWidth, gutter };
+}
+
 defineAddon('gallery-filter', () => {
   const taxonomy = TAXONOMIES[location.pathname.replace(/\/$/, '')];
   if (!taxonomy) return;
@@ -69,7 +90,6 @@ defineAddon('gallery-filter', () => {
   const items = [...gallery.querySelectorAll('.gallery-masonry-item')];
   if (items.length < 6) return;
 
-  // Tag every item up front so filtering is just an attribute flip.
   const tagged = items.map((el) => {
     const alt = (el.querySelector('img')?.alt || '').toLowerCase();
     const tags = taxonomy
@@ -78,12 +98,13 @@ defineAddon('gallery-filter', () => {
     return { el, tags };
   });
 
-  // Only offer a filter if it actually matches something.
   const available = taxonomy
     .map(([label]) => ({ label, count: tagged.filter((t) => t.tags.includes(label)).length }))
     .filter((t) => t.count > 0);
 
   if (available.length < 2) return;
+
+  const { colWidth, gutter } = measure(items);
 
   css('gallery-filter', `
     .taro-filter {
@@ -106,7 +127,7 @@ defineAddon('gallery-filter', () => {
       padding: 0.45em 1.1em;
       cursor: pointer;
       opacity: 0.55;
-      transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+      transition: opacity 0.2s ease, box-shadow 0.2s ease;
     }
     .taro-filter__btn:hover { opacity: 0.9; }
     /* Active state uses weight and opacity rather than a fill, so it reads
@@ -118,14 +139,38 @@ defineAddon('gallery-filter', () => {
     }
     .taro-filter__count { opacity: 0.55; margin-left: 0.5em; font-variant-numeric: tabular-nums; }
 
-    .gallery-masonry-item { transition: opacity 0.4s ease, filter 0.4s ease; }
-    .gallery-masonry-item[data-taro-dim="1"] {
-      opacity: 0.15;
-      filter: grayscale(1);
-      pointer-events: none;
+    /* ---- collapsed (filtered) layout ----
+       !important is load-bearing here: it overrides Squarespace's inline
+       positioning, including whatever it rewrites on the next resize. */
+    .gallery-masonry.taro-collapsed .gallery-masonry-wrapper {
+      height: auto !important;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(${colWidth}px, 1fr));
+      gap: ${gutter}px;
     }
+    .gallery-masonry.taro-collapsed .gallery-masonry-item {
+      position: static !important;
+      transform: none !important;
+      width: auto !important;
+      animation: taro-fade-in 0.35s ease both;
+    }
+    .gallery-masonry.taro-collapsed .gallery-masonry-item-wrapper {
+      height: auto !important;
+      aspect-ratio: 1 / 1;
+    }
+    .gallery-masonry.taro-collapsed .gallery-masonry-item img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+    }
+    .gallery-masonry.taro-collapsed .gallery-masonry-item[data-taro-hide="1"] {
+      display: none !important;
+    }
+    @keyframes taro-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
     @media (prefers-reduced-motion: reduce) {
-      .gallery-masonry-item, .taro-filter__btn { transition: none; }
+      .taro-filter__btn { transition: none; }
+      .gallery-masonry.taro-collapsed .gallery-masonry-item { animation: none; }
     }
   `);
 
@@ -135,6 +180,30 @@ defineAddon('gallery-filter', () => {
   bar.setAttribute('aria-label', 'Filter images by subject');
 
   const buttons = [];
+
+  function apply(value, btn) {
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+
+    if (value === null) {
+      gallery.classList.remove('taro-collapsed');
+      tagged.forEach(({ el }) => el.removeAttribute('data-taro-hide'));
+    } else {
+      tagged.forEach(({ el, tags }) => {
+        if (tags.includes(value)) el.removeAttribute('data-taro-hide');
+        else el.setAttribute('data-taro-hide', '1');
+      });
+      gallery.classList.add('taro-collapsed');
+    }
+
+    // Collapsing shortens the page a lot; without this the reader can be left
+    // stranded below the gallery looking at empty space.
+    const top = gallery.getBoundingClientRect().top;
+    if (top < 0) {
+      const y = window.scrollY + top - 120;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
+  }
+
   const makeBtn = (label, count, value) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -145,17 +214,7 @@ defineAddon('gallery-filter', () => {
     b.addEventListener('click', () => apply(value, b));
     buttons.push(b);
     bar.appendChild(b);
-    return b;
   };
-
-  function apply(value, btn) {
-    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-    tagged.forEach(({ el, tags }) => {
-      const match = value === null || tags.includes(value);
-      if (match) el.removeAttribute('data-taro-dim');
-      else el.setAttribute('data-taro-dim', '1');
-    });
-  }
 
   makeBtn('All', items.length, null);
   available.forEach(({ label, count }) => makeBtn(label, count, label));
