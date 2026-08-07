@@ -51,22 +51,24 @@ defineAddon('hero-reveal', () => {
     }
   `);
 
-  // Delay is assigned per Squarespace block, not per element. Both headline
-  // lines sit inside a single block, so staggering per element had one chasing
-  // the other and the pair never read as one statement. Grouped, they move
-  // together and the supporting lines follow.
-  const groups = [];
-  lines.forEach((el) => {
-    const key = el.closest('.sqs-block') || el.parentElement;
-    let group = groups.find((g) => g.key === key);
-    if (!group) groups.push((group = { key, els: [] }));
-    group.els.push(el);
-  });
+  // Delay is assigned by heading level, so the two headline lines arrive
+  // together as one statement and the supporting lines follow in turn.
+  //
+  // Grouping by Squarespace block was tried first and does not work: the two
+  // headlines sit in separate blocks in the mobile hero variant, so they went
+  // back to chasing each other. Their shared tag is the thing that actually
+  // identifies them as a pair.
+  const ORDER = ['H1', 'H2', 'H3', 'H4', 'P'];
+  const rank = (el) => {
+    const i = ORDER.indexOf(el.tagName);
+    return i === -1 ? ORDER.length : i;   // buttons and anything else come last
+  };
 
-  groups.forEach((group, i) => group.els.forEach((el) => {
+  const tiers = [...new Set(lines.map(rank))].sort((a, b) => a - b);
+  lines.forEach((el) => {
     el.classList.add('taro-hero-line');
-    el.style.setProperty('--d', `${i * LINE_GAP_MS}ms`);
-  }));
+    el.style.setProperty('--d', `${tiers.indexOf(rank(el)) * LINE_GAP_MS}ms`);
+  });
 
   // Failsafe: the hero is the first thing anyone sees, so it must never be left
   // hidden by a missed frame or an interrupted load.
