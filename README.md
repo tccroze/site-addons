@@ -20,9 +20,9 @@ Squarespace → **Settings → Billing & Plans → Change Plan → Core**.
 
 ### 2. Create the GitHub repo
 
-Make a **public** repo named `site-addons` (public is required — GitHub Pages is
-private-repo-only on paid plans, and the browser has to fetch these files anyway).
-Then, from this directory:
+Make a **public** repo named `site-addons`. Public matters: Pages on a private repo
+needs a paid GitHub plan, and visitors' browsers have to fetch these files regardless,
+so there is nothing to hide here. Then, from this directory:
 
 ```bash
 git remote add origin https://github.com/YOUR-USERNAME/site-addons.git && git branch -M main && git push -u origin main
