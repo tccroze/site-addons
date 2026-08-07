@@ -114,7 +114,6 @@ defineAddon('gallery-filter', () => {
     gallery.style.setProperty('--taro-cols', columns);
     gallery.style.setProperty('--taro-gap', `${gutter}px`);
   };
-  applyMeasurements();
 
   css('gallery-filter', `
     .taro-filter {
@@ -224,6 +223,11 @@ defineAddon('gallery-filter', () => {
       gallery.classList.remove('taro-collapsed');
       tagged.forEach(({ el }) => el.removeAttribute('data-taro-hide'));
     } else {
+      // Measure immediately before collapsing, while the real masonry is still
+      // laid out. Measuring at init instead would race Squarespace's own layout
+      // pass and read the tiles as un-positioned full-width blocks.
+      if (!gallery.classList.contains('taro-collapsed')) applyMeasurements();
+
       tagged.forEach(({ el, tags }) => {
         if (tags.includes(value)) el.removeAttribute('data-taro-hide');
         else el.setAttribute('data-taro-hide', '1');
@@ -275,15 +279,4 @@ defineAddon('gallery-filter', () => {
   window.addEventListener('scroll', onScroll, { passive: true });
   fallback = setTimeout(reveal, 2600);
   onScroll();   // handle a restored scroll position on back-navigation
-
-  // Re-read the column count after a resize. Only meaningful while the real
-  // masonry is on screen — that is the only time there is a live layout to
-  // measure — so a resize mid-filter picks up the new count on reset.
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      if (!gallery.classList.contains('taro-collapsed')) applyMeasurements();
-    }, 200);
-  }, { passive: true });
 });
