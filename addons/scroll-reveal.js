@@ -15,7 +15,7 @@ import { defineAddon, css } from '../lib/util.js';
 
 // Slow enough to register as movement rather than a flicker. The earlier
 // timings were quick enough that the reveal was over before it was noticed.
-const TEXT_MS = 1500;
+const TEXT_MS = 2300;
 const IMAGE_MS = 1900;
 const STAGGER_MS = 155;
 
