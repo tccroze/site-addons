@@ -107,7 +107,10 @@ defineAddon('scroll-reveal', () => {
       // Squarespace ships hidden desktop/mobile duplicates; those have no box
       // and must stay pending in case a resize brings them into play.
       if (r.width === 0 && r.height === 0) return true;
-      if (r.top < limit && r.bottom > 0) {
+      // Everything above the trigger line reveals — including content already
+      // scrolled past. Requiring it to still be on screen meant a fast scroll or
+      // an anchor jump could skip an element and leave it invisible above you.
+      if (r.top < limit) {
         el.setAttribute('data-taro-reveal', 'in');
         return false;
       }
