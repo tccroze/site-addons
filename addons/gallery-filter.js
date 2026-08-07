@@ -110,34 +110,54 @@ defineAddon('gallery-filter', () => {
     .taro-filter {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 0.4rem 1.6rem;
       justify-content: center;
-      margin: 0 auto 2rem;
+      margin: 0 auto 2.75rem;
       padding: 0 1rem;
     }
     .taro-filter__btn {
       font: inherit;
-      font-size: 0.78rem;
-      letter-spacing: 0.08em;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       color: inherit;
-      background: transparent;
-      border: 1px solid currentColor;
-      border-radius: 999px;
-      padding: 0.45em 1.1em;
+      background: none;
+      border: 0;
+      border-radius: 0;
+      padding: 0.25em 0;
       cursor: pointer;
-      opacity: 0.55;
-      transition: opacity 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      opacity: 0;
+      transform: translateY(7px);
+      /* Staggered reveal: each label arrives just after the one before it. */
+      transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 55ms),
+                  transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 55ms);
     }
-    .taro-filter__btn:hover { opacity: 0.9; }
-    /* Active state uses weight and opacity rather than a fill, so it reads
-       correctly against any section background without knowing the palette. */
-    .taro-filter__btn[aria-pressed="true"] {
-      opacity: 1;
-      font-weight: 600;
-      box-shadow: inset 0 0 0 1px currentColor;
+    .taro-filter.is-revealed .taro-filter__btn { opacity: 0.4; transform: none; }
+    .taro-filter.is-revealed .taro-filter__btn:hover { opacity: 0.75; }
+    .taro-filter.is-revealed .taro-filter__btn[aria-pressed="true"] { opacity: 1; }
+
+    /* Hairline under the active label, drawn out from the centre. Reads as
+       intentional against any section background without needing a palette. */
+    .taro-filter__btn::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 1px;
+      background: currentColor;
+      transform: scaleX(0);
+      transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
     }
-    .taro-filter__count { opacity: 0.55; margin-left: 0.5em; font-variant-numeric: tabular-nums; }
+    .taro-filter__btn[aria-pressed="true"]::after { transform: scaleX(1); }
+
+    .taro-filter__count {
+      font-size: 0.62em;
+      vertical-align: super;
+      opacity: 0.5;
+      margin-left: 0.45em;
+      letter-spacing: 0.05em;
+      font-variant-numeric: tabular-nums;
+    }
 
     /* ---- collapsed (filtered) layout ----
        !important is load-bearing here: it overrides Squarespace's inline
@@ -173,7 +193,9 @@ defineAddon('gallery-filter', () => {
     @keyframes taro-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
     @media (prefers-reduced-motion: reduce) {
-      .taro-filter__btn { transition: none; }
+      .taro-filter__btn,
+      .taro-filter__btn::after { transition: none; transform: none; }
+      .taro-filter__btn[aria-pressed="true"]::after { transform: scaleX(1); }
       .gallery-masonry.taro-collapsed .gallery-masonry-item { animation: none; }
     }
   `);
@@ -214,6 +236,7 @@ defineAddon('gallery-filter', () => {
     b.className = 'taro-filter__btn';
     b.setAttribute('aria-pressed', value === null ? 'true' : 'false');
     b.dataset.value = value ?? '';
+    b.style.setProperty('--i', buttons.length);   // drives the stagger
     b.innerHTML = `<span class="taro-filter__label">${label}</span><span class="taro-filter__count">${count}</span>`;
     b.addEventListener('click', () => apply(value, b));
     buttons.push(b);
@@ -227,4 +250,19 @@ defineAddon('gallery-filter', () => {
   // the section's colour theme rather than the page default.
   const anchor = gallery.closest('.gallery-section-wrapper') || gallery;
   anchor.parentNode.insertBefore(bar, anchor);
+
+  // The filters stay out of the way until the visitor starts moving down the
+  // page, then fade up one after another. The timed fallback matters: without
+  // it, someone who never scrolls would never discover the filters at all.
+  let fallback;
+  const reveal = () => {
+    bar.classList.add('is-revealed');
+    window.removeEventListener('scroll', onScroll);
+    clearTimeout(fallback);
+  };
+  const onScroll = () => { if (window.scrollY > 24) reveal(); };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  fallback = setTimeout(reveal, 2600);
+  onScroll();   // handle a restored scroll position on back-navigation
 });
