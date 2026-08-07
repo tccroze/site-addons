@@ -1,22 +1,25 @@
-// Gentle parallax on homepage images.
+// Parallax drift on homepage images.
 //
-// Amplitude is deliberately small. Parallax is the effect most likely to feel
-// dated when overdone, and on a photography site the picture should move a
-// little, not perform.
+// Amplitude and scale are computed per image from its own height, rather than
+// being fixed constants. A single global scale cannot be right for images of
+// different heights: too small and the translation exposes a bare edge inside
+// the frame, too large and short images get visibly over-zoomed. Deriving the
+// scale from the travel distance guarantees coverage either way.
 //
-// The image is scaled slightly so that translating it never exposes a bare edge
-// inside its container, and only images currently on screen are updated.
+// This add-on owns the transform on these <img> elements. scroll-reveal
+// deliberately animates only clip-path on the surrounding frame so the two
+// never write the same property.
 
 import { defineAddon, css } from '../lib/util.js';
 
-const AMPLITUDE_PX = 26;
-const SCALE = 1.09;          // must cover 2 × AMPLITUDE across the tallest image
+const TRAVEL_RATIO = 0.09;   // of image height
+const MIN_TRAVEL = 20;
+const MAX_TRAVEL = 58;
 
 defineAddon('parallax', () => {
   if (location.pathname !== '/') return;
 
-  // No parallax where it would be wrong: touch scrolling makes it feel laggy,
-  // and reduced-motion users have asked not to have it.
+  // Wrong where it would feel laggy or unwanted.
   if (window.matchMedia('(hover: none)').matches) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -27,21 +30,24 @@ defineAddon('parallax', () => {
     });
   if (!imgs.length) return;
 
-  css('parallax', `
-    .taro-parallax {
-      transform: scale(${SCALE}) translate3d(0, 0, 0);
-      will-change: transform;
-    }
-  `);
-
+  css('parallax', `.taro-parallax { will-change: transform; }`);
   imgs.forEach((img) => img.classList.add('taro-parallax'));
 
-  // Only images on screen get updated; the rest cost nothing.
+  // travel = how far it drifts each way; scale = just enough to hide that drift
+  const geom = new Map();
+  const measure = () => {
+    imgs.forEach((img) => {
+      const h = img.getBoundingClientRect().height || 1;
+      const travel = Math.min(MAX_TRAVEL, Math.max(MIN_TRAVEL, h * TRAVEL_RATIO));
+      geom.set(img, { travel, scale: 1 + (2 * travel) / h + 0.02 });
+    });
+  };
+
   const onScreen = new Set();
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => (e.isIntersecting ? onScreen.add(e.target) : onScreen.delete(e.target)));
-    if (onScreen.size) request();
-  }, { rootMargin: '15% 0px' });
+    request();
+  }, { rootMargin: '20% 0px' });
   imgs.forEach((img) => io.observe(img));
 
   let queued = false;
@@ -49,10 +55,13 @@ defineAddon('parallax', () => {
     queued = false;
     const mid = window.innerHeight / 2;
     onScreen.forEach((img) => {
+      const g = geom.get(img);
+      if (!g) return;
       const r = img.getBoundingClientRect();
-      // -1 when the image sits below the fold, +1 when it has scrolled above it.
+      // -1 while the image is still below the fold, +1 once it is above it.
       const progress = Math.max(-1, Math.min(1, (mid - (r.top + r.height / 2)) / mid));
-      img.style.transform = `scale(${SCALE}) translate3d(0, ${(progress * AMPLITUDE_PX).toFixed(2)}px, 0)`;
+      img.style.transform =
+        `scale(${g.scale.toFixed(3)}) translate3d(0, ${(progress * g.travel).toFixed(2)}px, 0)`;
     });
   };
   const request = () => {
@@ -61,7 +70,8 @@ defineAddon('parallax', () => {
     requestAnimationFrame(update);
   };
 
+  measure();
   window.addEventListener('scroll', request, { passive: true });
-  window.addEventListener('resize', request, { passive: true });
+  window.addEventListener('resize', () => { measure(); request(); }, { passive: true });
   update();
 });
