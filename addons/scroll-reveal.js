@@ -13,7 +13,11 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-const STAGGER_MS = 110;
+// Slow enough to register as movement rather than a flicker. The earlier
+// timings were quick enough that the reveal was over before it was noticed.
+const TEXT_MS = 1500;
+const IMAGE_MS = 1900;
+const STAGGER_MS = 155;
 
 defineAddon('scroll-reveal', () => {
   if (location.pathname !== '/') return;
@@ -31,10 +35,12 @@ defineAddon('scroll-reveal', () => {
     /* --- text and buttons: rise and fade --- */
     .taro-reveal-on [data-taro-reveal] {
       opacity: 0;
-      transform: translateY(34px);
-      transition: opacity 1s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
-                  transform 1s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
-      will-change: opacity, transform;
+      transform: translateY(30px);
+      filter: blur(7px);
+      transition: opacity ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
+                  transform ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
+                  filter ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
+      will-change: opacity, transform, filter;
     }
 
     /* --- images: a wipe that uncovers the frame from the bottom up ---
@@ -44,16 +50,17 @@ defineAddon('scroll-reveal', () => {
     .taro-reveal-on [data-taro-reveal][data-taro-kind="image"] {
       opacity: 1;
       transform: none;
+      filter: none;
       clip-path: inset(0 0 100% 0);
-      transition: clip-path 1.25s cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
+      transition: clip-path ${IMAGE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
     }
     .taro-reveal-on [data-taro-reveal="in"][data-taro-kind="image"] { clip-path: inset(0 0 0 0); }
 
-    .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; }
+    .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: blur(0); }
 
     @media (prefers-reduced-motion: reduce) {
       .taro-reveal-on [data-taro-reveal] {
-        opacity: 1; transform: none; clip-path: none; transition: none;
+        opacity: 1; transform: none; filter: none; clip-path: none; transition: none;
       }
     }
   `);
@@ -66,11 +73,20 @@ defineAddon('scroll-reveal', () => {
       .forEach((el, i) => el.style.setProperty('--i', i));
   });
 
+  // Anything already on screen when this runs is marked revealed immediately and
+  // never enters the hidden state. An element the visitor can already see must
+  // not be hidden in order to animate it — that is how the Venues, Stills and
+  // Paint cards ended up invisible. Only content below the fold animates in.
+  const startsVisible = (el) => {
+    const r = el.getBoundingClientRect();
+    return (r.width || r.height) && r.top < window.innerHeight && r.bottom > 0;
+  };
+
   targets.forEach((el) => {
-    el.setAttribute('data-taro-reveal', '');
     if (el.getAttribute('data-animation-role') === 'image') {
       el.setAttribute('data-taro-kind', 'image');
     }
+    el.setAttribute('data-taro-reveal', startsVisible(el) ? 'in' : '');
   });
   document.documentElement.classList.add('taro-reveal-on');
 
@@ -80,7 +96,7 @@ defineAddon('scroll-reveal', () => {
   // modes that are invisible until they bite. A direct measurement against the
   // viewport cannot silently not-happen, and with a handful of elements the
   // cost of checking is nothing.
-  let pending = targets.slice();
+  let pending = targets.filter((el) => el.getAttribute('data-taro-reveal') !== 'in');
   let queued = false;
 
   const check = () => {

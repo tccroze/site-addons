@@ -11,7 +11,7 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-const EASE = 0.18;           // how quickly the ring catches up
+const EASE = 0.11;           // lower = a longer, softer trail behind the pointer
 const HOVER_TARGETS = 'a, button, [role="button"], input, textarea, select, .gallery-masonry-item';
 
 defineAddon('cursor', () => {
@@ -24,24 +24,28 @@ defineAddon('cursor', () => {
       position: fixed;
       top: 0;
       left: 0;
-      width: 34px;
-      height: 34px;
-      margin: -17px 0 0 -17px;
-      border: 1px solid #fff;
+      width: 18px;
+      height: 18px;
+      margin: -9px 0 0 -9px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
       border-radius: 50%;
       pointer-events: none;
       z-index: 99999;
       opacity: 0;
       mix-blend-mode: difference;
-      transition: opacity 0.35s ease, width 0.3s ease, height 0.3s ease,
-                  margin 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+      transition: opacity 0.5s ease, width 0.45s cubic-bezier(0.16, 0.84, 0.3, 1),
+                  height 0.45s cubic-bezier(0.16, 0.84, 0.3, 1),
+                  margin 0.45s cubic-bezier(0.16, 0.84, 0.3, 1),
+                  border-color 0.45s ease;
     }
-    .taro-cursor.is-awake { opacity: 1; }
+    .taro-cursor.is-awake { opacity: 0.75; }
+    /* No fill — the filled disc was what made this feel heavy. Opening the ring
+       a little and brightening the stroke is enough of a signal. */
     .taro-cursor.is-over {
-      width: 62px;
-      height: 62px;
-      margin: -31px 0 0 -31px;
-      background: rgba(255, 255, 255, 0.14);
+      width: 36px;
+      height: 36px;
+      margin: -18px 0 0 -18px;
+      border-color: rgba(255, 255, 255, 0.75);
     }
     /* Pointer left the window, or is over a text-entry field. */
     .taro-cursor.is-hidden { opacity: 0; }
