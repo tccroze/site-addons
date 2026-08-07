@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>taro add-ons — local preview</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    /* Preview-harness chrome only. Nothing here ships to Squarespace. */
+    body { margin: 0; font: 16px/1.6 -apple-system, BlinkMacSystemFont, sans-serif; color: #111; background: #fff; }
+    .note { padding: 1.5rem 2rem; background: #fffbe6; border-bottom: 1px solid #f0e4a0; font-size: 14px; }
+    .note code { background: #fff; padding: 1px 5px; border-radius: 3px; border: 1px solid #e5e0c0; }
+    section { padding: 6rem 2rem; border-bottom: 1px solid #eee; max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 2rem; letter-spacing: -0.02em; }
+    .swatch { height: 320px; background: repeating-linear-gradient(45deg, #f2f2f2, #f2f2f2 12px, #e8e8e8 12px, #e8e8e8 24px); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <p class="note">
+    Local preview harness — <strong>not</strong> a copy of tarocroze.com. It loads the same
+    <code>main.js</code> and <code>styles.css</code> the live site will, so you can check an add-on
+    runs and throws nothing before pushing. Serve it with
+    <code>python3 -m http.server</code>; opening the file directly breaks ES modules.
+  </p>
+
+  <section>
+    <h1>Scroll down</h1>
+    <p>The demo scroll-progress bar should track along the very top of the window.</p>
+    <p>Open the console — you should see <code>[taro] ✓ scroll-progress</code> and a version line.</p>
+  </section>
+
+  <section><div class="swatch"></div></section>
+  <section><div class="swatch"></div></section>
+  <section><div class="swatch"></div></section>
+  <section>
+    <h1>End</h1>
+    <p>Bar should be at 100%.</p>
+  </section>
+
+  <script type="module" src="../main.js"></script>
+</body>
+</html>

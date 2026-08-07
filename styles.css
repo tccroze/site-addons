@@ -1,0 +1,16 @@
+/* Site-wide custom CSS for tarocroze.com.
+ *
+ * This file is version-controlled and deploys on push, so prefer it over
+ * Squarespace's built-in Custom CSS editor — keep that one empty so there is
+ * only ever one place to look.
+ *
+ * Loaded via <link> in the header injection, which means it lands after
+ * Squarespace's own stylesheets and wins ties without needing !important.
+ *
+ * Add-on-specific styles do NOT belong here — those live inside the add-on
+ * file itself via the css() helper.
+ */
+
+:root {
+  /* Handy place to park values you reuse across rules. */
+}
