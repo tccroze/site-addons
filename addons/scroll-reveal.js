@@ -44,7 +44,11 @@ defineAddon('scroll-reveal', () => {
        plain opacity/transform transition. */
     .taro-reveal-on [data-taro-reveal] {
       opacity: 0;
-      transform: translateY(${LEAN ? 22 : 30}px);
+      /* Distance comes from a custom property, never from a second transform
+         rule. A rule matching two attributes outranks the [="in"] reset that
+         has one, so declaring transform twice left images stuck at their
+         offset forever — which closed the gaps between the cards. */
+      transform: translateY(var(--taro-travel, ${LEAN ? 22 : 30}px));
       ${LEAN ? '' : 'filter: blur(7px);'}
       transition: opacity ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
                   transform ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms)
@@ -56,12 +60,11 @@ defineAddon('scroll-reveal', () => {
        alongside the text — one motion language across the page is calmer.
        Nothing here touches transform on the <img> itself: that belongs to the
        parallax add-on, which rewrites it every frame. */
-    /* Images travel further than text. Sharing the text distance made the
-       movement almost imperceptible on a large picture — the same 30px reads
-       as a lot on a line of type and as nothing on a 400px-tall photograph.
-       Same easing and timing, so it is still one motion language. */
+    /* Images travel further than text. The same 30px reads as movement on a
+       line of type and as nothing on a 400px-tall photograph. This sets only
+       the distance — the transform itself is declared once, above. */
     .taro-reveal-on [data-taro-reveal][data-taro-kind="image"] {
-      transform: translateY(${LEAN ? 46 : 72}px);
+      --taro-travel: ${LEAN ? 46 : 72}px;
     }
 
     .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: none; }
