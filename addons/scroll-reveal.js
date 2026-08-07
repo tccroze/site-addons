@@ -63,4 +63,12 @@ defineAddon('scroll-reveal', () => {
   }, { rootMargin: '0px 0px -12% 0px', threshold: 0.05 });
 
   targets.forEach((el) => io.observe(el));
+
+  // Failsafe. The reveal works by hiding content first, so anything that stops
+  // the observer firing would leave the homepage blank — an unacceptable way to
+  // fail on a live site. After 5s, show everything regardless.
+  setTimeout(() => {
+    targets.forEach((el) => el.setAttribute('data-taro-reveal', 'in'));
+    io.disconnect();
+  }, 5000);
 });
