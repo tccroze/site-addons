@@ -1,0 +1,4 @@
+Disables Jekyll processing on GitHub Pages so files are served verbatim.
+Without this, Pages silently drops anything whose name starts with an
+underscore — including addons/_template.js. The file's contents are ignored;
+only its presence matters.
