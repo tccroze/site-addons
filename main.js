@@ -12,6 +12,6 @@ import './addons/gallery-filter.js';
 
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '1.2.0';
+export const VERSION = '1.2.1';
 
 log(`ready — v${VERSION}`);

@@ -142,26 +142,30 @@ defineAddon('gallery-filter', () => {
     /* ---- collapsed (filtered) layout ----
        !important is load-bearing here: it overrides Squarespace's inline
        positioning, including whatever it rewrites on the next resize. */
+    /* CSS columns rather than grid: this is a photography site, so tiles keep
+       their true aspect ratio instead of being cropped to a uniform cell, and
+       columns still pack tightly the way the original masonry does. */
     .gallery-masonry.taro-collapsed .gallery-masonry-wrapper {
       height: auto !important;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(${colWidth}px, 1fr));
-      gap: ${gutter}px;
+      display: block;
+      column-width: ${colWidth}px;
+      column-gap: ${gutter}px;
     }
     .gallery-masonry.taro-collapsed .gallery-masonry-item {
       position: static !important;
       transform: none !important;
       width: auto !important;
+      display: block;
+      break-inside: avoid;
+      margin: 0 0 ${gutter}px;
       animation: taro-fade-in 0.35s ease both;
     }
     .gallery-masonry.taro-collapsed .gallery-masonry-item-wrapper {
       height: auto !important;
-      aspect-ratio: 1 / 1;
     }
     .gallery-masonry.taro-collapsed .gallery-masonry-item img {
       width: 100% !important;
-      height: 100% !important;
-      object-fit: cover;
+      height: auto !important;
     }
     .gallery-masonry.taro-collapsed .gallery-masonry-item[data-taro-hide="1"] {
       display: none !important;
