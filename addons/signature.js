@@ -25,6 +25,11 @@ defineAddon('signature', () => {
   const sig = footer.querySelector('img');
   if (!sig) return;
 
+  // If masks are not supported, do nothing at all rather than risk applying a
+  // half-understood property to the signature and hiding it.
+  if (!(CSS.supports('mask-image', 'linear-gradient(#000, #000)')
+     || CSS.supports('-webkit-mask-image', 'linear-gradient(#000, #000)'))) return;
+
   css('signature', `
     .taro-sig {
       -webkit-mask-image: var(--taro-sig-mask);
@@ -58,7 +63,12 @@ defineAddon('signature', () => {
   const update = () => {
     queued = false;
     const r = sig.getBoundingClientRect();
-    if (!r.height) return;
+    // Unmeasurable (not laid out or not yet loaded) means show it in full.
+    // A mask we cannot compute a position for must never leave it invisible.
+    if (!r.height) {
+      sig.style.setProperty('--taro-sig-mask', 'none');
+      return;
+    }
     // Normalised against the signature's own height, not a fraction of the
     // viewport. It lives in the footer, so at maximum scroll it only ever rises
     // a little above the bottom edge — any viewport-relative target is simply
@@ -75,9 +85,11 @@ defineAddon('signature', () => {
     requestAnimationFrame(update);
   };
 
-  draw(0);
   window.addEventListener('scroll', request, { passive: true });
   window.addEventListener('resize', request, { passive: true });
   window.addEventListener('load', request);
+  // The image often has no box yet on first run; re-measure once it decodes so
+  // the mask starts from a real position rather than a guess.
+  if (!sig.complete) sig.addEventListener('load', request, { once: true });
   update();
 });

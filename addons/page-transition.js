@@ -44,9 +44,17 @@ defineAddon('page-transition', () => {
       opacity: 1;
       pointer-events: none;
       z-index: 99998;
+      visibility: visible;
       transition: opacity ${FADE_MS}ms ease;
     }
-    .taro-veil.is-clear { opacity: 0; }
+    /* Once cleared it goes properly hidden rather than sitting there as a
+       permanently composited full-viewport layer, which is wasteful on mobile.
+       visibility flips only after the fade finishes so the fade is still seen. */
+    .taro-veil.is-clear {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity ${FADE_MS}ms ease, visibility 0s linear ${FADE_MS}ms;
+    }
   `);
 
   const veil = document.createElement('div');

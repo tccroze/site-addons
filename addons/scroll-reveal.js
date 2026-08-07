@@ -11,7 +11,7 @@
 // Progressive enhancement matters: the hidden state is scoped to a class this
 // file puts on <html>, so if the script never loads nothing is ever hidden.
 
-import { defineAddon, css } from '../lib/util.js';
+import { defineAddon, css, LEAN } from '../lib/util.js';
 
 // Slow enough to register as movement rather than a flicker. The earlier
 // timings were quick enough that the reveal was over before it was noticed.
@@ -35,14 +35,17 @@ defineAddon('scroll-reveal', () => {
 
   css('scroll-reveal', `
     /* --- text and buttons: rise and fade --- */
+    /* No blur and no will-change on touch devices. A blur filter across a
+       couple of dozen promoted layers is genuinely expensive on a phone, and
+       bulk will-change pins memory for compositing that is not needed for a
+       plain opacity/transform transition. */
     .taro-reveal-on [data-taro-reveal] {
       opacity: 0;
-      transform: translateY(30px);
-      filter: blur(7px);
+      transform: translateY(${LEAN ? 22 : 30}px);
+      ${LEAN ? '' : 'filter: blur(7px);'}
       transition: opacity ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
-                  transform ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
-                  filter ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
-      will-change: opacity, transform, filter;
+                  transform ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms)
+                  ${LEAN ? '' : `, filter ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms)`};
     }
 
     /* --- images: a wipe that uncovers the frame from the bottom up ---
@@ -58,7 +61,7 @@ defineAddon('scroll-reveal', () => {
     }
     .taro-reveal-on [data-taro-reveal="in"][data-taro-kind="image"] { clip-path: inset(0 0 0 0); }
 
-    .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: blur(0); }
+    .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: none; }
 
     @media (prefers-reduced-motion: reduce) {
       .taro-reveal-on [data-taro-reveal] {

@@ -1,17 +1,22 @@
-// Hero headline reveal — each line wipes up from behind a mask, in sequence.
+// Hero reveal — every line settles into place in sequence on load.
 //
-// The mask is made by giving the heading `overflow: hidden` and translating an
-// inner wrapper up into view. Both the heading and the wrapper stay block-level,
-// so line wrapping, alignment and Squarespace's own typography are untouched —
-// which a display:inline-block wrapper would have broken.
+// This replaces an earlier mask wipe, where each line slid up from behind
+// overflow:hidden. That read as mechanical, needed the heading's children
+// rewrapped in a span, and clipped descenders. This version touches no markup
+// at all: it animates the existing elements, so nothing about Squarespace's
+// typography or line wrapping can be disturbed.
+//
+// Everything with text in the hero takes part — the two headlines, the
+// supporting line and the strapline underneath — rather than headings alone.
 //
 // The homepage carries two hero variants (Squarespace "content mode" swaps a
-// desktop and a mobile copy), so this deliberately picks the visible one.
+// desktop and a mobile copy), so this picks whichever one is visible.
 
-import { defineAddon, css } from '../lib/util.js';
+import { defineAddon, css, LEAN } from '../lib/util.js';
 
-const START_DELAY_MS = 250;
-const LINE_GAP_MS = 145;
+const START_DELAY_MS = 220;
+const LINE_MS = 1900;
+const LINE_GAP_MS = 240;
 
 defineAddon('hero-reveal', () => {
   if (location.pathname !== '/') return;
@@ -20,41 +25,41 @@ defineAddon('hero-reveal', () => {
     .find((s) => s.getBoundingClientRect().height > 0);
   if (!hero) return;
 
-  const lines = [...hero.querySelectorAll('h1, h2, h3, h4')]
-    .filter((el) => el.innerText.trim() && el.getBoundingClientRect().height > 0);
+  const lines = [...hero.querySelectorAll('h1, h2, h3, h4, p, .sqs-block-button-element')]
+    .filter((el) => el.innerText.trim() && el.getBoundingClientRect().height > 0)
+    // Keep only the outermost of any nested matches, so a line never animates twice.
+    .filter((el, _, all) => !all.some((other) => other !== el && other.contains(el)));
   if (!lines.length) return;
 
   css('hero-reveal', `
-    .taro-line { overflow: hidden; }
-    /* Descenders would otherwise be clipped by the mask. */
-    .taro-line__inner {
-      display: block;
-      padding-bottom: 0.14em;
-      margin-bottom: -0.14em;
-      transform: translateY(110%);
-      transition: transform 1s cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms);
-      will-change: transform;
+    .taro-hero-line {
+      opacity: 0;
+      transform: translateY(${LEAN ? 18 : 26}px);
+      ${LEAN ? '' : 'filter: blur(9px);'}
+      transition: opacity ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms),
+                  transform ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)
+                  ${LEAN ? '' : `, filter ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)`};
     }
-    .taro-line.is-in .taro-line__inner { transform: translateY(0); }
+    .taro-hero-line.is-in { opacity: 1; transform: none; filter: none; }
 
     @media (prefers-reduced-motion: reduce) {
-      .taro-line__inner { transform: none; transition: none; }
+      .taro-hero-line { opacity: 1; transform: none; filter: none; transition: none; }
     }
   `);
 
   lines.forEach((el, i) => {
-    if (el.querySelector('.taro-line__inner')) return;   // never double-wrap
-    const inner = document.createElement('span');
-    inner.className = 'taro-line__inner';
-    while (el.firstChild) inner.appendChild(el.firstChild);
-    el.appendChild(inner);
-    el.classList.add('taro-line');
-    inner.style.setProperty('--d', `${i * LINE_GAP_MS}ms`);
+    el.classList.add('taro-hero-line');
+    el.style.setProperty('--d', `${i * LINE_GAP_MS}ms`);
   });
 
-  // Two frames so the browser paints the masked state before it animates —
+  // Failsafe: the hero is the first thing anyone sees, so it must never be left
+  // hidden by a missed frame or an interrupted load.
+  const showAll = () => lines.forEach((el) => el.classList.add('is-in'));
+  setTimeout(showAll, START_DELAY_MS + 3000);
+
+  // Two frames so the browser paints the starting state before animating —
   // without this the transition is skipped and the lines simply appear.
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    setTimeout(() => lines.forEach((el) => el.classList.add('is-in')), START_DELAY_MS);
+    setTimeout(showAll, START_DELAY_MS);
   }));
 });
