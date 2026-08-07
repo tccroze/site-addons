@@ -59,11 +59,14 @@ defineAddon('signature', () => {
     queued = false;
     const r = sig.getBoundingClientRect();
     if (!r.height) return;
-    // 0 as it clears the bottom of the viewport, 1 by the time it has risen
-    // into the lower third — complete before the reader reaches the very end.
-    const start = window.innerHeight;
-    const end = window.innerHeight * 0.62;
-    const progress = Math.max(0, Math.min(1, (start - r.top) / (start - end)));
+    // Normalised against the signature's own height, not a fraction of the
+    // viewport. It lives in the footer, so at maximum scroll it only ever rises
+    // a little above the bottom edge — any viewport-relative target is simply
+    // unreachable and the name would stop half-written. Measuring its own
+    // travel means it finishes exactly as it comes fully into view, whatever
+    // the screen size. The 0.85 lands the last stroke a fraction early.
+    const travel = window.innerHeight - r.top;
+    const progress = Math.max(0, Math.min(1, travel / (r.height * 0.85)));
     draw(progress);
   };
   const request = () => {
