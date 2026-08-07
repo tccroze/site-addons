@@ -58,24 +58,29 @@ const TAXONOMIES = {
   ],
 };
 
-/** Read the live masonry geometry so the collapsed grid matches it. */
+/**
+ * Read the live masonry geometry so the collapsed layout matches whatever
+ * Squarespace is currently doing — including its own responsive breakpoints,
+ * which drop the gallery to a single column on narrow viewports.
+ *
+ * Returns a column *count* rather than a pixel width deliberately: a fixed
+ * px width measured once goes stale the moment the window is resized, and
+ * would strand the collapsed view at the wrong number of columns.
+ */
 function measure(items) {
   const rects = items.map((el) => el.getBoundingClientRect());
-  const colWidth = Math.round(rects[0]?.width) || 300;
 
-  // Gutter = horizontal space between two tiles sharing a row.
+  // Distinct x-positions = number of masonry columns.
+  const lefts = [...new Set(rects.map((r) => Math.round(r.left / 5) * 5))].sort((a, b) => a - b);
+  const columns = Math.max(1, lefts.length);
+
+  // Gutter = horizontal space between neighbouring columns.
   let gutter = 4;
-  const topOf = (r) => Math.round(r.top);
-  for (let i = 0; i < rects.length - 1; i++) {
-    const sameRow = rects.filter((r) => Math.abs(topOf(r) - topOf(rects[i])) < 2);
-    if (sameRow.length > 1) {
-      sameRow.sort((a, b) => a.left - b.left);
-      const g = Math.round(sameRow[1].left - sameRow[0].right);
-      if (g >= 0 && g < 60) gutter = g;
-      break;
-    }
+  if (lefts.length > 1) {
+    const g = Math.round(lefts[1] - lefts[0] - rects[0].width);
+    if (g >= 0 && g < 60) gutter = g;
   }
-  return { colWidth, gutter };
+  return { columns, gutter };
 }
 
 defineAddon('gallery-filter', () => {
@@ -104,7 +109,12 @@ defineAddon('gallery-filter', () => {
 
   if (available.length < 2) return;
 
-  const { colWidth, gutter } = measure(items);
+  const applyMeasurements = () => {
+    const { columns, gutter } = measure(items);
+    gallery.style.setProperty('--taro-cols', columns);
+    gallery.style.setProperty('--taro-gap', `${gutter}px`);
+  };
+  applyMeasurements();
 
   css('gallery-filter', `
     .taro-filter {
@@ -168,8 +178,8 @@ defineAddon('gallery-filter', () => {
     .gallery-masonry.taro-collapsed .gallery-masonry-wrapper {
       height: auto !important;
       display: block;
-      column-width: ${colWidth}px;
-      column-gap: ${gutter}px;
+      column-count: var(--taro-cols, 2);
+      column-gap: var(--taro-gap, 4px);
     }
     .gallery-masonry.taro-collapsed .gallery-masonry-item {
       position: static !important;
@@ -177,7 +187,7 @@ defineAddon('gallery-filter', () => {
       width: auto !important;
       display: block;
       break-inside: avoid;
-      margin: 0 0 ${gutter}px;
+      margin: 0 0 var(--taro-gap, 4px);
       animation: taro-fade-in 0.35s ease both;
     }
     .gallery-masonry.taro-collapsed .gallery-masonry-item-wrapper {
@@ -265,4 +275,15 @@ defineAddon('gallery-filter', () => {
   window.addEventListener('scroll', onScroll, { passive: true });
   fallback = setTimeout(reveal, 2600);
   onScroll();   // handle a restored scroll position on back-navigation
+
+  // Re-read the column count after a resize. Only meaningful while the real
+  // masonry is on screen — that is the only time there is a live layout to
+  // measure — so a resize mid-filter picks up the new count on reset.
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (!gallery.classList.contains('taro-collapsed')) applyMeasurements();
+    }, 200);
+  }, { passive: true });
 });
