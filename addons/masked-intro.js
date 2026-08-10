@@ -44,9 +44,19 @@ const GROW = 1.16;        // how much it scales on the way down
 // the edge clear of the skyline: it has to pass below the base of Spitzkoppe on
 // the left and below the desert horizon in the middle, or the tear eats the
 // landscape the type is supposed to sink behind.
+// TEAR_END plus the noise has to stay inside the band. At 0.97 the noise pushed
+// the edge past the bottom over the last sixth of the width, where it clamped
+// flat and the fill fell below the viewBox entirely — the right of the print met
+// the page with a straight cut instead of a tear.
 const TEAR = 0.36;        // height of the torn band, as a fraction of frame height
-const TEAR_START = 0.22;
-const TEAR_END = 0.97;
+const TEAR_START = 0.20;
+const TEAR_END = 0.86;
+
+// How far the following section is pulled up under the print, as a fraction of
+// frame height, so the torn edge lies over the top of it rather than meeting it
+// at a seam. The stage is only as tall as the print for the same reason: a
+// full-height stage would be an opaque block covering what should show through.
+const OVERLAP = 0.34;
 
 // Skyline in image-space fractions: [x, y], left to right, y measured down from
 // the top. Traced offline; see the header note.
@@ -106,6 +116,9 @@ function noise(seed) {
 // first, puts a tooth every few pixels and looks machine-cut.
 const CELLS = 3;
 
+// Deepest row the traced skyline reaches, used to clamp lookups into it.
+const RIDGE_MAX_Y = RIDGE.reduce((m, pt) => Math.max(m, pt[1]), 0);
+
 /** Several octaves of it, so the edge has both a slow wander and fine fibre. */
 function fbm(seed, octaves = 5) {
   const layers = Array.from({ length: octaves }, (_, i) => noise(seed + i * 7919));
@@ -125,7 +138,7 @@ function fbm(seed, octaves = 5) {
  * riding on it, filled downwards. Randomness alone reads as a zigzag — it is
  * the drop plus the octaves that reads as paper.
  */
-function tearPath(w, h, seed, amp = 0.5) {
+function tearPath(w, h, seed, amp = 0.42) {
   const f = fbm(seed);
   // Run past every edge except the torn one. The deckle filter shifts the
   // outline by up to half its scale, so a side or bottom that stops exactly on
@@ -176,21 +189,28 @@ defineAddon('masked-intro', () => {
     .taro-intro {
       position: relative;
       height: ${STAGE_VH}vh;
+      /* Written from JS — how far the site header overlays the top of the page. */
+      --taro-header-h: 0px;
       /* Tall enough to hold the type, wide enough that the browser isn't
          upscaling a 2048px source past about 1.9x. */
       --taro-frame-h: clamp(42vh, min(64vh, 100vw / ${FRAME_RATIO}), 68vh);
+      margin-bottom: calc(var(--taro-frame-h) * -${OVERLAP});
     }
+    /* Pinned below the header, and only as tall as the print itself. Pinning at
+       the top of the viewport slid it under Squarespace's fixed header and took
+       the wordmark with it; a full-height stage would be an opaque block over
+       the section that is meant to rise behind the tear. */
     .taro-intro__stage {
-      position: sticky; top: 0;
-      height: 100vh; width: 100%;
-      overflow: hidden;
-      background: var(--siteBackgroundColor, #f6eed5);
+      position: sticky;
+      top: var(--taro-header-h);
+      height: var(--taro-frame-h);
+      width: 100%;
+      z-index: 1;
     }
     /* The print. A band, not a full-height cover — see FRAME_RATIO. */
     .taro-intro__frame {
-      --taro-fx: 0.40;                   /* read back in JS; never let these drift */
-      position: absolute; top: 0; left: 0; right: 0;
-      height: var(--taro-frame-h);
+      --taro-fx: 0.12;                   /* read back in JS; never let these drift */
+      position: absolute; inset: 0;
       overflow: hidden;
     }
     .taro-intro__layer {
@@ -201,11 +221,16 @@ defineAddon('masked-intro', () => {
     }
     /* The clipped copy that passes in front of the type. */
     .taro-intro__fore { z-index: 3; }
+    /* Wordmark and subline travel together so both sink behind the ridge.
+       Stacked with flex rather than left as blocks: each one is shrink-to-fit so
+       that its own width can be measured against the sky, and two shrink-to-fit
+       boxes in normal flow would sit side by side on one line. */
     .taro-intro__type {
-      position: absolute; left: 0; right: 0; top: 12%;
+      position: absolute; left: 0; right: 0; top: 6%;
       z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
       text-align: center;
-      color: #f9f3e2;
+      color: var(--siteBackgroundColor, #f6eed5);
       pointer-events: none;
       text-shadow: 0 2px 34px rgba(0,0,0,0.26);
     }
@@ -218,10 +243,9 @@ defineAddon('masked-intro', () => {
       line-height: 0.92;
       letter-spacing: 0.01em;
       margin: 0;
-      /* Sized to sit in the clear sky between the Spitzkoppe peak and the near
-         dome. Much larger and the last letters run into the granite while the
-         page is still at rest, which reads as a mistake rather than an effect. */
-      font-size: clamp(1.9rem, 6.8vw, 7rem);
+      /* An upper bound only. What actually fits is decided in fitType(), which
+         measures the sky left of the granite at this wordmark's own height. */
+      font-size: clamp(2.2rem, 8.6vw, 9rem);
     }
     /* Torn edge, pinned to the bottom of the print — not to the viewport, which
        is what used to leave a ragged strip hanging over the section below. */
@@ -231,24 +255,19 @@ defineAddon('masked-intro', () => {
       z-index: 5; display: block;
       filter: drop-shadow(0 -5px 9px rgba(48,36,22,0.22));
     }
-    /* Caption sits on the paper below the tear, so the space there is composed
-       rather than empty. */
-    .taro-intro__caption {
-      position: absolute; left: 0; right: 0;
-      top: calc(var(--taro-frame-h) + 7vh);
-      text-align: center;
-      color: var(--siteTextColor, #2b2a26);
-    }
     .taro-intro__sub {
+      display: inline-block;             /* so its width can be measured too */
       font-family: ${bodyFont};
-      font-size: clamp(0.58rem, 1.05vw, 0.95rem);
+      font-size: clamp(0.6rem, 1.1vw, 1rem);
       letter-spacing: 0.42em;
       text-transform: uppercase;
-      margin: 0;
-      opacity: 0.75;
+      margin: 1.6em 0 0;
+      opacity: 0.92;
     }
+    /* Sits on the paper below the print, so it needs the page's ink colour
+       rather than the cream the masked type is set in. */
     .taro-intro__hint {
-      position: absolute; left: 50%; bottom: 9vh;
+      position: absolute; left: 50%; top: calc(100% + 5vh);
       transform: translateX(-50%);
       z-index: 6;
       font-size: 0.58rem; letter-spacing: 0.34em; text-transform: uppercase;
@@ -263,12 +282,16 @@ defineAddon('masked-intro', () => {
          directly here. The crop is heavy either way at this width, so the extra
          height costs little sharpness and stops the screen reading as empty. */
       .taro-intro { --taro-frame-h: 62vh; }
-      .taro-intro__frame { --taro-fx: 0.56; }
-      .taro-intro__type { top: 10%; }
+      /* A phone sees about a fifth of the frame. Centred on the near dome that
+         fifth is all pale glow and granite, which leaves cream type with nothing
+         to sit against; centred on Spitzkoppe it gets deep sky above a hard
+         silhouette, and the peak takes over as the mass the type sinks behind. */
+      .taro-intro__frame { --taro-fx: 0.22; }
+      .taro-intro__type { top: 7%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .taro-intro { height: 100vh; }
+      .taro-intro { height: var(--taro-frame-h); margin-bottom: 0; }
       .taro-intro__stage { position: relative; }
       .taro-intro__hint { display: none; }
     }
@@ -280,7 +303,10 @@ defineAddon('masked-intro', () => {
     <div class="taro-intro__stage">
       <div class="taro-intro__frame">
         <img class="taro-intro__layer taro-intro__back" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
-        <div class="taro-intro__type"><h1 class="taro-intro__word">${WORDMARK}</h1></div>
+        <div class="taro-intro__type">
+          <h1 class="taro-intro__word">${WORDMARK}</h1>
+          <p class="taro-intro__sub">${SUBLINE}</p>
+        </div>
         <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
         <svg class="taro-intro__tear" preserveAspectRatio="none" aria-hidden="true">
           <defs>
@@ -306,16 +332,17 @@ defineAddon('masked-intro', () => {
                 fill="var(--siteBackgroundColor, #f6eed5)"></path>
         </svg>
       </div>
-      <div class="taro-intro__caption"><p class="taro-intro__sub">${SUBLINE}</p></div>
       <div class="taro-intro__hint">Scroll</div>
     </div>`;
   host.insertBefore(wrap, firstSection);
 
+  const stage = wrap.querySelector('.taro-intro__stage');
   const frame = wrap.querySelector('.taro-intro__frame');
   const back = wrap.querySelector('.taro-intro__back');
   const fore = wrap.querySelector('.taro-intro__fore');
   const type = wrap.querySelector('.taro-intro__type');
   const word = wrap.querySelector('.taro-intro__word');
+  const sub = wrap.querySelector('.taro-intro__sub');
   const hint = wrap.querySelector('.taro-intro__hint');
   const tearSvg = wrap.querySelector('.taro-intro__tear');
   const paper = wrap.querySelector('.taro-intro__paper');
@@ -344,31 +371,115 @@ defineAddon('masked-intro', () => {
     fore.style.clipPath = `polygon(${pts.join(', ')}, 100% 100%, 0% 100%)`;
   };
 
-  // Where the near dome's wall reaches the top of the frame: the rightmost ridge
-  // point still below the top edge. Everything past it is granite.
-  const DOME_X = (() => {
-    for (let i = RIDGE.length - 1; i >= 0; i--) if (RIDGE[i][1] > 0.12) return RIDGE[i][0];
+  /**
+   * How far right the near dome's wall has got by a given depth into the frame.
+   * The wall slopes, so it eats further into the sky the lower you look — which
+   * is why the wordmark is measured against its own bottom edge rather than
+   * against the top of the frame.
+   */
+  const domeEdge = (yFrac) => {
+    // Clamped to the table's own range. Past the deepest traced row there is no
+    // sky at any x, but the scan would find no qualifying point and fall through
+    // to 1 — reporting the whole frame as clear at exactly the depths where the
+    // truth is the opposite.
+    const y = Math.max(0, Math.min(yFrac, RIDGE_MAX_Y - 1e-4));
+    for (let i = RIDGE.length - 1; i >= 0; i--) if (RIDGE[i][1] > y) return RIDGE[i][0];
     return 1;
-  })();
+  };
+
+  // Below this the wordmark would be shrunk past the point of being a wordmark.
+  // Rather than go smaller it is allowed to run into the granite, which is the
+  // effect anyway — the type is meant to end up behind the rock.
+  const MIN_SCALE = 0.84;
 
   /**
-   * Hold the wordmark in the clear sky left of the dome. CSS can't do this on
-   * its own: how much sky is on screen depends on how cover has cropped the
-   * frame, so at some widths the last letters sit behind the granite before the
-   * page has moved at all, which reads as a bug rather than as the effect.
+   * Size the centred wordmark to the clear sky. CSS can't do this on its own:
+   * how much sky is on screen depends on how cover has cropped the frame, so at
+   * some widths the last letters sit behind the granite before the page has
+   * moved at all, which reads as a bug rather than as the effect. Centred makes
+   * the limit symmetric — sky to the left of the middle is no help, only the
+   * run from the middle out to the granite counts.
    */
   const fitType = (g) => {
     if (!g) return;
-    const margin = Math.max(16, g.W * 0.03);
-    const domeX = g.ox + DOME_X * g.dw;
-    const avail = Math.max(120, domeX - margin * 2);
-    type.style.right = `${Math.max(0, g.W - domeX + margin).toFixed(0)}px`;
-    word.style.fontSize = '';
-    const natural = word.offsetWidth;
-    if (natural > avail) {
-      const size = parseFloat(getComputedStyle(word).fontSize);
-      word.style.fontSize = `${(size * avail / natural).toFixed(1)}px`;
-    }
+    const margin = Math.max(14, g.W * 0.02);
+
+    /** Clear sky either side of the middle, level with a row of the frame. */
+    const skyWidth = (framePx) => {
+      // Frame pixels are not image fractions. When cover crops horizontally the
+      // photograph is taller than the frame, so a row a quarter of the way down
+      // the frame is further down the picture than a quarter — and reading the
+      // ridge at the wrong row overstates the sky on wide, short viewports.
+      const domeX = g.ox + domeEdge((framePx - g.oy) / g.dh) * g.dw;
+      return 2 * (domeX - g.W / 2) - margin * 2;
+    };
+
+    /** Shrink el to fit, but never past floor — below that let it tuck. */
+    const fit = (el, bottom, floor) => {
+      el.style.fontSize = '';                       // always measure from the CSS size
+      const size = parseFloat(getComputedStyle(el).fontSize);
+      const natural = el.offsetWidth;
+      if (!natural) return;
+      const avail = skyWidth(bottom());
+      if (avail < natural) {
+        el.style.fontSize = `${Math.max(size * floor, size * avail / natural).toFixed(1)}px`;
+      }
+    };
+
+    fit(word, () => type.offsetTop + word.offsetHeight, MIN_SCALE);
+    // The subline sits lower, where the sloping wall has taken more of the sky,
+    // so it needs its own measurement — the wordmark clearing the granite says
+    // nothing about whether the line beneath it does.
+    fit(sub, () => type.offsetTop + type.offsetHeight, 0.7);
+  };
+
+  /**
+   * The site header is fixed and paints over the page, so a stage pinned at
+   * top: 0 slides underneath it and takes the wordmark with it. It also hides
+   * itself on scroll down by translating out of view rather than by collapsing,
+   * which is why two different numbers come out of here:
+   *
+   *   visible — the header's current bottom edge, transform included. Drives the
+   *             pin, so the print rides up as the header slides away.
+   *   layout  — its untransformed height. Drives the sink, because reading the
+   *             moving value there would jog the wordmark every time the header
+   *             appeared or disappeared.
+   *
+   * Both are measured rather than written down: the height differs between
+   * breakpoints and an announcement bar would add to it. A header that simply
+   * scrolls away with the page needs no offset at all, hence the position test.
+   */
+  let headerEls = [];
+  let headerLayoutH = 0;
+  let pinnedAt = -1;
+  const watched = new WeakSet();
+
+  const findHeader = () => {
+    headerEls = [...document.querySelectorAll('#header, header.header, .sqs-announcement-bar-dropzone')]
+      .filter((el) => !el.closest('.taro-intro'))
+      .filter((el) => {
+        const cs = getComputedStyle(el);
+        return cs.display !== 'none' && cs.visibility !== 'hidden'
+          && (cs.position === 'fixed' || cs.position === 'sticky');
+      });
+    headerLayoutH = headerEls.reduce((m, el) => Math.max(m, el.offsetHeight), 0);
+    // The header slides in and out over 140ms, and that transition outlives the
+    // scroll event that started it. Without this the pin is left wherever the
+    // last scroll frame saw the header mid-slide, and the print sits stranded a
+    // header's height down the page with nothing above it.
+    headerEls.forEach((el) => {
+      if (watched.has(el)) return;
+      watched.add(el);
+      el.addEventListener('transitionend', request, { passive: true });
+    });
+  };
+
+  const syncHeaderPin = () => {
+    const px = Math.max(0, Math.round(
+      headerEls.reduce((m, el) => Math.max(m, el.getBoundingClientRect().bottom), 0)));
+    if (px === pinnedAt) return;
+    pinnedAt = px;
+    wrap.style.setProperty('--taro-header-h', `${px}px`);
   };
 
   const layoutTear = () => {
@@ -384,9 +495,19 @@ defineAddon('masked-intro', () => {
   };
 
   const draw = () => {
-    const top = wrap.getBoundingClientRect().top;
-    const travel = wrap.offsetHeight - wrap.querySelector('.taro-intro__stage').clientHeight;
-    const p = travel > 0 ? Math.max(0, Math.min(1, -top / travel)) : 0;
+    syncHeaderPin();
+    // Progress has to run from where the visitor actually starts to where the
+    // stage unpins, and it cannot be read off the sticky offset. The header
+    // overlays the page rather than pushing it down, so the wrapper begins at
+    // the very top of the document and sticky has already clamped the stage a
+    // header's height into its travel before a single pixel has been scrolled —
+    // measuring from there starts the sink around a sixth of the way in.
+    const y = window.scrollY || 0;
+    const travel = wrap.offsetHeight - stage.clientHeight;
+    const docTop = wrap.getBoundingClientRect().top + y;   // constant across scroll
+    const start = Math.max(0, docTop - headerLayoutH);
+    const span = docTop - headerLayoutH + travel - start;
+    const p = span > 0 ? Math.max(0, Math.min(1, (y - start) / span)) : 0;
 
     // The type sinks and grows; the ridge in front of it does the hiding.
     const sink = SINK * p * p * frame.clientHeight;
@@ -407,6 +528,9 @@ defineAddon('masked-intro', () => {
   };
 
   const relayout = () => {
+    // Re-found on every relayout because the header swaps between breakpoints.
+    findHeader();
+    syncHeaderPin();
     const g = geom();
     applyForeground(g);
     fitType(g);
@@ -414,17 +538,32 @@ defineAddon('masked-intro', () => {
     draw();
   };
 
-  if (back.complete && back.naturalWidth) relayout();
-  else back.addEventListener('load', relayout, { once: true });
-  relayout();   // the ridge is baked, so the layout doesn't wait on the image
+  // relayout() forces a dozen synchronous layouts and rebuilds both the clip
+  // polygon and the tear path, and resize and the ResizeObserver both fire for
+  // the same change, so it is coalesced to one per frame as scrolling already is.
+  let layoutQueued = false;
+  const scheduleRelayout = () => {
+    if (layoutQueued) return;
+    layoutQueued = true;
+    requestAnimationFrame(() => { layoutQueued = false; relayout(); });
+  };
+
+  relayout();   // the ridge is baked, so the first layout doesn't wait on the image
+  if (!(back.complete && back.naturalWidth)) {
+    back.addEventListener('load', scheduleRelayout, { once: true });
+  }
 
   window.addEventListener('scroll', request, { passive: true });
-  window.addEventListener('resize', relayout, { passive: true });
+  window.addEventListener('resize', scheduleRelayout, { passive: true });
   // Catches the case where the frame has no size at boot — a hidden tab, a
   // deferred layout — and lays out properly the moment it gets one.
-  if (typeof ResizeObserver === 'function') new ResizeObserver(relayout).observe(frame);
-  // TAN Nimbus is served font-display: swap, so on a cold load the wordmark is
-  // first measured in the fallback face and fitted to the wrong width. Measure
-  // again once the real face has landed.
-  document.fonts?.ready.then(relayout).catch(() => {});
+  if (typeof ResizeObserver === 'function') new ResizeObserver(scheduleRelayout).observe(frame);
+  // Webfonts change two things that are measured here: the wordmark's width, and
+  // the site header's height, which decides where the stage pins. `ready` can
+  // already be resolved on a warm load, so loadingdone is listened for too.
+  window.addEventListener('load', scheduleRelayout);
+  if (document.fonts) {
+    document.fonts.ready.then(scheduleRelayout).catch(() => {});
+    document.fonts.addEventListener?.('loadingdone', scheduleRelayout);
+  }
 });

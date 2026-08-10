@@ -26,20 +26,43 @@
       background: var(--siteBackgroundColor);
       color: var(--siteTextColor);
       font: 16px/1.6 -apple-system, BlinkMacSystemFont, sans-serif;
+      /* No top padding, matching the live site: Squarespace's header paints
+         over the page rather than pushing it down, so article#sections really
+         does start at document y=0 underneath it. */
     }
+    /* Stands in for Squarespace's fixed header — the thing the intro has to pin
+       below. Heights measured off the live site (163.5px desktop, 87.7px under
+       768px), as is the z-index of 10 and the scroll-back behaviour below: on
+       this site the header hides by translating out of view, not by collapsing,
+       so its layout height never changes. */
+    :root { --mock-header-h: 164px; }
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      transition: transform 140ms ease;
+      height: var(--mock-header-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem;
+      background: var(--siteBackgroundColor);
+    }
+    #header .logo { font-weight: 700; font-size: 1.6rem; letter-spacing: -0.04em; }
+    #header nav { display: flex; gap: 1.4rem; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; }
+    #header.is-hidden { transform: translateY(calc(-1 * var(--mock-header-h))); }
+    @media (max-width: 767px) { :root { --mock-header-h: 88px; } #header nav { display: none; } }
     h1, h2, h3 { font-family: 'Times New Roman', Didot, serif; letter-spacing: -0.01em; }
     section { padding: 8rem 2rem; max-width: 900px; margin: 0 auto; }
     .swatch { height: 300px; background: rgba(43,42,38,0.07); border-radius: 3px; }
   </style>
 </head>
 <body>
+  <header id="header">
+    <div class="logo">tc</div>
+    <nav><span>VENUES</span><span>STILLS</span><span>MOTION</span><span>PAINT</span><span>ABOUT</span><span>LET'S TALK</span><span>SHOP</span></nav>
+  </header>
+
   <article id="sections">
     <section data-section-id="mock-1">
-      <h2>Second section</h2>
-      <p>
-        The torn edge belongs to the print above, not to the viewport. Nothing
-        from the intro should hang over this heading at any scroll position.
-      </p>
+      <h2>Art that feels loved.</h2>
+      <h2>visuals that feel lived.</h2>
       <div class="swatch"></div>
     </section>
     <section data-section-id="mock-2">
@@ -55,6 +78,19 @@
     var params = new URLSearchParams(location.search);
     var jump = Number(params.get('scroll')) || 0;
     var debug = params.has('debug');
+
+    // Squarespace's "scroll back" header: hides on the way down, returns on the
+    // way up. The intro pins to its visible edge, so this has to be here or the
+    // preview can't show what that actually looks like.
+    addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('header');
+      var prev = window.scrollY;
+      addEventListener('scroll', function () {
+        var y = window.scrollY;
+        el.classList.toggle('is-hidden', y > prev && y > el.offsetHeight);
+        prev = y;
+      }, { passive: true });
+    });
 
     // The intro only runs on the homepage. Same origin, so this is enough to
     // make the harness look like '/' without touching the add-on.
