@@ -18,9 +18,9 @@ import { defineAddon, css } from '../lib/util.js';
 const LEAN = window.matchMedia('(hover: none)').matches;
 
 
-const START_DELAY_MS = 220;
-const LINE_MS = 2100;
-const LINE_GAP_MS = 300;
+const START_DELAY_MS = 550;
+const LINE_MS = 2600;
+const LINE_GAP_MS = 380;
 
 defineAddon('hero-reveal', () => {
   if (location.pathname !== '/') return;
@@ -38,8 +38,8 @@ defineAddon('hero-reveal', () => {
   css('hero-reveal', `
     .taro-hero-line {
       opacity: 0;
-      transform: translateY(${LEAN ? 14 : 20}px);
-      ${LEAN ? '' : 'filter: blur(6px);'}
+      transform: translateY(${LEAN ? 26 : 38}px);
+      ${LEAN ? '' : 'filter: blur(10px);'}
       transition: opacity ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms),
                   transform ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)
                   ${LEAN ? '' : `, filter ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)`};

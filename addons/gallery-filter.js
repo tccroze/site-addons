@@ -28,14 +28,11 @@ const TAXONOMIES = {
   '/vroom': [
     ['Vintage',    ['vintage']],
     ['Racing',     ['race', 'racing', 'track']],
-    ['Parked',     ['parked', 'parking']],
-    ['People',     ['people', 'person', 'man', 'woman', 'crowd']],
   ],
   '/astro': [
-    ['Star trails', ['trail']],
-    ['Milky Way',   ['milky', 'galaxy']],
-    ['Silhouettes', ['silhouette']],
-    ['Sparklers',   ['sparkler']],
+    ['Star trails',    ['trail']],
+    ['Milky Way',      ['milky', 'galaxy']],
+    ['Light painting', ['sparkler', 'light painting', 'light-painting']],
   ],
   '/portraits': [
     ['Maasai',      ['maasai']],

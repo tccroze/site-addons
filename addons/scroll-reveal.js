@@ -4,9 +4,9 @@
 // the right elements with data-animation-role (headings, images, buttons). We
 // drive off those hooks rather than inventing selectors.
 //
-// Everything — headings, images, buttons — uses the same fade and rise. An
-// earlier version gave images their own clip wipe, which read as a second,
-// more mechanical effect competing with the text.
+// Text and buttons rise and fade. Photographs wipe open from the bottom —
+// tried as a shared fade at one point, but a dissolve does nothing for a
+// picture; the wipe is what makes the images feel revealed as you scroll.
 //
 // Progressive enhancement matters: the hidden state is scoped to a class this
 // file puts on <html>, so if the script never loads nothing is ever hidden.
@@ -20,6 +20,7 @@ const LEAN = window.matchMedia('(hover: none)').matches;
 // Slow enough to register as movement rather than a flicker. The earlier
 // timings were quick enough that the reveal was over before it was noticed.
 const TEXT_MS = 2300;
+const IMAGE_MS = 1900;   // the wipe reads best a touch quicker than the text
 const STAGGER_MS = 155;
 
 defineAddon('scroll-reveal', () => {
@@ -55,16 +56,22 @@ defineAddon('scroll-reveal', () => {
                   ${LEAN ? '' : `, filter ${TEXT_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms)`};
     }
 
-    /* Images use the same fade-and-rise as everything else. They previously had
-       a clip wipe, which read as a different, more mechanical effect sitting
-       alongside the text — one motion language across the page is calmer.
-       Nothing here touches transform on the <img> itself: that belongs to the
-       parallax add-on, which rewrites it every frame. */
-    /* Images travel further than text. The same 30px reads as movement on a
-       line of type and as nothing on a 400px-tall photograph. This sets only
-       the distance — the transform itself is declared once, above. */
+    /* Photographs wipe open from the bottom as they come into view, with a
+       small rise underneath it. No blur and no fade — the wipe is the reveal,
+       and it reads far better on a picture than a dissolve does.
+       Only the distance goes in the custom property; transform stays declared
+       once, above. clip-path has its own reset below at matching specificity,
+       so it always clears — the trap that previously left images stuck. */
     .taro-reveal-on [data-taro-reveal][data-taro-kind="image"] {
-      --taro-travel: ${LEAN ? 46 : 72}px;
+      --taro-travel: ${LEAN ? 16 : 24}px;
+      opacity: 1;
+      filter: none;
+      clip-path: inset(0 0 100% 0);
+      transition: transform ${IMAGE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms),
+                  clip-path ${IMAGE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * ${STAGGER_MS}ms);
+    }
+    .taro-reveal-on [data-taro-reveal="in"][data-taro-kind="image"] {
+      clip-path: inset(0 0 0 0);
     }
 
     .taro-reveal-on [data-taro-reveal="in"] { opacity: 1; transform: none; filter: none; }
@@ -95,7 +102,7 @@ defineAddon('scroll-reveal', () => {
 
   targets.forEach((el) => {
     if (el.getAttribute('data-animation-role') === 'image') {
-      el.setAttribute('data-taro-kind', 'image');   // travels further, see CSS
+      el.setAttribute('data-taro-kind', 'image');   // wipes open, see CSS
     }
     el.setAttribute('data-taro-reveal', startsVisible(el) ? 'in' : '');
   });
