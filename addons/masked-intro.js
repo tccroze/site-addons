@@ -21,16 +21,24 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-// Spitzkoppe, Namibia. 2048x552 — and 2048 is all the source has, so how much
-// the browser has to upscale it is the limit on how sharp the intro can look.
-// See FRAME_RATIO for how that constrains the crop.
-const PHOTO = 'https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/fd58d70e-2684-4273-afe3-e42491a752ea/IMG_4184-2.jpg';
+// Spitzkoppe, Namibia — 13982x3770, served from this repo rather than through
+// Squarespace, whose image CDN caps out at 2500px. The copy that came through
+// Squarespace was only 2048px wide, which had the browser upscaling it about
+// 1.9x; from here the largest variant covers a retina desktop with a little to
+// spare. Sized off the module's own URL so it resolves wherever this is hosted.
+const ASSET = (name) => new URL(`../assets/${name}`, import.meta.url).href;
+const PHOTO = ASSET('spitzkoppe-2600.jpg');
+const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
+// object-fit: cover scales the picture up past the element's own width, and the
+// browser picks from srcset on the element width alone, so it has to be told to
+// aim higher or it lands a size short.
+const PHOTO_SIZES = '(max-width: 767px) 150vw, 140vw';
+const PHOTO_W = 4000, PHOTO_H = 1078;    // only used before the image has loaded
 
-// The frame is a band rather than a full-height cover. Covering 100vh with a
-// 3.71:1 photo crops away 57% of the frame and upscales what's left about 3.3x
-// on a retina display, which is what made it look soft and tight. This band
-// shows about 74% of the frame at roughly 1.9x. Wider still would be sharper
-// again, but the band gets too shallow to hold the wordmark.
+// The frame is a band rather than a full-height cover: covering 100vh with a
+// 3.71:1 photo throws away 57% of the frame. This band shows about 74% of it.
+// Wider still would show more, but the band gets too shallow to hold the
+// wordmark. Sharpness no longer constrains this — the source is big enough now.
 const FRAME_RATIO = 2.75;
 
 const WORDMARK = 'TARO CROZE';
@@ -70,41 +78,44 @@ const TEAR_END = 0.86;
 // Skyline in image-space fractions: [x, y], left to right, y measured down from
 // the top. Traced offline; see the header note.
 const RIDGE = [
-  [0,0.6497],[0.0064,0.6425],[0.0127,0.6298],[0.0191,0.6171],[0.022,0.6098],
-  [0.0249,0.6025],[0.0283,0.5953],[0.0313,0.588],[0.0347,0.5808],
-  [0.0405,0.5753],[0.044,0.5626],[0.0469,0.5554],[0.0532,0.5426],
-  [0.0567,0.5372],[0.0625,0.5318],[0.0689,0.5263],[0.0752,0.5118],
-  [0.0782,0.4846],[0.0816,0.461],[0.0845,0.4428],[0.0879,0.4192],
-  [0.0909,0.4029],[0.0943,0.3902],[0.0972,0.3793],[0.1001,0.3612],
-  [0.1036,0.3557],[0.1065,0.3412],[0.1099,0.3339],[0.1192,0.323],
-  [0.1255,0.3176],[0.1319,0.3085],[0.1378,0.3031],[0.1632,0.2813],
-  [0.1661,0.2704],[0.1788,0.3122],[0.1817,0.3249],[0.1851,0.3339],
-  [0.1881,0.3666],[0.191,0.3721],[0.1944,0.392],[0.1974,0.4156],
-  [0.2008,0.441],[0.2037,0.4592],[0.2071,0.4809],[0.2101,0.4955],
-  [0.213,0.5154],[0.2164,0.5263],[0.232,0.5336],[0.235,0.5408],
-  [0.2413,0.5572],[0.2447,0.5753],[0.2477,0.5862],[0.2506,0.6134],
-  [0.2633,0.6062],[0.2882,0.6116],[0.2946,0.6189],[0.298,0.6261],
-  [0.3009,0.6316],[0.3039,0.6461],[0.3073,0.6534],[0.3136,0.6624],
-  [0.3166,0.6679],[0.32,0.6733],[0.3258,0.6824],[0.3322,0.6915],
-  [0.3605,0.6969],[0.3669,0.7042],[0.3732,0.7151],[0.3791,0.7241],
-  [0.3825,0.7314],[0.3889,0.7441],[0.3918,0.7495],[0.3952,0.7568],
-  [0.3981,0.7623],[0.4011,0.7695],[0.4045,0.775],[0.4074,0.7804],
-  [0.4108,0.7877],[0.4138,0.7949],[0.4167,0.8022],[0.4387,0.8076],
-  [0.4485,0.8221],[0.4514,0.833],[0.4763,0.8185],[0.4827,0.8131],
-  [0.4861,0.804],[0.4919,0.7985],[0.5081,0.784],[0.511,0.7731],
-  [0.5139,0.7604],[0.5173,0.7459],[0.5203,0.735],[0.5237,0.7187],
-  [0.5266,0.706],[0.5296,0.6915],[0.533,0.6733],[0.5359,0.6588],
-  [0.5393,0.6425],[0.5423,0.6279],[0.5457,0.6098],[0.5486,0.5917],
-  [0.5515,0.5771],[0.555,0.559],[0.5579,0.5426],[0.5613,0.5227],
-  [0.5642,0.5045],[0.5672,0.4882],[0.5706,0.4664],[0.5735,0.4483],
-  [0.5769,0.4211],[0.5799,0.4029],[0.5833,0.3775],[0.5862,0.3503],
-  [0.5892,0.3303],[0.5926,0.3212],[0.5955,0.3103],[0.5989,0.2922],
-  [0.6019,0.2777],[0.6048,0.2613],[0.6082,0.2414],[0.6111,0.2287],
-  [0.6146,0.2196],[0.6175,0.2105],[0.6209,0.1978],[0.6238,0.1833],
-  [0.6268,0.1706],[0.6302,0.1561],[0.6331,0.1434],[0.6365,0.1234],
-  [0.6395,0.1089],[0.6424,0.0944],[0.6458,0.0672],[0.6488,0.0472],
-  [0.6522,0.0363],[0.6551,0.0236],[0.6585,0.0127],[0.6615,0.0054],
-  [0.6644,0],[1,0],
+  [0.0,0.6488],[0.0063,0.6395],[0.0094,0.6349],[0.0125,0.6279],
+  [0.0188,0.6163],[0.0219,0.607],[0.025,0.6],[0.0281,0.5953],[0.0313,0.5884],
+  [0.0344,0.5814],[0.0375,0.5767],[0.0438,0.5605],[0.0469,0.5535],
+  [0.0532,0.5419],[0.0563,0.5372],[0.0594,0.5326],[0.0688,0.5279],
+  [0.075,0.5116],[0.0782,0.4837],[0.0813,0.4628],[0.0844,0.4442],
+  [0.0876,0.4209],[0.0907,0.4023],[0.0938,0.3907],[0.0969,0.3814],
+  [0.1001,0.3605],[0.1032,0.3558],[0.1063,0.3395],[0.1094,0.3349],
+  [0.1126,0.3302],[0.1188,0.3233],[0.1257,0.3186],[0.1288,0.314],
+  [0.132,0.3093],[0.1351,0.3047],[0.1538,0.3],[0.1632,0.2814],[0.1664,0.2698],
+  [0.1757,0.2744],[0.1789,0.3093],[0.182,0.3233],[0.1851,0.3349],
+  [0.1882,0.3674],[0.1914,0.3721],[0.1945,0.3907],[0.1976,0.4186],
+  [0.2008,0.4395],[0.2039,0.4628],[0.207,0.4791],[0.2101,0.4953],
+  [0.2133,0.5116],[0.2164,0.5256],[0.2258,0.5302],[0.2351,0.5419],
+  [0.2414,0.5581],[0.2445,0.5721],[0.2477,0.5837],[0.2508,0.614],
+  [0.2602,0.6093],[0.2664,0.6023],[0.2758,0.607],[0.2914,0.6116],
+  [0.2946,0.6186],[0.2977,0.6256],[0.3008,0.6326],[0.3039,0.6442],
+  [0.3071,0.6512],[0.3102,0.6558],[0.3133,0.6605],[0.3164,0.6651],
+  [0.3196,0.6721],[0.3227,0.6767],[0.3258,0.6814],[0.3321,0.6884],
+  [0.3352,0.693],[0.3634,0.7],[0.3696,0.7047],[0.3727,0.7116],[0.3765,0.7186],
+  [0.3796,0.7233],[0.3827,0.7302],[0.3859,0.7349],[0.389,0.7419],
+  [0.3921,0.7488],[0.3952,0.7558],[0.3984,0.7628],[0.4015,0.7698],
+  [0.4046,0.7744],[0.4078,0.7814],[0.4109,0.786],[0.414,0.7953],[0.4171,0.8],
+  [0.4359,0.8047],[0.4422,0.8093],[0.4453,0.8186],[0.4484,0.8233],
+  [0.4515,0.8302],[0.4609,0.8349],[0.4672,0.8302],[0.4765,0.8186],
+  [0.4828,0.8116],[0.4859,0.8047],[0.4891,0.8],[0.5047,0.7953],
+  [0.5078,0.7837],[0.5109,0.7698],[0.5141,0.7581],[0.5172,0.7465],
+  [0.5203,0.7326],[0.5235,0.7186],[0.5266,0.7047],[0.5297,0.6907],
+  [0.5328,0.6744],[0.536,0.6581],[0.5391,0.6419],[0.5422,0.6256],
+  [0.5453,0.6093],[0.5485,0.593],[0.5516,0.5767],[0.5547,0.5581],
+  [0.5578,0.5419],[0.561,0.5209],[0.5641,0.5047],[0.5672,0.4884],
+  [0.5704,0.4651],[0.5735,0.4465],[0.5766,0.4233],[0.5797,0.4023],
+  [0.5829,0.3814],[0.586,0.3512],[0.5891,0.3302],[0.5922,0.3209],
+  [0.5954,0.3093],[0.5985,0.2977],[0.6016,0.2791],[0.6048,0.2605],
+  [0.6079,0.2442],[0.611,0.2279],[0.6141,0.2209],[0.6173,0.2116],
+  [0.6204,0.1977],[0.6235,0.186],[0.6273,0.1674],[0.6304,0.1512],
+  [0.6335,0.1395],[0.6366,0.1209],[0.6398,0.1116],[0.6429,0.0884],
+  [0.646,0.0651],[0.6492,0.0442],[0.6523,0.0349],[0.6554,0.0233],
+  [0.6585,0.0116],[0.6617,0.0047],[0.6648,0.0],[1.0,0.0],
 ];
 
 /** Smoothly-interpolated value noise over a 256-cell table, seeded. */
@@ -320,12 +331,12 @@ defineAddon('masked-intro', () => {
     <div class="taro-intro__stage">
       <div class="taro-intro__frame">
         <div class="taro-intro__sheet">
-          <img class="taro-intro__layer taro-intro__back" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
+          <img class="taro-intro__layer taro-intro__back" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
           <div class="taro-intro__type">
             <h1 class="taro-intro__word">${WORDMARK}</h1>
             <p class="taro-intro__sub">${SUBLINE}</p>
           </div>
-          <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
+          <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
         </div>
       </div>
     </div>`;
@@ -345,7 +356,7 @@ defineAddon('masked-intro', () => {
   const geom = () => {
     const W = frame.clientWidth, H = frame.clientHeight;
     if (!W || !H) return null;
-    const iw = back.naturalWidth || 2048, ih = back.naturalHeight || 552;
+    const iw = back.naturalWidth || PHOTO_W, ih = back.naturalHeight || PHOTO_H;
     const fx = parseFloat(getComputedStyle(frame).getPropertyValue('--taro-fx')) || 0.4;
     const scale = Math.max(W / iw, H / ih);
     const dw = iw * scale, dh = ih * scale;
@@ -548,7 +559,14 @@ defineAddon('masked-intro', () => {
     // Pin length measured against the print, not the window — see PIN.
     wrap.style.height = `${Math.round(frameH * (1 + PIN) + headerLayoutH)}px`;
     const travel = wrap.offsetHeight - frameH;
-    const overlap = Math.max(0, travel - headerLayoutH + TEAR * frameH);
+    // A header's height of slack on top of the tear. The print pins to the
+    // header's visible edge, so when the header hides on scroll-down the print
+    // rides up by its height while the section below — being in normal flow —
+    // stays put. Line the two up exactly and that movement opens a band of bare
+    // page between the torn edge and the photograph. With the slack the section
+    // simply runs further up behind the print, where it cannot be seen, and the
+    // tear has something under it in either header state.
+    const overlap = Math.max(0, travel + TEAR * frameH);
     wrap.style.marginBottom = `${-Math.round(overlap)}px`;
   };
 

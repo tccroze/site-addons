@@ -1,2 +1,6 @@
 .DS_Store
 *.log
+
+# The full-resolution original. The committed spitzkoppe-*.jpg variants are
+# generated from it; at 28MB it has no business in the history.
+assets/IMG_4184.jpg
