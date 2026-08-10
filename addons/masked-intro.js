@@ -36,7 +36,7 @@ const FRAME_RATIO = 2.75;
 const WORDMARK = 'TARO CROZE';
 const SUBLINE = 'STILLS.  MOTION.  PAINT.';
 
-const STAGE_VH = 165;     // scroll length of the pinned intro
+const STAGE_VH = 125;     // scroll length of the pinned intro
 const SINK = 0.74;        // how far the type sinks, as a fraction of frame height
 const GROW = 1.16;        // how much it scales on the way down
 // The torn band. TEAR_START/END are where the edge sits inside that band at the
@@ -52,11 +52,13 @@ const TEAR = 0.36;        // height of the torn band, as a fraction of frame hei
 const TEAR_START = 0.20;
 const TEAR_END = 0.86;
 
-// How far the following section is pulled up under the print, as a fraction of
-// frame height, so the torn edge lies over the top of it rather than meeting it
-// at a seam. The stage is only as tall as the print for the same reason: a
-// full-height stage would be an opaque block covering what should show through.
-const OVERLAP = 0.34;
+// The following section is pulled up so its top sits at the TOP of the torn
+// band, which puts the whole tear over it: the photograph below emerges from
+// under the torn paper instead of starting at a seam below it. The exact amount
+// depends on the header and the viewport, so it is worked out in relayout()
+// rather than written as a constant here. The stage is only as tall as the print
+// for the same reason — a full-height stage would be an opaque block covering
+// what is meant to show through.
 
 // Skyline in image-space fractions: [x, y], left to right, y measured down from
 // the top. Traced offline; see the header note.
@@ -134,27 +136,33 @@ function fbm(seed, octaves = 5) {
 }
 
 /**
- * The torn edge: a baseline dropping from left to right with fractal noise
- * riding on it, filled downwards. Randomness alone reads as a zigzag — it is
- * the drop plus the octaves that reads as paper.
+ * The print's own outline, in frame coordinates: square on three sides, torn
+ * along the bottom. A baseline dropping from left to right with fractal noise
+ * riding on it — randomness alone reads as a zigzag, it is the drop plus the
+ * octaves that reads as paper.
+ *
+ * It describes what to KEEP, so it can be used as a mask. Painting the torn
+ * strip in the page's cream instead, as this did at first, makes the tear opaque
+ * — it covers whatever is beneath rather than revealing it, which is no use when
+ * the point is for the photograph below to come up through the tear.
  */
-function tearPath(w, h, seed, amp = 0.42) {
+function sheetPath(w, h, seed, amp = 0.42) {
   const f = fbm(seed);
-  // Run past every edge except the torn one. The deckle filter shifts the
-  // outline by up to half its scale, so a side or bottom that stops exactly on
-  // the viewBox gets dragged inward and lets the photograph show through as a
-  // rash of specks. Only the top edge is meant to be ragged.
+  const band = h * TEAR, base = h - band;
+  // Run past the sides and the top. The deckle filter shifts the outline by up
+  // to half its scale, so an edge stopping exactly on the viewBox gets dragged
+  // inward and takes a strip off the photograph. Only the bottom is ragged.
   const pad = w * 0.06, padY = 34;
   const steps = Math.max(60, Math.round(w / 12));
-  const foot = (h + padY).toFixed(1);
-  let d = `M${(-pad).toFixed(1)},${foot} L${(-pad).toFixed(1)},${(TEAR_START * h).toFixed(1)}`;
+  const head = (-padY).toFixed(1);
+  let d = `M${(-pad).toFixed(1)},${head}`;
   for (let i = 0; i <= steps; i++) {
     const x = -pad + ((w + 2 * pad) * i) / steps;
     const t = x / w;
-    const y = (TEAR_START + (TEAR_END - TEAR_START) * t + amp * f(t)) * h;
-    d += ` L${x.toFixed(1)},${Math.max(0, Math.min(h, y)).toFixed(1)}`;
+    const y = base + (TEAR_START + (TEAR_END - TEAR_START) * t + amp * f(t)) * band;
+    d += ` L${x.toFixed(1)},${y.toFixed(1)}`;
   }
-  return `${d} L${(w + pad).toFixed(1)},${foot} Z`;
+  return `${d} L${(w + pad).toFixed(1)},${head} Z`;
 }
 
 defineAddon('masked-intro', () => {
@@ -194,7 +202,6 @@ defineAddon('masked-intro', () => {
       /* Tall enough to hold the type, wide enough that the browser isn't
          upscaling a 2048px source past about 1.9x. */
       --taro-frame-h: clamp(42vh, min(64vh, 100vw / ${FRAME_RATIO}), 68vh);
-      margin-bottom: calc(var(--taro-frame-h) * -${OVERLAP});
     }
     /* Pinned below the header, and only as tall as the print itself. Pinning at
        the top of the viewport slid it under Squarespace's fixed header and took
@@ -207,11 +214,22 @@ defineAddon('masked-intro', () => {
       width: 100%;
       z-index: 1;
     }
-    /* The print. A band, not a full-height cover — see FRAME_RATIO. */
+    /* The print. A band, not a full-height cover — see FRAME_RATIO. No
+       overflow: hidden, because the mask on the sheet is what bounds the print
+       now and clipping here would square off the deckle's outermost fibres. The
+       shadow lives out here rather than on the sheet because filters are applied
+       before masks, so a shadow on the masked element gets masked away with it. */
     .taro-intro__frame {
       --taro-fx: 0.12;                   /* read back in JS; never let these drift */
       position: absolute; inset: 0;
-      overflow: hidden;
+      filter: drop-shadow(0 5px 9px rgba(48,36,22,0.20));
+    }
+    /* Everything that is "the photograph" lives in here so one mask tears the
+       lot: the print, the wordmark over it, and the ridge layer in front. */
+    .taro-intro__sheet {
+      position: absolute; inset: 0;
+      -webkit-mask-size: 100% 100%;         mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat;       mask-repeat: no-repeat;
     }
     .taro-intro__layer {
       position: absolute; inset: 0;
@@ -226,13 +244,20 @@ defineAddon('masked-intro', () => {
        that its own width can be measured against the sky, and two shrink-to-fit
        boxes in normal flow would sit side by side on one line. */
     .taro-intro__type {
-      position: absolute; left: 0; right: 0; top: 6%;
+      position: absolute; left: 0; right: 0; top: 11%;
       z-index: 2;
       display: flex; flex-direction: column; align-items: center;
       text-align: center;
-      color: var(--siteBackgroundColor, #f6eed5);
       pointer-events: none;
       text-shadow: 0 2px 34px rgba(0,0,0,0.26);
+    }
+    /* Set on the elements, not inherited from the box above. Squarespace paints
+       headings from --headingLargeColor with a rule on the h1 itself — a red on
+       this site — and inheritance can never beat a direct rule, so the wordmark
+       came out red. The descendant selector is here to out-specify it. */
+    .taro-intro__type .taro-intro__word,
+    .taro-intro__type .taro-intro__sub {
+      color: var(--siteBackgroundColor, #f6eed5);
     }
     .taro-intro__word {
       display: inline-block;             /* so its width can be measured */
@@ -247,14 +272,6 @@ defineAddon('masked-intro', () => {
          measures the sky left of the granite at this wordmark's own height. */
       font-size: clamp(2.2rem, 8.6vw, 9rem);
     }
-    /* Torn edge, pinned to the bottom of the print — not to the viewport, which
-       is what used to leave a ragged strip hanging over the section below. */
-    .taro-intro__tear {
-      position: absolute; left: 0; right: 0; bottom: -1px;
-      width: 100%; height: ${TEAR * 100}%;
-      z-index: 5; display: block;
-      filter: drop-shadow(0 -5px 9px rgba(48,36,22,0.22));
-    }
     .taro-intro__sub {
       display: inline-block;             /* so its width can be measured too */
       font-family: ${bodyFont};
@@ -263,16 +280,6 @@ defineAddon('masked-intro', () => {
       text-transform: uppercase;
       margin: 1.6em 0 0;
       opacity: 0.92;
-    }
-    /* Sits on the paper below the print, so it needs the page's ink colour
-       rather than the cream the masked type is set in. */
-    .taro-intro__hint {
-      position: absolute; left: 50%; top: calc(100% + 5vh);
-      transform: translateX(-50%);
-      z-index: 6;
-      font-size: 0.58rem; letter-spacing: 0.34em; text-transform: uppercase;
-      color: var(--siteTextColor, #2b2a26);
-      opacity: 0.5; pointer-events: none;
     }
 
     /* Portrait phones can't show a 3:1 band and still have room for type, so
@@ -287,13 +294,12 @@ defineAddon('masked-intro', () => {
          to sit against; centred on Spitzkoppe it gets deep sky above a hard
          silhouette, and the peak takes over as the mass the type sinks behind. */
       .taro-intro__frame { --taro-fx: 0.22; }
-      .taro-intro__type { top: 7%; }
+      .taro-intro__type { top: 11%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .taro-intro { height: var(--taro-frame-h); margin-bottom: 0; }
       .taro-intro__stage { position: relative; }
-      .taro-intro__hint { display: none; }
     }
   `);
 
@@ -302,40 +308,19 @@ defineAddon('masked-intro', () => {
   wrap.innerHTML = `
     <div class="taro-intro__stage">
       <div class="taro-intro__frame">
-        <img class="taro-intro__layer taro-intro__back" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
-        <div class="taro-intro__type">
-          <h1 class="taro-intro__word">${WORDMARK}</h1>
-          <p class="taro-intro__sub">${SUBLINE}</p>
+        <div class="taro-intro__sheet">
+          <img class="taro-intro__layer taro-intro__back" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
+          <div class="taro-intro__type">
+            <h1 class="taro-intro__word">${WORDMARK}</h1>
+            <p class="taro-intro__sub">${SUBLINE}</p>
+          </div>
+          <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
         </div>
-        <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}?format=2500w" alt="" aria-hidden="true">
-        <svg class="taro-intro__tear" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <filter id="taro-deckle" x="-8%" y="-40%" width="116%" height="180%"
-                    color-interpolation-filters="sRGB">
-              <feTurbulence type="fractalNoise" baseFrequency="0.014 0.055"
-                            numOctaves="4" seed="11" result="n"/>
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="17"
-                                 xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-            <filter id="taro-deckle-soft" x="-8%" y="-40%" width="116%" height="180%"
-                    color-interpolation-filters="sRGB">
-              <feTurbulence type="fractalNoise" baseFrequency="0.02 0.08"
-                            numOctaves="4" seed="29" result="n"/>
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="26"
-                                 xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-          </defs>
-          <path class="taro-intro__fibre" filter="url(#taro-deckle-soft)"
-                transform="translate(0,-7)"
-                fill="var(--siteBackgroundColor, #f6eed5)" fill-opacity="0.45"></path>
-          <path class="taro-intro__paper" filter="url(#taro-deckle)"
-                fill="var(--siteBackgroundColor, #f6eed5)"></path>
-        </svg>
       </div>
-      <div class="taro-intro__hint">Scroll</div>
     </div>`;
   host.insertBefore(wrap, firstSection);
 
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const stage = wrap.querySelector('.taro-intro__stage');
   const frame = wrap.querySelector('.taro-intro__frame');
   const back = wrap.querySelector('.taro-intro__back');
@@ -343,10 +328,7 @@ defineAddon('masked-intro', () => {
   const type = wrap.querySelector('.taro-intro__type');
   const word = wrap.querySelector('.taro-intro__word');
   const sub = wrap.querySelector('.taro-intro__sub');
-  const hint = wrap.querySelector('.taro-intro__hint');
-  const tearSvg = wrap.querySelector('.taro-intro__tear');
-  const paper = wrap.querySelector('.taro-intro__paper');
-  const fibre = wrap.querySelector('.taro-intro__fibre');
+  const sheet = wrap.querySelector('.taro-intro__sheet');
 
   /** Where the photograph actually sits in the frame, given object-fit: cover. */
   const geom = () => {
@@ -482,16 +464,28 @@ defineAddon('masked-intro', () => {
     wrap.style.setProperty('--taro-header-h', `${px}px`);
   };
 
-  const layoutTear = () => {
-    const w = frame.clientWidth, h = Math.round(frame.clientHeight * TEAR);
+  /**
+   * Cut the print out along its torn edge, so what lies below the tear is
+   * whatever is behind the intro — the photograph in the section underneath,
+   * which is pulled up to meet it — rather than a strip of paper-coloured fill.
+   *
+   * The mask is an inline SVG data URI rather than a referenced <mask> element
+   * because the deckle is a filter, and filters render inside an SVG used as an
+   * image. A clip-path would take the shape but not the fibres.
+   */
+  const layoutSheet = () => {
+    const w = Math.round(frame.clientWidth), h = Math.round(frame.clientHeight);
     if (!w || !h) return;
-    tearSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    // Same edge for both. The fibre copy is the paper lifted a few pixels and
-    // roughed up harder, so it always reads as thinning fibre hugging the tear;
-    // giving it its own shape left it poking through as loose specks.
-    const d = tearPath(w, h, 7);
-    paper.setAttribute('d', d);
-    fibre.setAttribute('d', d);
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+      `<filter id="d" x="-8%" y="-30%" width="116%" height="160%" color-interpolation-filters="sRGB">` +
+      `<feTurbulence type="fractalNoise" baseFrequency="0.014 0.055" numOctaves="4" seed="11" result="n"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="n" scale="17" xChannelSelector="R" yChannelSelector="G"/>` +
+      `</filter>` +
+      `<path d="${sheetPath(w, h, 7)}" fill="#fff" filter="url(#d)"/></svg>`;
+    const url = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+    sheet.style.webkitMaskImage = url;
+    sheet.style.maskImage = url;
   };
 
   const draw = () => {
@@ -517,7 +511,6 @@ defineAddon('masked-intro', () => {
     // Slow push-out for depth. Kept small: every extra percent here is another
     // percent of upscaling on an image that has none to spare.
     back.style.transform = fore.style.transform = `scale(${(1.03 - 0.03 * p).toFixed(4)})`;
-    hint.style.opacity = (Math.max(0, 1 - p / 0.12) * 0.5).toFixed(3);
   };
 
   let queued = false;
@@ -527,6 +520,25 @@ defineAddon('masked-intro', () => {
     requestAnimationFrame(() => { queued = false; draw(); });
   };
 
+  /**
+   * Pull the section below up until its top reaches the TOP of the torn band,
+   * so the whole tear lies over it and the photograph there emerges from under
+   * the paper rather than starting at a seam below a strip of bare page.
+   *
+   * The amount can't be a constant: it is whatever is left of the viewport under
+   * the pinned print, which depends on the header and the window. A margin does
+   * not change the wrapper's own box, so this cannot feed back into the travel
+   * it is derived from.
+   */
+  const setOverlap = () => {
+    if (reduced.matches) { wrap.style.marginBottom = ''; return; }
+    const frameH = stage.clientHeight;
+    if (!frameH) return;
+    const travel = wrap.offsetHeight - frameH;
+    const overlap = Math.max(0, travel - headerLayoutH + TEAR * frameH);
+    wrap.style.marginBottom = `${-Math.round(overlap)}px`;
+  };
+
   const relayout = () => {
     // Re-found on every relayout because the header swaps between breakpoints.
     findHeader();
@@ -534,7 +546,8 @@ defineAddon('masked-intro', () => {
     const g = geom();
     applyForeground(g);
     fitType(g);
-    layoutTear();
+    layoutSheet();
+    setOverlap();
     draw();
   };
 

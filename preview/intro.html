@@ -48,8 +48,18 @@
     #header nav { display: flex; gap: 1.4rem; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; }
     #header.is-hidden { transform: translateY(calc(-1 * var(--mock-header-h))); }
     @media (max-width: 767px) { :root { --mock-header-h: 88px; } #header nav { display: none; } }
-    h1, h2, h3 { font-family: 'Times New Roman', Didot, serif; letter-spacing: -0.01em; }
+    /* The colour is the point, not decoration: Squarespace paints headings from
+       --headingLargeColor with a rule on the element, which is what turned the
+       wordmark red. Reproduced here so the override can be checked locally. */
+    h1, h2, h3 {
+      font-family: 'Times New Roman', Didot, serif;
+      letter-spacing: -0.01em;
+      color: hsla(8, 81%, 49%, 1);
+    }
     section { padding: 8rem 2rem; max-width: 900px; margin: 0 auto; }
+    .photo-section { padding: 0; max-width: none; }
+    .lead-photo { display: block; width: 100%; height: 62vh; object-fit: cover; }
+    .photo-section .copy { max-width: 900px; margin: 0 auto; padding: 5rem 2rem; }
     .swatch { height: 300px; background: rgba(43,42,38,0.07); border-radius: 3px; }
   </style>
 </head>
@@ -60,10 +70,17 @@
   </header>
 
   <article id="sections">
-    <section data-section-id="mock-1">
-      <h2>Art that feels loved.</h2>
-      <h2>visuals that feel lived.</h2>
-      <div class="swatch"></div>
+    <!-- Mirrors the live section below the intro: a full-bleed photograph with
+         the two lines of copy beneath it. The tear is meant to lie over the top
+         of that photograph, so the harness needs a real one to check against. -->
+    <section data-section-id="mock-1" class="photo-section">
+      <img class="lead-photo"
+           src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/def6fd2f-3d9e-4d44-b660-e8e11f0708cc/P1022968.jpg?format=2500w"
+           alt="">
+      <div class="copy">
+        <h2>Art that feels loved.</h2>
+        <h2>visuals that feel lived.</h2>
+      </div>
     </section>
     <section data-section-id="mock-2">
       <h2>Third section</h2>
