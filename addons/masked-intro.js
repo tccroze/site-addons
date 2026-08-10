@@ -20,7 +20,14 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-const PHOTO = 'https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/7d48f3b7-2b74-463d-b539-9be947fcec68/IMG_2624.jpg';
+// Spitzkoppe. Chosen because the frame has a large clean sky on the left for
+// the type to live in, and the granite dome reads as solid from the very top
+// edge across the right of the frame — a wall for the type to disappear behind.
+const PHOTO = 'https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/fd58d70e-2684-4273-afe3-e42491a752ea/IMG_4184-2.jpg';
+// Horizontal crop point. The frame is 3.71:1, so a 16:9 viewport shows under
+// half of it; biased left of centre to keep sky behind the wordmark while
+// still holding the dome in shot.
+const FOCUS_X = 0.42;
 const WORDMARK = 'TARO CROZE';
 const SUBLINE = 'STILLS.  MOTION.  PAINT.';
 const STAGE_VH = 280;
@@ -95,6 +102,7 @@ defineAddon('masked-intro', () => {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
       object-fit: cover;
+      object-position: ${FOCUS_X * 100}% center;
     }
     /* The clipped copy of the photograph that passes in front of the type. */
     .taro-intro__fore { z-index: 3; }
@@ -182,7 +190,8 @@ defineAddon('masked-intro', () => {
     if (!iw || !ih || !W || !H) return;
     const scale = Math.max(W / iw, H / ih);
     const dw = iw * scale, dh = ih * scale;
-    const ox = (W - dw) / 2, oy = (H - dh) / 2;
+    // Must match object-position, or the clip drifts away from the ridge.
+    const ox = (W - dw) * FOCUS_X, oy = (H - dh) / 2;
 
     const pts = ridge.map(([fx, fy]) => {
       const x = ((ox + fx * dw) / W) * 100;
