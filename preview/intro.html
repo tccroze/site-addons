@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>taro add-ons — homepage intro</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* Stands in for the parts of Squarespace the intro reads: a cream page, a
+       display face for the wordmark to borrow, and an article#sections wrapper
+       whose first section[data-section-id] the intro inserts itself before. */
+    /* The real TAN Nimbus upload, pulled from the live site so the harness
+       renders the wordmark in the same face the visitor sees. Declared under
+       Squarespace's own hashed family name, which is what the add-on looks
+       for among the page's loaded fonts. */
+    @font-face {
+      font-family: 'tan---nimbus-regular-webfont-tn3woj';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('https://file.squarespace-cdn.com/content/v2/namespaces/fonts/libraries/6923f2156e59f05fd5bf40f3/assets/0c569f03-f70b-4ad7-bf09-493649495f78/font.woff2') format('woff2');
+    }
+    :root { --siteBackgroundColor: #f6eed5; --siteTextColor: #2b2a26; }
+    body {
+      margin: 0;
+      background: var(--siteBackgroundColor);
+      color: var(--siteTextColor);
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    h1, h2, h3 { font-family: 'Times New Roman', Didot, serif; letter-spacing: -0.01em; }
+    section { padding: 8rem 2rem; max-width: 900px; margin: 0 auto; }
+    .swatch { height: 300px; background: rgba(43,42,38,0.07); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <article id="sections">
+    <section data-section-id="mock-1">
+      <h2>Second section</h2>
+      <p>
+        The torn edge belongs to the print above, not to the viewport. Nothing
+        from the intro should hang over this heading at any scroll position.
+      </p>
+      <div class="swatch"></div>
+    </section>
+    <section data-section-id="mock-2">
+      <h2>Third section</h2>
+      <div class="swatch"></div>
+    </section>
+  </article>
+
+  <script>
+    // ?scroll=N jumps to that offset once everything has settled, so a headless
+    // screenshot can catch the intro mid-sink rather than only at rest. Read it
+    // before the rewrite below, which drops the query string.
+    var params = new URLSearchParams(location.search);
+    var jump = Number(params.get('scroll')) || 0;
+    var debug = params.has('debug');
+
+    // The intro only runs on the homepage. Same origin, so this is enough to
+    // make the harness look like '/' without touching the add-on.
+    history.replaceState(null, '', '/');
+
+    // Both hooks hang off the intro mounting, and both run synchronously in the
+    // observer: `--dump-dom` snapshots before load, so anything deferred to a
+    // scroll or load handler is too late to be captured.
+    if (jump || debug) new MutationObserver(function (_, obs) {
+      if (!document.querySelector('.taro-intro')) return;
+      obs.disconnect();
+      if (jump) window.scrollTo(0, jump);
+      if (debug) dump();
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    // ?debug=1 mirrors the live geometry into the page title, which is the one
+    // channel a headless `--dump-dom` run can read back without a debugger
+    // attached. Refreshed on scroll so whenever the dump lands it is current.
+    if (debug) {
+      var box = function (sel) {
+        var el = document.querySelector(sel);
+        if (!el) return null;
+        var b = el.getBoundingClientRect();
+        return [Math.round(b.top), Math.round(b.height)];
+      };
+      // Painted into the page rather than the title: a headless screenshot is
+      // taken at load, which is late enough to see the mounted intro, whereas
+      // --dump-dom snapshots before the add-ons have finished running.
+      var panel = document.createElement('pre');
+      panel.style.cssText = 'position:fixed;z-index:99999;left:0;top:0;margin:0;'
+        + 'padding:6px 10px;background:#111;color:#0f0;font:11px/1.45 monospace;'
+        + 'white-space:pre-wrap;max-width:52ch';
+      addEventListener('DOMContentLoaded', function () { document.body.appendChild(panel); });
+
+      var dump = function () {
+        panel.textContent = JSON.stringify({
+          scrollY: Math.round(window.scrollY),
+          docH: document.documentElement.scrollHeight,
+          wrap: box('.taro-intro'),
+          stage: box('.taro-intro__stage'),
+          frame: box('.taro-intro__frame'),
+          stagePosition: getComputedStyle(document.querySelector('.taro-intro__stage')).position,
+          aboveIntro: [].slice.call(document.querySelectorAll('article#sections > *'))
+            .slice(0, 3).map(function (e) { return e.tagName + '.' + (e.className || '-'); }),
+          bodyKids: [].slice.call(document.body.children)
+            .map(function (e) { return e.tagName + '.' + (e.className || '-'); }),
+        }, null, 1);
+      };
+      addEventListener('scroll', dump, { passive: true });
+      addEventListener('load', dump);
+    }
+  </script>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

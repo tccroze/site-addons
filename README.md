@@ -76,6 +76,20 @@ Then open `http://localhost:8000/preview/`. The harness loads the exact same
 `main.js` and `styles.css` the live site does, so a broken import or a thrown error
 shows up here first.
 
+`preview/intro.html` is a second harness for the homepage intro, which needs a
+page that looks like Squarespace: an `article#sections` wrapper, a first
+`section[data-section-id]`, and a path of `/`. Two query params help when
+checking it:
+
+- `?scroll=N` — jump to that offset once the intro mounts, to catch it mid-sink.
+- `?debug=1` — paint the live geometry (scroll position, sticky state, box
+  rects) into the corner of the page.
+
+Both apply as soon as the intro mounts rather than on `load`, so a headless
+screenshot can see them. Note that `cursor.js` keeps a `requestAnimationFrame`
+loop running for as long as the page is open, so Chrome's `--virtual-time-budget`
+never expires and can't be used to wait for a render.
+
 ---
 
 ## Layout
