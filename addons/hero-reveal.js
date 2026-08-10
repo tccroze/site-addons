@@ -36,9 +36,17 @@ defineAddon('hero-reveal', () => {
   if (!lines.length) return;
 
   css('hero-reveal', `
+    /* A focus pull rather than a rise: each line starts fractionally oversized
+       and soft, then settles to exact size and sharp — like a lens finding
+       focus, which suits a photographer's site.
+       Deliberately no vertical movement. This script is fetched from another
+       origin, so its CSS always lands after the browser has painted the hero
+       in place; any downward start position is therefore visible as a snap
+       down before the animation runs back up. Scale and blur have no such
+       tell — the line is already where it belongs. */
     .taro-hero-line {
       opacity: 0;
-      transform: translateY(${LEAN ? 26 : 38}px);
+      transform: scale(${LEAN ? 1.02 : 1.035});
       ${LEAN ? '' : 'filter: blur(10px);'}
       transition: opacity ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms),
                   transform ${LINE_MS}ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--d, 0ms)

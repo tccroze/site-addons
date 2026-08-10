@@ -6,6 +6,10 @@
 
 import { log } from './lib/util.js';
 
+// Imported first on purpose: each module is a separate network fetch, so the
+// hero's starting state lands sooner the earlier this appears.
+import './addons/hero-reveal.js';
+
 import './addons/scroll-progress.js';
 import './addons/gallery-hover.js';
 import './addons/gallery-filter.js';
@@ -15,12 +19,11 @@ import './addons/signature.js';
 
 // Homepage only
 import './addons/scroll-reveal.js';
-import './addons/hero-reveal.js';
 import './addons/testimonial-rotator.js';
 import './addons/parallax.js';
 
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '2.3.0';
+export const VERSION = '2.4.0';
 
 log(`ready — v${VERSION}`);

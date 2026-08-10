@@ -1,19 +1,23 @@
-// Turns the three stacked testimonials into one crossfading quote.
+// Turns the three stacked testimonials into one rotating quote.
 //
 // The list is a Squarespace "simple list" section: ul.user-items-list-item-container
 // holding li.list-item, laid out with CSS grid. Rather than absolutely positioning
 // the quotes (which would collapse the container's height), all three are placed in
-// the same grid cell — so the row still sizes itself to the tallest quote and the
-// section never changes height as it rotates.
+// the same grid cell — so the row still sizes to the tallest quote and the section
+// never changes height as it rotates.
+//
+// Opacity is driven from JavaScript rather than by CSS attribute selectors. Two
+// earlier attempts got this wrong in ways that were hard to see: first a true
+// crossfade that painted both quotes at once (overlapping text), then a rule
+// whose specificity and transition-delay left the incoming quote stuck at zero.
+// Setting the value directly leaves nothing to reason about.
 
 import { defineAddon, css } from '../lib/util.js';
 
-const INTERVAL_MS = 6500;
-const FADE_MS = 450;      // one leg of the sequence; a full swap takes twice this
+const INTERVAL_MS = 4000;
+const FADE_MS = 400;      // one leg; a full swap is out-then-in, so twice this
 
 defineAddon('testimonial-rotator', () => {
-  if (location.pathname !== '/') return;
-
   const list = [...document.querySelectorAll('ul.user-items-list-item-container')]
     .find((ul) => ul.querySelectorAll('.list-item').length >= 2
                && ul.querySelector('.list-item-content__title'));
@@ -24,9 +28,8 @@ defineAddon('testimonial-rotator', () => {
 
   css('testimonial-rotator', `
     /* One full-width column; every quote shares the single cell.
-       align-items must be forced: Squarespace centres the items, and since the
-       quotes are different heights that made each one sit at a different offset
-       — a visible jump of ~40px between slides on a phone. */
+       align-items must be forced: Squarespace centres them, and since the
+       quotes differ in height that put each at a different offset. */
     ul.taro-rotator {
       grid-template-columns: 1fr !important;
       align-items: start !important;
@@ -34,21 +37,8 @@ defineAddon('testimonial-rotator', () => {
     ul.taro-rotator > .list-item {
       grid-area: 1 / 1 / 2 / 2 !important;
       align-self: start !important;
-      opacity: 0;
-      pointer-events: none;
       transition: opacity ${FADE_MS}ms ease;
     }
-    /* Sequenced, not crossfaded: the incoming quote waits for the outgoing one
-       to finish leaving. A true crossfade renders both at once, and stacked in
-       a single cell that reads as overlapping text rather than a dissolve.
-       (visibility is not used to hide them — it inherits, so any child setting
-       visibility:visible would paint anyway.) */
-    ul.taro-rotator > .list-item[data-taro-active] {
-      opacity: 1;
-      pointer-events: auto;
-      transition: opacity ${FADE_MS}ms ease ${FADE_MS}ms;
-    }
-
     .taro-dots {
       display: flex;
       justify-content: center;
@@ -57,9 +47,7 @@ defineAddon('testimonial-rotator', () => {
       padding: 0;
     }
     .taro-dots__dot {
-      width: 7px;
-      height: 7px;
-      padding: 0;
+      width: 7px; height: 7px; padding: 0;
       border: 1px solid currentColor;
       border-radius: 50%;
       background: transparent;
@@ -68,10 +56,7 @@ defineAddon('testimonial-rotator', () => {
       transition: opacity 0.3s ease, background-color 0.3s ease;
     }
     .taro-dots__dot:hover { opacity: 0.7; }
-    .taro-dots__dot[aria-current="true"] {
-      opacity: 1;
-      background: currentColor;
-    }
+    .taro-dots__dot[aria-current="true"] { opacity: 1; background: currentColor; }
     @media (prefers-reduced-motion: reduce) {
       ul.taro-rotator > .list-item, .taro-dots__dot { transition: none; }
     }
@@ -81,18 +66,28 @@ defineAddon('testimonial-rotator', () => {
   list.setAttribute('aria-live', 'polite');
 
   let index = 0;
+  let swapTimer;
   const dots = [];
 
-  const show = (i) => {
-    index = (i + quotes.length) % quotes.length;
+  // Inline opacity, so the resting state is always exactly what we set.
+  const paint = () => {
     quotes.forEach((q, n) => {
-      if (n === index) q.setAttribute('data-taro-active', '');
-      else q.removeAttribute('data-taro-active');
-      // The inactive quotes are only transparent, not removed from the tree, so
-      // they have to be hidden from screen readers explicitly.
+      q.style.opacity = n === index ? '1' : '0';
+      q.style.pointerEvents = n === index ? 'auto' : 'none';
       q.setAttribute('aria-hidden', String(n !== index));
     });
     dots.forEach((d, n) => d.setAttribute('aria-current', String(n === index)));
+  };
+
+  const goTo = (next) => {
+    const target = (next + quotes.length) % quotes.length;
+    if (target === index) return;
+    clearTimeout(swapTimer);
+    // Out, then in — never both on screen at once, which is what made the
+    // quotes appear to overlap on a phone.
+    quotes[index].style.opacity = '0';
+    quotes[index].setAttribute('aria-hidden', 'true');
+    swapTimer = setTimeout(() => { index = target; paint(); }, FADE_MS);
   };
 
   const nav = document.createElement('div');
@@ -106,50 +101,44 @@ defineAddon('testimonial-rotator', () => {
     dot.type = 'button';
     dot.className = 'taro-dots__dot';
     dot.setAttribute('aria-label', `Show testimonial from ${name}`);
-    dot.addEventListener('click', () => { show(i); restart(); });
+    dot.addEventListener('click', () => { goTo(i); restart(); });
     dots.push(dot);
     nav.appendChild(dot);
   });
 
   list.parentNode.insertBefore(nav, list.nextSibling);
-  show(0);
+  paint();
 
-  // Swipe, because dots alone are a poor way to change a quote on a phone.
-  // Only a decisive, mostly-horizontal drag counts, so this never steals a
-  // vertical scroll.
+  // Swipe, because dots alone are awkward on a phone. Only a decisive,
+  // mostly-horizontal drag counts, so this never steals a vertical scroll.
   let sx = 0, sy = 0, tracking = false;
   list.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
-    sx = e.touches[0].clientX;
-    sy = e.touches[0].clientY;
-    tracking = true;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true;
   }, { passive: true });
-
   list.addEventListener('touchend', (e) => {
     if (!tracking) return;
     tracking = false;
     const dx = e.changedTouches[0].clientX - sx;
     const dy = e.changedTouches[0].clientY - sy;
     if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    show(index + (dx < 0 ? 1 : -1));
+    goTo(index + (dx < 0 ? 1 : -1));
     restart();
   }, { passive: true });
 
-  // Auto-advance, unless the visitor is reading or has asked for less motion.
+  // Auto-advance. Only a hidden tab stops it — an earlier version also paused
+  // on hover over the whole section, which on a desktop meant it frequently
+  // never advanced at all and looked broken.
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let timer;
-  const restart = () => {
-    clearInterval(timer);
-    if (!still) timer = setInterval(() => show(index + 1), INTERVAL_MS);
-  };
-  const stop = () => clearInterval(timer);
-
-  const region = list.parentElement;
-  region.addEventListener('mouseenter', stop);
-  region.addEventListener('mouseleave', restart);
-  region.addEventListener('focusin', stop);
-  region.addEventListener('focusout', restart);
-  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : restart()));
+  let cycle;
+  function restart() {
+    clearInterval(cycle);
+    if (!still) cycle = setInterval(() => goTo(index + 1), INTERVAL_MS);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clearInterval(cycle);
+    else restart();
+  });
 
   restart();
 });
