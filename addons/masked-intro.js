@@ -63,9 +63,14 @@ const GROW = 1.16;        // how much it scales on the way down
 // the edge past the bottom over the last sixth of the width, where it clamped
 // flat and the fill fell below the viewBox entirely — the right of the print met
 // the page with a straight cut instead of a tear.
-const TEAR = 0.28;        // height of the torn band, as a fraction of frame height
-const TEAR_START = 0.20;
-const TEAR_END = 0.86;
+const TEAR = 0.24;        // height of the torn band, as a fraction of frame height
+const TEAR_START = 0.24;
+const TEAR_END = 0.60;
+const TEAR_AMP = 0.32;    // how far the noise rides off that baseline
+// Clearance kept between the torn edge and the top of the section behind it, so
+// the deckle filter — which shifts the outline by a few pixels — can never drag
+// the edge above the photograph and expose bare page.
+const TEAR_SAFETY = 16;
 
 // The following section is pulled up so its top sits at the TOP of the torn
 // band, which puts the whole tear over it: the photograph below emerges from
@@ -139,6 +144,20 @@ const CELLS = 3;
 // Deepest row the traced skyline reaches, used to clamp lookups into it.
 const RIDGE_MAX_Y = RIDGE.reduce((m, pt) => Math.max(m, pt[1]), 0);
 
+// Highest the torn edge ever climbs inside its band. The noise keeps it well
+// below the band's top, so treating the band's top as the edge pulls the
+// section behind it further up than the tear needs — and every pixel of that is
+// a pixel of gap lost between the torn edge and the copy underneath it.
+const TEAR_MIN = (() => {
+  const f = fbm(7);
+  let lo = 1;
+  for (let i = 0; i <= 400; i++) {
+    const t = i / 400;
+    lo = Math.min(lo, TEAR_START + (TEAR_END - TEAR_START) * t + TEAR_AMP * f(t));
+  }
+  return Math.max(0, lo);
+})();
+
 /** Several octaves of it, so the edge has both a slow wander and fine fibre. */
 function fbm(seed, octaves = 5) {
   const layers = Array.from({ length: octaves }, (_, i) => noise(seed + i * 7919));
@@ -164,7 +183,7 @@ function fbm(seed, octaves = 5) {
  * — it covers whatever is beneath rather than revealing it, which is no use when
  * the point is for the photograph below to come up through the tear.
  */
-function sheetPath(w, h, seed, amp = 0.42) {
+function sheetPath(w, h, seed, amp = TEAR_AMP) {
   const f = fbm(seed);
   const band = h * TEAR, base = h - band;
   // Run past the sides and the top. The deckle filter shifts the outline by up
@@ -230,7 +249,7 @@ defineAddon('masked-intro', () => {
       top: var(--taro-header-h);
       height: var(--taro-frame-h);
       width: 100%;
-      z-index: 1;
+      z-index: 4;
     }
     /* The print. A band, not a full-height cover — see FRAME_RATIO.
        overflow: hidden is load-bearing: the wordmark and both photo layers are
@@ -474,8 +493,29 @@ defineAddon('masked-intro', () => {
     headerEls.forEach((el) => {
       if (watched.has(el)) return;
       watched.add(el);
-      el.addEventListener('transitionend', request, { passive: true });
+      el.addEventListener('transitionrun', followHeader, { passive: true });
+      el.addEventListener('transitionend', followHeader, { passive: true });
     });
+  };
+
+  /**
+   * Track the header for the length of its slide. It animates over about 140ms,
+   * which outlives the scroll event that set it off, so sampling only on scroll
+   * left the print parked wherever the last frame happened to catch the header
+   * and then snapping across when the transition ended — the jolt you feel on
+   * the way back up. Following it frame by frame turns that into a slide.
+   */
+  let following = false;
+  const followHeader = () => {
+    if (following) return;
+    following = true;
+    const until = performance.now() + 420;
+    const step = () => {
+      syncHeaderPin();
+      if (performance.now() < until) requestAnimationFrame(step);
+      else following = false;
+    };
+    requestAnimationFrame(step);
   };
 
   const syncHeaderPin = () => {
@@ -559,14 +599,14 @@ defineAddon('masked-intro', () => {
     // Pin length measured against the print, not the window — see PIN.
     wrap.style.height = `${Math.round(frameH * (1 + PIN) + headerLayoutH)}px`;
     const travel = wrap.offsetHeight - frameH;
-    // A header's height of slack on top of the tear. The print pins to the
-    // header's visible edge, so when the header hides on scroll-down the print
-    // rides up by its height while the section below — being in normal flow —
-    // stays put. Line the two up exactly and that movement opens a band of bare
-    // page between the torn edge and the photograph. With the slack the section
-    // simply runs further up behind the print, where it cannot be seen, and the
-    // tear has something under it in either header state.
-    const overlap = Math.max(0, travel + TEAR * frameH);
+    // Brings the section's top to just above where the torn edge actually
+    // reaches, rather than to the top of the whole torn band — see TEAR_MIN.
+    // `travel` carries a header's height of slack with it, which matters because
+    // the print pins to the header's visible edge: when the header hides on
+    // scroll-down the print rides up by its height while the section, being in
+    // normal flow, stays put. Without the slack that movement slides the torn
+    // edge off the top of the photograph and opens a band of bare page.
+    const overlap = Math.max(0, travel + TEAR * (1 - TEAR_MIN) * frameH + TEAR_SAFETY);
     wrap.style.marginBottom = `${-Math.round(overlap)}px`;
   };
 
