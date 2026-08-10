@@ -36,7 +36,14 @@ const FRAME_RATIO = 2.75;
 const WORDMARK = 'TARO CROZE';
 const SUBLINE = 'STILLS.  MOTION.  PAINT.';
 
-const STAGE_VH = 125;     // scroll length of the pinned intro
+// Scroll length of the pin, as a multiple of the frame height. The wrapper is
+// sized from this in JS; STAGE_VH is only the value that applies before the
+// first layout. Expressing it against the frame rather than the viewport keeps
+// the gesture the same on a short laptop window as on a tall monitor — in vh it
+// ate exactly the room the section below needed on short windows, which pushed
+// the copy under it off the bottom of the screen.
+const PIN = 0.62;
+const STAGE_VH = 125;
 const SINK = 0.74;        // how far the type sinks, as a fraction of frame height
 const GROW = 1.16;        // how much it scales on the way down
 // The torn band. TEAR_START/END are where the edge sits inside that band at the
@@ -48,7 +55,7 @@ const GROW = 1.16;        // how much it scales on the way down
 // the edge past the bottom over the last sixth of the width, where it clamped
 // flat and the fill fell below the viewBox entirely — the right of the print met
 // the page with a straight cut instead of a tear.
-const TEAR = 0.36;        // height of the torn band, as a fraction of frame height
+const TEAR = 0.28;        // height of the torn band, as a fraction of frame height
 const TEAR_START = 0.20;
 const TEAR_END = 0.86;
 
@@ -214,14 +221,18 @@ defineAddon('masked-intro', () => {
       width: 100%;
       z-index: 1;
     }
-    /* The print. A band, not a full-height cover — see FRAME_RATIO. No
-       overflow: hidden, because the mask on the sheet is what bounds the print
-       now and clipping here would square off the deckle's outermost fibres. The
-       shadow lives out here rather than on the sheet because filters are applied
-       before masks, so a shadow on the masked element gets masked away with it. */
+    /* The print. A band, not a full-height cover — see FRAME_RATIO.
+       overflow: hidden is load-bearing: the wordmark and both photo layers are
+       scaled as the page scrolls, and a mask only hides the overspill, it does
+       not stop it counting as scrollable overflow. Without this the type grew
+       about 80px past the viewport and the whole page gained a horizontal
+       scrollbar, which read as a blank strip down the right-hand side.
+       The shadow lives out here rather than on the sheet because filters are
+       applied before masks, so a shadow on the masked element is masked away. */
     .taro-intro__frame {
       --taro-fx: 0.12;                   /* read back in JS; never let these drift */
       position: absolute; inset: 0;
+      overflow: hidden;
       filter: drop-shadow(0 5px 9px rgba(48,36,22,0.20));
     }
     /* Everything that is "the photograph" lives in here so one mask tears the
@@ -288,13 +299,13 @@ defineAddon('masked-intro', () => {
       /* A 2.75:1 band off a phone's width is a 140px sliver, so height is set
          directly here. The crop is heavy either way at this width, so the extra
          height costs little sharpness and stops the screen reading as empty. */
-      .taro-intro { --taro-frame-h: 62vh; }
+      .taro-intro { --taro-frame-h: 56vh; }
       /* A phone sees about a fifth of the frame. Centred on the near dome that
          fifth is all pale glow and granite, which leaves cream type with nothing
          to sit against; centred on Spitzkoppe it gets deep sky above a hard
          silhouette, and the peak takes over as the mass the type sinks behind. */
       .taro-intro__frame { --taro-fx: 0.22; }
-      .taro-intro__type { top: 11%; }
+      .taro-intro__type { top: 13%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -531,9 +542,11 @@ defineAddon('masked-intro', () => {
    * it is derived from.
    */
   const setOverlap = () => {
-    if (reduced.matches) { wrap.style.marginBottom = ''; return; }
+    if (reduced.matches) { wrap.style.height = ''; wrap.style.marginBottom = ''; return; }
     const frameH = stage.clientHeight;
     if (!frameH) return;
+    // Pin length measured against the print, not the window — see PIN.
+    wrap.style.height = `${Math.round(frameH * (1 + PIN) + headerLayoutH)}px`;
     const travel = wrap.offsetHeight - frameH;
     const overlap = Math.max(0, travel - headerLayoutH + TEAR * frameH);
     wrap.style.marginBottom = `${-Math.round(overlap)}px`;
