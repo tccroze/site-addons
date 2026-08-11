@@ -265,6 +265,20 @@ defineAddon('masked-intro', () => {
       overflow: hidden;
       filter: drop-shadow(0 5px 9px rgba(48,36,22,0.20));
     }
+    /* Fills the strip the header vacates when it hides itself on scroll-down.
+       The print holds still rather than following the header — that movement was
+       the main thing making this feel jerky — but the section underneath is
+       pulled up far enough to sit behind the tear, which means that once you are
+       a couple of hundred pixels down, its own dark background is what would
+       show in that strip. Anchored to the stage, so it scrolls away with the
+       print instead of hanging over the rest of the page. */
+    .taro-intro__cap {
+      position: absolute; left: 0; right: 0;
+      top: calc(-1 * var(--taro-header-h));
+      height: var(--taro-header-h);
+      background: var(--siteBackgroundColor, #f6eed5);
+      pointer-events: none;
+    }
     /* Everything that is "the photograph" lives in here so one mask tears the
        lot: the print, the wordmark over it, and the ridge layer in front. */
     .taro-intro__sheet {
@@ -349,6 +363,7 @@ defineAddon('masked-intro', () => {
   wrap.className = 'taro-intro';
   wrap.innerHTML = `
     <div class="taro-intro__stage">
+      <div class="taro-intro__cap" aria-hidden="true"></div>
       <div class="taro-intro__frame">
         <div class="taro-intro__sheet">
           <img class="taro-intro__layer taro-intro__back" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
