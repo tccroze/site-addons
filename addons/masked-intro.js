@@ -202,6 +202,23 @@ function sheetPath(w, h, seed, amp = TEAR_AMP) {
   return `${d} L${(w + pad).toFixed(1)},${head} Z`;
 }
 
+/**
+ * The deckle. Two passes: a coarse one that does the tearing, and a fine one on
+ * top of it that frays the result into fibre. One pass alone gives a wobbly but
+ * smooth outline, which reads as a cut rather than a tear.
+ *
+ * Built here rather than written out twice because the mask and the light fringe
+ * drawn along it must be displaced identically — same frequencies, same seeds,
+ * same user space — or the fringe drifts off the edge it is meant to sit on.
+ */
+const deckleFilter = (id) =>
+  `<filter id="${id}" x="-10%" y="-40%" width="120%" height="180%" color-interpolation-filters="sRGB">` +
+  `<feTurbulence type="fractalNoise" baseFrequency="0.011 0.042" numOctaves="4" seed="11" result="a"/>` +
+  `<feDisplacementMap in="SourceGraphic" in2="a" scale="21" xChannelSelector="R" yChannelSelector="G" result="b"/>` +
+  `<feTurbulence type="fractalNoise" baseFrequency="0.09 0.24" numOctaves="3" seed="4" result="c"/>` +
+  `<feDisplacementMap in="b" in2="c" scale="6" xChannelSelector="R" yChannelSelector="G"/>` +
+  `</filter>`;
+
 defineAddon('masked-intro', () => {
   if (location.pathname !== '/') return;
 
@@ -278,6 +295,22 @@ defineAddon('masked-intro', () => {
       height: var(--taro-header-h);
       background: var(--siteBackgroundColor, #f6eed5);
       pointer-events: none;
+    }
+    /* A thin light fringe along the torn edge — the paper's core showing where
+       the print has been pulled apart. It carries the same path and the same
+       displacement as the mask, so it lands on the boundary rather than near it,
+       and it sits outside the masked sheet so it is not cut in half by it. */
+    .taro-intro__deckle {
+      position: absolute; inset: 0;
+      z-index: 6;
+      display: block;
+      pointer-events: none;
+    }
+    .taro-intro__fringe {
+      fill: none;
+      stroke: var(--siteBackgroundColor, #f6eed5);
+      stroke-width: 2.5;
+      stroke-opacity: 0.7;
     }
     /* Everything that is "the photograph" lives in here so one mask tears the
        lot: the print, the wordmark over it, and the ridge layer in front. */
@@ -373,6 +406,10 @@ defineAddon('masked-intro', () => {
           </div>
           <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
         </div>
+        <svg class="taro-intro__deckle" preserveAspectRatio="none" aria-hidden="true">
+          <defs>${deckleFilter('taro-deckle-edge')}</defs>
+          <path class="taro-intro__fringe" filter="url(#taro-deckle-edge)"></path>
+        </svg>
       </div>
     </div>`;
   host.insertBefore(wrap, firstSection);
@@ -386,6 +423,8 @@ defineAddon('masked-intro', () => {
   const word = wrap.querySelector('.taro-intro__word');
   const sub = wrap.querySelector('.taro-intro__sub');
   const sheet = wrap.querySelector('.taro-intro__sheet');
+  const deckle = wrap.querySelector('.taro-intro__deckle');
+  const fringe = wrap.querySelector('.taro-intro__fringe');
 
   /** Where the photograph actually sits in the frame, given object-fit: cover. */
   const geom = () => {
@@ -532,16 +571,19 @@ defineAddon('masked-intro', () => {
   const layoutSheet = () => {
     const w = Math.round(frame.clientWidth), h = Math.round(frame.clientHeight);
     if (!w || !h) return;
+    const d = sheetPath(w, h, 7);
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-      `<filter id="d" x="-8%" y="-30%" width="116%" height="160%" color-interpolation-filters="sRGB">` +
-      `<feTurbulence type="fractalNoise" baseFrequency="0.014 0.055" numOctaves="4" seed="11" result="n"/>` +
-      `<feDisplacementMap in="SourceGraphic" in2="n" scale="17" xChannelSelector="R" yChannelSelector="G"/>` +
-      `</filter>` +
-      `<path d="${sheetPath(w, h, 7)}" fill="#fff" filter="url(#d)"/></svg>`;
+      deckleFilter('d') +
+      `<path d="${d}" fill="#fff" filter="url(#d)"/></svg>`;
     const url = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
     sheet.style.webkitMaskImage = url;
     sheet.style.maskImage = url;
+
+    // Same geometry, stroked instead of filled. The sides and top of the path
+    // run outside the frame, so overflow: hidden leaves only the torn edge lit.
+    deckle.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    fringe.setAttribute('d', d);
   };
 
   // Geometry that only changes on relayout, cached so the scroll path never
