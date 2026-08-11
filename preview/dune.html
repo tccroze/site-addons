@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>taro add-ons — dune reveal</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* Reproduces the print-collection section as Squarespace actually builds it,
+       measured off the live page: a .section-background holding the photograph
+       under a .section-background-overlay, with the copy in Fluid Engine blocks
+       on z-index 1 over the top. The z-index and the overlay's colour and opacity
+       are the parts that matter — get those wrong and the check is worthless. */
+    :root { --siteBackgroundColor: #f6eed5; --siteTextColor: #2b2a26; }
+    body { margin: 0; background: var(--siteBackgroundColor); font: 16px/1.6 -apple-system, sans-serif; }
+    .spacer { height: 90vh; display: grid; place-items: center; color: #9a927c; letter-spacing: .3em; font-size: .7rem; }
+
+    section.page-section { position: relative; height: 886px; overflow: hidden; }
+    .section-background { position: absolute; inset: 0; }
+    .section-background img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; }
+    .section-background-overlay { position: absolute; inset: 0; background: rgb(36,50,48); opacity: .21; }
+    .content-wrapper { position: relative; }
+    .fluid-engine { display: grid; }
+    .fe-block { z-index: 1; padding: 0 58px; }
+
+    .fe-block h2 { margin: 72px 0 0; font-size: 4.4rem; line-height: 1.05; letter-spacing: -.01em; color: #f6eee0; }
+    .fe-block p  { margin: 42px 0 0; font-size: 1.15rem; color: #f6eee0; }
+    .fe-block .btn {
+      display: inline-block; margin: 52px 0 0; padding: .85rem 2.6rem; border: 2px solid #f6eee0;
+      border-radius: 999px; color: #f6eee0; text-decoration: none; letter-spacing: .12em;
+    }
+  </style>
+</head>
+<body>
+  <div class="spacer">SCROLL DOWN TO THE SECTION</div>
+
+  <article id="sections">
+    <section class="page-section" data-section-id="mock-dune">
+      <div class="section-background">
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/52f0d7f6-8349-4644-98db-b317bbc4265a/deadvlei.jpg?format=2500w" alt="">
+        <div class="section-background-overlay"></div>
+      </div>
+      <div class="content-wrapper">
+        <div class="content">
+          <div class="fluid-engine">
+            <div class="fe-block">
+              <h2>Shop the new print collection</h2>
+              <p>Wildlife from Northern Kenya. Landscape from the Namib. Every print made by hand.</p>
+              <a class="btn" href="/shop">Shop All</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </article>
+
+  <div class="spacer">AFTER</div>
+
+  <script>
+    var jump = Number(new URLSearchParams(location.search).get('scroll')) || 0;
+    history.replaceState(null, '', '/');            // the add-on is homepage-only
+    if (jump) new MutationObserver(function (_, obs) {
+      if (!document.querySelector('.taro-dune')) return;
+      obs.disconnect();
+      window.scrollTo(0, jump);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  </script>
+  <!-- Only this add-on: main.js would also drop the homepage intro in here,
+       which has nothing to do with what this harness is checking. -->
+  <script type="module">import '/addons/dune-reveal.js';</script>
+</body>
+</html>

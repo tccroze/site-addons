@@ -19,12 +19,13 @@ import './addons/signature.js';
 
 // Homepage only
 import './addons/masked-intro.js';
+import './addons/dune-reveal.js';
 import './addons/scroll-reveal.js';
 import './addons/testimonial-rotator.js';
 import './addons/parallax.js';
 
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '2.15.0';
+export const VERSION = '2.16.0';
 
 log(`ready — v${VERSION}`);
