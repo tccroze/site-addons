@@ -69,9 +69,13 @@ defineAddon('dune-reveal', () => {
                      img.getAttribute('data-image')].filter(Boolean).join(' ');
         if (!scene.match.test(src)) return false;
         // Squarespace also ships hidden duplicates of a section for other
-        // breakpoints, carrying the same photograph but no height.
+        // breakpoints, carrying the same photograph. They are display: none,
+        // which is the test to use — measuring height instead rejected the real
+        // section too, because at DOMContentLoaded it has not laid out yet and
+        // reads zero. That failed silently: the add-on reported success having
+        // mounted only half of itself.
         return !!s.querySelector('.content-wrapper')
-          && s.getBoundingClientRect().height > 0;
+          && getComputedStyle(s).display !== 'none';
       }),
     }))
     .filter((x) => x.section);
