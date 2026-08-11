@@ -60,7 +60,16 @@ defineAddon('dune-reveal', () => {
       // so nothing mounted and the real section was never reached.
       section: sections.find((s) => {
         const img = s.querySelector('.section-background img');
-        if (!img || !scene.match.test(img.currentSrc || img.src || '')) return false;
+        if (!img) return false;
+        // data-src as well as src: Squarespace lazy-loads section backgrounds,
+        // and below the fold the element still has an empty src when this runs.
+        // Matching on src alone found the print section, whose picture happened
+        // to be loaded already, and silently missed this one.
+        const src = [img.currentSrc, img.src, img.getAttribute('data-src'),
+                     img.getAttribute('data-image')].filter(Boolean).join(' ');
+        if (!scene.match.test(src)) return false;
+        // Squarespace also ships hidden duplicates of a section for other
+        // breakpoints, carrying the same photograph but no height.
         return !!s.querySelector('.content-wrapper')
           && s.getBoundingClientRect().height > 0;
       }),
@@ -160,7 +169,7 @@ defineAddon('dune-reveal', () => {
       overlay ? getComputedStyle(overlay).backgroundColor : 'transparent');
     layer.style.setProperty('--taro-fg-tint-o', overlay ? getComputedStyle(overlay).opacity : '0');
     layer.innerHTML =
-      `<img class="taro-dune__photo" src="${bgImg.currentSrc || bgImg.src}" alt="">` +
+      `<img class="taro-dune__photo" src="${bgImg.currentSrc || bgImg.src || bgImg.getAttribute('data-src') || ''}" alt="">` +
       '<div class="taro-dune__tint"></div>';
     section.appendChild(layer);
 
