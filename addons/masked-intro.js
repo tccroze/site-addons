@@ -319,6 +319,13 @@ defineAddon('masked-intro', () => {
       -webkit-mask-repeat: no-repeat;       mask-repeat: no-repeat;
     }
     .taro-intro__sheet--back { z-index: 1; }
+    /* The type is torn off with everything else. It has to be inside a mask or
+       it carries on past the torn edge and ghosts over the section below — which
+       is what taking it out of the masked layer did. Its own sheet, rather than
+       sharing one with the photograph: this one holds nothing but text, so the
+       repaint its movement forces is cheap, where re-rasterising a full-width
+       photograph and its mask every frame was the thing worth avoiding. */
+    .taro-intro__sheet--type { z-index: 2; }
     .taro-intro__sheet--fore { z-index: 3; }
     .taro-intro__layer {
       position: absolute; inset: 0;
@@ -402,9 +409,11 @@ defineAddon('masked-intro', () => {
         <div class="taro-intro__sheet taro-intro__sheet--back">
           <img class="taro-intro__layer taro-intro__back" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
         </div>
-        <div class="taro-intro__type">
-          <h1 class="taro-intro__word">${WORDMARK}</h1>
-          <p class="taro-intro__sub">${SUBLINE}</p>
+        <div class="taro-intro__sheet taro-intro__sheet--type">
+          <div class="taro-intro__type">
+            <h1 class="taro-intro__word">${WORDMARK}</h1>
+            <p class="taro-intro__sub">${SUBLINE}</p>
+          </div>
         </div>
         <div class="taro-intro__sheet taro-intro__sheet--fore">
           <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">

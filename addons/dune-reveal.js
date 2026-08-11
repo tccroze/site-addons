@@ -40,9 +40,12 @@ const SCENES = [
 ];
 
 // Where the travel starts and ends, in viewport heights of the section's top.
-// Finishing at -0.5 rather than 0 means the copy is only fully swallowed once the
-// section is half gone — before that there is always something left to read.
-const FROM = 0.75, TO = -0.5;
+// Nothing moves until the section is properly on screen: starting at 0.75 meant
+// the sink was already underway while the copy was still arriving from the bottom
+// of the window, so it was going before anyone could read it. It now holds still
+// until the section's top has climbed to a third of the way up, and finishes only
+// once the section is three quarters gone.
+const FROM = 0.30, TO = -0.75;
 const EASE = 0.16;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
