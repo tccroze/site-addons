@@ -54,9 +54,15 @@ defineAddon('dune-reveal', () => {
   const found = SCENES
     .map((scene) => ({
       scene,
+      // Squarespace ships hidden duplicates of a section for other breakpoints,
+      // and they carry the same background photograph. Matching on the picture
+      // alone found one of those first — it has no content wrapper and no height,
+      // so nothing mounted and the real section was never reached.
       section: sections.find((s) => {
         const img = s.querySelector('.section-background img');
-        return img && scene.match.test(img.currentSrc || img.src || '');
+        if (!img || !scene.match.test(img.currentSrc || img.src || '')) return false;
+        return !!s.querySelector('.content-wrapper')
+          && s.getBoundingClientRect().height > 0;
       }),
     }))
     .filter((x) => x.section);
