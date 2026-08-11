@@ -107,9 +107,14 @@
     addEventListener('DOMContentLoaded', function () {
       var el = document.getElementById('header');
       var prev = window.scrollY;
+      // Height cached deliberately. Reading offsetHeight inside the scroll
+      // handler forces a layout on every scroll event, which showed up as ~90
+      // forced layouts across a 90-frame scroll and buried the add-on's own cost
+      // in the measurements.
+      var headerH = el.offsetHeight;
       addEventListener('scroll', function () {
         var y = window.scrollY;
-        el.classList.toggle('is-hidden', y > prev && y > el.offsetHeight);
+        el.classList.toggle('is-hidden', y > prev && y > headerH);
         prev = y;
       }, { passive: true });
     });

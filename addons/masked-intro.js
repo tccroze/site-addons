@@ -280,7 +280,6 @@ defineAddon('masked-intro', () => {
       --taro-fx: 0.12;                   /* read back in JS; never let these drift */
       position: absolute; inset: 0;
       overflow: hidden;
-      filter: drop-shadow(0 5px 9px rgba(48,36,22,0.20));
     }
     /* Fills the strip the header vacates when it hides itself on scroll-down.
        The print holds still rather than following the header — that movement was
@@ -319,6 +318,8 @@ defineAddon('masked-intro', () => {
       -webkit-mask-size: 100% 100%;         mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat;       mask-repeat: no-repeat;
     }
+    .taro-intro__sheet--back { z-index: 1; }
+    .taro-intro__sheet--fore { z-index: 3; }
     .taro-intro__layer {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
@@ -398,12 +399,14 @@ defineAddon('masked-intro', () => {
     <div class="taro-intro__stage">
       <div class="taro-intro__cap" aria-hidden="true"></div>
       <div class="taro-intro__frame">
-        <div class="taro-intro__sheet">
+        <div class="taro-intro__sheet taro-intro__sheet--back">
           <img class="taro-intro__layer taro-intro__back" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
-          <div class="taro-intro__type">
-            <h1 class="taro-intro__word">${WORDMARK}</h1>
-            <p class="taro-intro__sub">${SUBLINE}</p>
-          </div>
+        </div>
+        <div class="taro-intro__type">
+          <h1 class="taro-intro__word">${WORDMARK}</h1>
+          <p class="taro-intro__sub">${SUBLINE}</p>
+        </div>
+        <div class="taro-intro__sheet taro-intro__sheet--fore">
           <img class="taro-intro__layer taro-intro__fore" src="${PHOTO}" srcset="${PHOTO_SET}" sizes="${PHOTO_SIZES}" alt="" aria-hidden="true">
         </div>
         <svg class="taro-intro__deckle" preserveAspectRatio="none" aria-hidden="true">
@@ -422,7 +425,7 @@ defineAddon('masked-intro', () => {
   const type = wrap.querySelector('.taro-intro__type');
   const word = wrap.querySelector('.taro-intro__word');
   const sub = wrap.querySelector('.taro-intro__sub');
-  const sheet = wrap.querySelector('.taro-intro__sheet');
+  const sheets = [...wrap.querySelectorAll('.taro-intro__sheet')];
   const deckle = wrap.querySelector('.taro-intro__deckle');
   const fringe = wrap.querySelector('.taro-intro__fringe');
 
@@ -577,8 +580,7 @@ defineAddon('masked-intro', () => {
       deckleFilter('d') +
       `<path d="${d}" fill="#fff" filter="url(#d)"/></svg>`;
     const url = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
-    sheet.style.webkitMaskImage = url;
-    sheet.style.maskImage = url;
+    sheets.forEach((el) => { el.style.webkitMaskImage = url; el.style.maskImage = url; });
 
     // Same geometry, stroked instead of filled. The sides and top of the path
     // run outside the frame, so overflow: hidden leaves only the torn edge lit.
