@@ -97,6 +97,16 @@ defineAddon('dune-reveal', () => {
     }
     .taro-dune-content { will-change: transform; }
 
+    /* More sky above the dune, so the copy has further to travel before the
+       landscape swallows it. The photograph already shows its full height in
+       this section, so there is no more sky to uncover by re-cropping — the only
+       lever is a taller section, which scales the picture up and carries the
+       ridge further down the frame while the copy stays near the top. Desktop
+       only: the phone layout stacks and doesn't have the problem. */
+    @media (min-width: 768px) {
+      .taro-dune-section { min-height: min(1100px, 76vw); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .taro-dune-content { transform: none !important; }
     }
@@ -110,6 +120,7 @@ defineAddon('dune-reveal', () => {
     '<div class="taro-dune__tint"></div>';
   section.appendChild(layer);
   content.classList.add('taro-dune-content');
+  section.classList.add('taro-dune-section');
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 

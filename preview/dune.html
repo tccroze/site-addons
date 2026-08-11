@@ -15,7 +15,10 @@
     body { margin: 0; background: var(--siteBackgroundColor); font: 16px/1.6 -apple-system, sans-serif; }
     .spacer { height: 90vh; display: grid; place-items: center; color: #9a927c; letter-spacing: .3em; font-size: .7rem; }
 
-    section.page-section { position: relative; height: 886px; overflow: hidden; }
+    /* Sized the way the live section is: no fixed height, content top-anchored
+       inside 72px padding, and overflow VISIBLE — the fixed height and hidden
+       overflow here are what hid a horizontal overflow bug from this preview. */
+    section.page-section { position: relative; min-height: 965px; padding: 72px 0; overflow: visible; }
     .section-background { position: absolute; inset: 0; }
     .section-background img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; }
     .section-background-overlay { position: absolute; inset: 0; background: rgb(36,50,48); opacity: .21; }
@@ -23,7 +26,7 @@
     .fluid-engine { display: grid; }
     .fe-block { z-index: 1; padding: 0 58px; }
 
-    .fe-block h2 { margin: 72px 0 0; font-size: 4.4rem; line-height: 1.05; letter-spacing: -.01em; color: #f6eee0; }
+    .fe-block h2 { margin: 0; font-size: 4.4rem; line-height: 1.05; letter-spacing: -.01em; color: #f6eee0; }
     .fe-block p  { margin: 42px 0 0; font-size: 1.15rem; color: #f6eee0; }
     .fe-block .btn {
       display: inline-block; margin: 52px 0 0; padding: .85rem 2.6rem; border: 2px solid #f6eee0;
