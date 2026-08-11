@@ -290,6 +290,7 @@ defineAddon('masked-intro', () => {
       display: flex; flex-direction: column; align-items: center;
       text-align: center;
       pointer-events: none;
+      will-change: transform, opacity;
       text-shadow: 0 2px 34px rgba(0,0,0,0.26);
     }
     /* Set on the elements, not inherited from the box above. Squarespace paints
@@ -475,7 +476,6 @@ defineAddon('masked-intro', () => {
   let headerEls = [];
   let headerLayoutH = 0;
   let pinnedAt = -1;
-  const watched = new WeakSet();
 
   const findHeader = () => {
     headerEls = [...document.querySelectorAll('#header, header.header, .sqs-announcement-bar-dropzone')]
@@ -486,44 +486,23 @@ defineAddon('masked-intro', () => {
           && (cs.position === 'fixed' || cs.position === 'sticky');
       });
     headerLayoutH = headerEls.reduce((m, el) => Math.max(m, el.offsetHeight), 0);
-    // The header slides in and out over 140ms, and that transition outlives the
-    // scroll event that started it. Without this the pin is left wherever the
-    // last scroll frame saw the header mid-slide, and the print sits stranded a
-    // header's height down the page with nothing above it.
-    headerEls.forEach((el) => {
-      if (watched.has(el)) return;
-      watched.add(el);
-      el.addEventListener('transitionrun', followHeader, { passive: true });
-      el.addEventListener('transitionend', followHeader, { passive: true });
-    });
   };
 
   /**
-   * Track the header for the length of its slide. It animates over about 140ms,
-   * which outlives the scroll event that set it off, so sampling only on scroll
-   * left the print parked wherever the last frame happened to catch the header
-   * and then snapping across when the transition ended — the jolt you feel on
-   * the way back up. Following it frame by frame turns that into a slide.
+   * Pin below the header's full height, and then hold still.
+   *
+   * This used to track the header's *visible* edge, so the print rode up as the
+   * header hid itself on the way down and dropped back as it returned. That was
+   * faithful to the header, and it was the jerkiest thing in here: a header's
+   * height of travel every time the visitor changed direction, layered on top of
+   * the scrolling they were already doing. Holding still costs nothing that can
+   * be seen, because what the header uncovers is the page's own background in
+   * the same cream — all that actually disappears is the navigation.
    */
-  let following = false;
-  const followHeader = () => {
-    if (following) return;
-    following = true;
-    const until = performance.now() + 420;
-    const step = () => {
-      syncHeaderPin();
-      if (performance.now() < until) requestAnimationFrame(step);
-      else following = false;
-    };
-    requestAnimationFrame(step);
-  };
-
   const syncHeaderPin = () => {
-    const px = Math.max(0, Math.round(
-      headerEls.reduce((m, el) => Math.max(m, el.getBoundingClientRect().bottom), 0)));
-    if (px === pinnedAt) return;
-    pinnedAt = px;
-    wrap.style.setProperty('--taro-header-h', `${px}px`);
+    if (headerLayoutH === pinnedAt) return;
+    pinnedAt = headerLayoutH;
+    wrap.style.setProperty('--taro-header-h', `${headerLayoutH}px`);
   };
 
   /**
@@ -550,36 +529,78 @@ defineAddon('masked-intro', () => {
     sheet.style.maskImage = url;
   };
 
-  const draw = () => {
-    syncHeaderPin();
-    // Progress has to run from where the visitor actually starts to where the
-    // stage unpins, and it cannot be read off the sticky offset. The header
-    // overlays the page rather than pushing it down, so the wrapper begins at
-    // the very top of the document and sticky has already clamped the stage a
-    // header's height into its travel before a single pixel has been scrolled —
-    // measuring from there starts the sink around a sixth of the way in.
-    const y = window.scrollY || 0;
-    const travel = wrap.offsetHeight - stage.clientHeight;
-    const docTop = wrap.getBoundingClientRect().top + y;   // constant across scroll
-    const start = Math.max(0, docTop - headerLayoutH);
-    const span = docTop - headerLayoutH + travel - start;
-    const p = span > 0 ? Math.max(0, Math.min(1, (y - start) / span)) : 0;
+  // Geometry that only changes on relayout, cached so the scroll path never
+  // touches it. Reading a bounding rect or offsetHeight inside the animation
+  // makes the browser flush layout mid-frame, and that is where stutter comes
+  // from — every frame below this line is writes only.
+  let geoTravel = 0, geoDocTop = 0, geoFrameH = 0;
 
-    // The type sinks and grows; the ridge in front of it does the hiding.
-    const sink = SINK * p * p * frame.clientHeight;
-    type.style.transform = `translateY(${sink.toFixed(1)}px) scale(${(1 + (GROW - 1) * p).toFixed(4)})`;
-    type.style.opacity = p > 0.86 ? Math.max(0, 1 - (p - 0.86) / 0.14).toFixed(3) : 1;
-
-    // Slow push-out for depth. Kept small: every extra percent here is another
-    // percent of upscaling on an image that has none to spare.
-    back.style.transform = fore.style.transform = `scale(${(1.03 - 0.03 * p).toFixed(4)})`;
+  const measure = () => {
+    geoFrameH = frame.clientHeight;
+    geoTravel = wrap.offsetHeight - stage.clientHeight;
+    geoDocTop = wrap.getBoundingClientRect().top + (window.scrollY || 0);
   };
 
-  let queued = false;
+  /** Where the scroll position says the sink should be, 0..1. */
+  const targetProgress = () => {
+    // Taken from where the visitor actually starts, not off the sticky offset:
+    // the header overlays the page rather than pushing it down, so the wrapper
+    // begins at the very top of the document and sticky has already clamped the
+    // stage a header's height into its travel before anything has moved.
+    const y = window.scrollY || 0;
+    const start = Math.max(0, geoDocTop - headerLayoutH);
+    const span = geoDocTop - headerLayoutH + geoTravel - start;
+    return span > 0 ? Math.max(0, Math.min(1, (y - start) / span)) : 0;
+  };
+
+  const render = (p) => {
+    // The type sinks and grows; the ridge in front of it does the hiding. This
+    // is the only thing written per frame — the photograph itself no longer
+    // moves. It used to carry a 3% push-out, which meant scaling two full-width
+    // images inside a masked layer on every frame and re-rasterising the mask
+    // with them, for a depth cue barely anyone would notice.
+    const sink = SINK * p * p * geoFrameH;
+    type.style.transform =
+      `translate3d(0, ${sink.toFixed(2)}px, 0) scale(${(1 + (GROW - 1) * p).toFixed(4)})`;
+    type.style.opacity = p > 0.86 ? Math.max(0, 1 - (p - 0.86) / 0.14).toFixed(3) : 1;
+  };
+
+  /**
+   * The sink chases the scroll position instead of being welded to it: each
+   * frame closes a fixed proportion of whatever distance is left. A wheel notch
+   * or a trackpad flick arrives as a jump, and mapping that straight onto the
+   * transform makes the type move in the same steps the input did, which is what
+   * reads as clunky. Easing into the target turns those steps into a glide, for
+   * about a tenth of a second of lag against the scrollbar.
+   *
+   * The per-frame factor is derived from how long the frame actually took, so a
+   * 120Hz display eases at the same rate as 60Hz rather than twice as fast.
+   */
+  const EASE = 0.16;                  // proportion of the gap closed per 60Hz frame
+  const FRAME = 1000 / 60;
+  let shownP = 0, lastFrame = 0, raf = 0;
+
+  const step = (now) => {
+    const target = targetProgress();
+    const dt = lastFrame ? Math.min(80, now - lastFrame) : FRAME;
+    lastFrame = now;
+    shownP += (target - shownP) * (1 - Math.pow(1 - EASE, dt / FRAME));
+    if (Math.abs(target - shownP) < 0.0004) shownP = target;
+    render(shownP);
+    raf = shownP === target ? 0 : requestAnimationFrame(step);
+  };
+
+  /** Snap straight to the scroll position, no easing — for layout changes. */
+  const draw = () => {
+    shownP = targetProgress();
+    render(shownP);
+  };
+
   const request = () => {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(() => { queued = false; draw(); });
+    if (reduced.matches) { draw(); return; }
+    if (raf) return;
+    lastFrame = 0;
+    raf = requestAnimationFrame(step);
   };
 
   /**
@@ -619,6 +640,7 @@ defineAddon('masked-intro', () => {
     fitType(g);
     layoutSheet();
     setOverlap();
+    measure();          // after setOverlap: it is what sizes the wrapper
     draw();
   };
 
