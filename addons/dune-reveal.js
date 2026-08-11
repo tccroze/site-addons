@@ -97,6 +97,26 @@ defineAddon('dune-reveal', () => {
     }
     .taro-dune-content { will-change: transform; }
 
+    /* The call to action is lifted out of the sinking copy and parked at the
+       foot of the photograph. Everything else is meant to be swallowed by the
+       landscape; a button that disappears is just a button you cannot press.
+       Above the cut-out at z-index 3, so the dune never covers it either. */
+    .taro-dune-cta {
+      position: absolute; left: 0; right: 0;
+      bottom: clamp(28px, 5vh, 64px);
+      z-index: 5;
+      display: flex; justify-content: center;
+      pointer-events: none;          /* the strip must not swallow clicks */
+    }
+    .taro-dune-cta > * {
+      pointer-events: auto;
+      /* It came out of a grid, so its placement and stretch have to be undone. */
+      position: static;
+      grid-area: auto;
+      width: auto; max-width: min(92vw, 520px);
+      margin: 0; padding: 0;
+    }
+
     /* More sky above the dune, so the copy has further to travel before the
        landscape swallows it. The photograph already shows its full height in
        this section, so there is no more sky to uncover by re-cropping — the only
@@ -121,6 +141,24 @@ defineAddon('dune-reveal', () => {
   section.appendChild(layer);
   content.classList.add('taro-dune-content');
   section.classList.add('taro-dune-section');
+
+  // Lift the button clear of the sinking copy. It is moved rather than cloned so
+  // there is only ever one of it in the document — a duplicate would be read out
+  // twice and would drift out of sync if the block is edited in Squarespace.
+  // Fluid Engine gives every block its own .fe-block, so the button has one to
+  // itself. Matching on "contains a link" alone is not enough — if the copy ever
+  // shares a block with the button it would carry the whole lot down here, which
+  // is exactly what happened first time. Requiring that the block has no heading
+  // and no paragraph makes that impossible; if nothing matches, the button is
+  // simply left where it is.
+  const buttonBlock = [...section.querySelectorAll('.fe-block')].find(
+    (b) => b.querySelector('a') && !b.querySelector('h1, h2, h3, h4, p'));
+  if (buttonBlock) {
+    const cta = document.createElement('div');
+    cta.className = 'taro-dune-cta';
+    cta.appendChild(buttonBlock);        // moved, not cloned
+    section.appendChild(cta);
+  }
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
