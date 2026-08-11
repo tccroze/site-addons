@@ -28,7 +28,11 @@ const MASK = new URL('../assets/deadvlei-mask.png', import.meta.url).href;
 // starts around 8% down and the dune ridge sits at about 46%, so it needs a good
 // third of the section to get behind it.
 const SINK = 0.42;
-const GROW = 1.05;        // a touch of scale, so it reads as going away not just down
+// No scale here, deliberately. The element being moved is Squarespace's own
+// content wrapper, which is the full width of the page: scaling it up by even a
+// few percent pushes it past the viewport and the document grows a horizontal
+// scrollbar, which shows up as a dead strip down the side. Only the translate is
+// safe, and the depth it was buying was barely visible anyway.
 // Where the travel starts and ends, in viewport heights of the section's top.
 // Finishing at -0.5 rather than 0 means the copy is only fully swallowed once the
 // section is half gone — before that there is always something left to read.
@@ -123,8 +127,7 @@ defineAddon('dune-reveal', () => {
   };
 
   const render = (p) => {
-    content.style.transform =
-      `translate3d(0, ${(SINK * p * p * sectionH).toFixed(2)}px, 0) scale(${(1 + (GROW - 1) * p).toFixed(4)})`;
+    content.style.transform = `translate3d(0, ${(SINK * p * p * sectionH).toFixed(2)}px, 0)`;
   };
 
   let shownP = 0, lastFrame = 0, raf = 0;
