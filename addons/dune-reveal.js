@@ -45,7 +45,12 @@ const SCENES = [
 // of the window, so it was going before anyone could read it. It now holds still
 // until the section's top has climbed to a third of the way up, and finishes only
 // once the section is three quarters gone.
-const FROM = 0.30, TO = -0.75;
+const FROM = 0.30, TO = -1.0;
+// The copy is raised before it starts falling. Squarespace centres it in a very
+// tall section, which puts it low on the screen and close to the ridge — so it
+// had little room to travel and was gone almost as soon as it was legible.
+// Lifting it first buys both: it reads higher up, and it has further to fall.
+const LIFT = 0.14;        // of the viewport height
 const EASE = 0.16;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
@@ -98,9 +103,16 @@ defineAddon('dune-reveal', () => {
          simply covers the copy, which is exactly what it did at first. */
       -webkit-mask-image: var(--taro-fg-mask);   mask-image: var(--taro-fg-mask);
       -webkit-mask-mode: alpha;                  mask-mode: alpha;
-      -webkit-mask-size: cover;                  mask-size: cover;
+      /* Sized and placed in pixels, computed from the photograph's own frame —
+         not by mask-size: cover. Both are "cover", but they are fitted from
+         different intrinsic sizes: the mask is 2000x1333 and the picture 1500x1000,
+         and the browser resolves the two independently. On a tall section that
+         drifted the mask 41px above the picture, so the cut-out silhouette was
+         lifted clear of the figures it was cut from and printed a ghost of them
+         against the sky. Driving both off the same numbers cannot drift. */
+      -webkit-mask-size: var(--taro-fg-size);    mask-size: var(--taro-fg-size);
       -webkit-mask-repeat: no-repeat;            mask-repeat: no-repeat;
-      -webkit-mask-position: var(--taro-fg-focal); mask-position: var(--taro-fg-focal);
+      -webkit-mask-position: var(--taro-fg-pos); mask-position: var(--taro-fg-pos);
     }
     .taro-dune__photo {
       position: absolute; inset: 0;
@@ -179,6 +191,8 @@ defineAddon('dune-reveal', () => {
       `<img class="taro-dune__photo" src="${bgImg.currentSrc || bgImg.src || bgImg.getAttribute('data-src') || ''}" alt="">` +
       '<div class="taro-dune__tint"></div>';
     section.appendChild(layer);
+    const photo = layer.querySelector('.taro-dune__photo');
+    if (!photo.complete) photo.addEventListener('load', () => relayout(), { once: true });
 
     content.classList.add('taro-dune-content');
     if (scene.taller) section.classList.add('taro-dune-section--taller');
@@ -200,10 +214,29 @@ defineAddon('dune-reveal', () => {
     // Cached on relayout, never read per frame: a bounding rect inside the scroll
     // path forces a layout flush mid-animation, which is what makes this kind of
     // thing feel steppy.
-    let travel = 0;
+    // Percentages out of the focal point, so the mask can be placed with the
+    // same arithmetic object-fit uses rather than a second interpretation of it.
+    const pct = (focal.match(/-?[\d.]+%/g) || ['50%', '50%'])
+      .map((v) => parseFloat(v) / 100);
+    const fx = pct[0] ?? 0.5, fy = pct[1] ?? 0.5;
+
+    let travel = 0, lift = 0;
     const measure = () => {
-      travel = Math.min(scene.sink * section.getBoundingClientRect().height,
-                        0.5 * (window.innerHeight || 0));
+      const box = section.getBoundingClientRect();
+      const vh = window.innerHeight || 0;
+      travel = Math.min(scene.sink * box.height, 0.5 * vh);
+      lift = LIFT * vh;
+
+      // Reproduce object-fit: cover for the photograph, then hand the mask the
+      // very same box. naturalWidth is the density-corrected intrinsic size,
+      // which is exactly what object-fit itself uses.
+      const iw = photo.naturalWidth || 1500, ih = photo.naturalHeight || 1000;
+      if (!box.width || !box.height || !iw || !ih) return;
+      const scale = Math.max(box.width / iw, box.height / ih);
+      const dw = iw * scale, dh = ih * scale;
+      layer.style.setProperty('--taro-fg-size', `${dw.toFixed(2)}px ${dh.toFixed(2)}px`);
+      layer.style.setProperty('--taro-fg-pos',
+        `${((box.width - dw) * fx).toFixed(2)}px ${((box.height - dh) * fy).toFixed(2)}px`);
     };
 
     const targetProgress = () => {
@@ -218,7 +251,10 @@ defineAddon('dune-reveal', () => {
     // percent pushes it past the viewport and the document grows a horizontal
     // scrollbar, which reads as a dead strip down the side.
     const render = (p) => {
-      content.style.transform = `translate3d(0, ${(travel * p * p).toFixed(2)}px, 0)`;
+      // Starts at -lift and ends at +travel: raised while it is being read, then
+      // carried down behind the ridge.
+      const y = travel * p * p - lift * (1 - p);
+      content.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
     };
 
     let shownP = 0, lastFrame = 0, raf = 0;
