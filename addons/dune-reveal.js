@@ -44,12 +44,12 @@ const SCENES = [
 ];
 
 // Where the travel starts and ends, in viewport heights of the section's top.
-// Nothing moves until the section is properly on screen: starting at 0.75 meant
-// the sink was already underway while the copy was still arriving from the bottom
-// of the window, so it was going before anyone could read it. It now holds still
-// until the section's top has climbed to a third of the way up, and finishes only
-// once the section is three quarters gone.
-const FROM = 0.30, TO = -1.0;
+// Nothing moves until the section is properly on screen. At 0.75 the sink was
+// already underway while the copy was still arriving from the bottom of the
+// window — it was going before anyone could read it. It now holds still for the
+// whole time the section is crossing the screen, and only begins once its top
+// nears the top of the window, finishing when the section is well past.
+const FROM = 0.10, TO = -1.2;
 const EASE = 0.16;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
@@ -128,6 +128,12 @@ defineAddon('dune-reveal', () => {
       opacity: var(--taro-fg-tint-o);
     }
     .taro-dune-content { will-change: transform; }
+
+    /* Centred. The blocks are grid items already spanning the section, so
+       centring the text inside them is enough and nothing has to be moved. */
+    .taro-dune-content .fe-block,
+    .taro-dune-content .sqs-html-content,
+    .taro-dune-content .sqs-block-content { text-align: center; }
 
     /* More sky above the ridge, so the copy has further to travel before the
        landscape swallows it. Only where the photograph already shows its full
