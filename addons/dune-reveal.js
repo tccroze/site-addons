@@ -35,8 +35,12 @@ const ASSET = (name) => new URL(`../assets/${name}`, import.meta.url).href;
  * way to buy more room once re-cropping has nothing left to give.
  */
 const SCENES = [
-  { match: /deadvlei/i, mask: 'deadvlei-mask.png', sink: 0.42, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-mask.png', sink: 0.30, taller: false },
+  // `lift` raises the copy before it starts falling. The print section already
+  // holds its copy near the top of the picture, so lifting it there only pushed
+  // it out under the header — it is the dune section, where Squarespace centres
+  // the copy in a very tall section, that needs the room.
+  { match: /deadvlei/i, mask: 'deadvlei-mask.png', sink: 0.42, lift: 0, taller: true },
+  { match: /\bdune\.jpg/i, mask: 'dune-mask.png', sink: 0.30, lift: 0.14, taller: false },
 ];
 
 // Where the travel starts and ends, in viewport heights of the section's top.
@@ -46,11 +50,6 @@ const SCENES = [
 // until the section's top has climbed to a third of the way up, and finishes only
 // once the section is three quarters gone.
 const FROM = 0.30, TO = -1.0;
-// The copy is raised before it starts falling. Squarespace centres it in a very
-// tall section, which puts it low on the screen and close to the ridge — so it
-// had little room to travel and was gone almost as soon as it was legible.
-// Lifting it first buys both: it reads higher up, and it has further to fall.
-const LIFT = 0.14;        // of the viewport height
 const EASE = 0.16;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
@@ -225,7 +224,7 @@ defineAddon('dune-reveal', () => {
       const box = section.getBoundingClientRect();
       const vh = window.innerHeight || 0;
       travel = Math.min(scene.sink * box.height, 0.5 * vh);
-      lift = LIFT * vh;
+      lift = (scene.lift || 0) * vh;
 
       // Reproduce object-fit: cover for the photograph, then hand the mask the
       // very same box. naturalWidth is the density-corrected intrinsic size,
