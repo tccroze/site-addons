@@ -187,11 +187,21 @@ defineAddon('dune-reveal', () => {
       overlay ? getComputedStyle(overlay).backgroundColor : 'transparent');
     layer.style.setProperty('--taro-fg-tint-o', overlay ? getComputedStyle(overlay).opacity : '0');
     layer.innerHTML =
-      `<img class="taro-dune__photo" src="${bgImg.currentSrc || bgImg.src || bgImg.getAttribute('data-src') || ''}" alt="">` +
+      `<img class="taro-dune__photo" alt="">` +
       '<div class="taro-dune__tint"></div>';
     section.appendChild(layer);
     const photo = layer.querySelector('.taro-dune__photo');
+    // Take the background's srcset and sizes verbatim, so the copy resolves to
+    // exactly the same variant. Left to itself it picked a different one — the
+    // background reported an intrinsic 1970x1313 on a retina screen against the
+    // copy's 2500x1667 — and two images fitted with cover from different
+    // intrinsic sizes land in slightly different places, which is what prints a
+    // ghost of the figures beside the real ones.
+    if (bgImg.srcset) photo.srcset = bgImg.srcset;
+    if (bgImg.sizes) photo.sizes = bgImg.sizes;
+    photo.src = bgImg.currentSrc || bgImg.src || bgImg.getAttribute('data-src') || '';
     if (!photo.complete) photo.addEventListener('load', () => relayout(), { once: true });
+    if (!bgImg.complete) bgImg.addEventListener('load', () => relayout(), { once: true });
 
     content.classList.add('taro-dune-content');
     if (scene.taller) section.classList.add('taro-dune-section--taller');
@@ -226,10 +236,12 @@ defineAddon('dune-reveal', () => {
       travel = Math.min(scene.sink * box.height, 0.5 * vh);
       lift = (scene.lift || 0) * vh;
 
-      // Reproduce object-fit: cover for the photograph, then hand the mask the
-      // very same box. naturalWidth is the density-corrected intrinsic size,
-      // which is exactly what object-fit itself uses.
-      const iw = photo.naturalWidth || 1500, ih = photo.naturalHeight || 1000;
+      // Reproduce object-fit: cover, then hand the mask the very same box.
+      // Measured from the BACKGROUND image, because that is the picture the
+      // visitor sees underneath; naturalWidth is the density-corrected intrinsic
+      // size, which is exactly what object-fit itself uses.
+      const iw = bgImg.naturalWidth || photo.naturalWidth || 1500;
+      const ih = bgImg.naturalHeight || photo.naturalHeight || 1000;
       if (!box.width || !box.height || !iw || !ih) return;
       const scale = Math.max(box.width / iw, box.height / ih);
       const dw = iw * scale, dh = ih * scale;
