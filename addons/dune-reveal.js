@@ -136,11 +136,17 @@ defineAddon('dune-reveal', () => {
     }
     .taro-dune-content { will-change: transform; }
 
-    /* Centred. The blocks are grid items already spanning the section, so
-       centring the text inside them is enough and nothing has to be moved. */
-    .taro-dune-content .fe-block,
+    /* Centred — as a pair, not each line inside its own box. Fluid Engine gives
+       every block its own grid span, so centring the text alone left the two
+       lines centred on different axes and reading as ragged. Spanning both
+       blocks across the whole grid first gives them a common centre line. */
+    .taro-dune-content .fe-block {
+      grid-column: 1 / -1 !important;
+      text-align: center;
+    }
     .taro-dune-content .sqs-html-content,
-    .taro-dune-content .sqs-block-content { text-align: center; }
+    .taro-dune-content .sqs-block-content,
+    .taro-dune-content .sqs-block-button { text-align: center; }
 
     /* More sky above the ridge, so the copy has further to travel before the
        landscape swallows it. Only where the photograph already shows its full
