@@ -142,6 +142,11 @@ defineAddon('dune-reveal', () => {
        blocks across the whole grid first gives them a common centre line. */
     .taro-dune-content .fe-block {
       grid-column: 1 / -1 !important;
+      /* Gutters matter here: Squarespace scales this type to fit its block, so
+         spanning the full grid without them made the text grow to the section's
+         full width and run off both edges. The padding gives the scaler a
+         narrower box, which is what keeps the lines inside the frame. */
+      padding-inline: clamp(24px, 7vw, 140px);
       text-align: center;
     }
     .taro-dune-content .sqs-html-content,
