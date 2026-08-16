@@ -216,7 +216,13 @@ defineAddon('dune-reveal', () => {
     const measure = () => {
       const vh = window.innerHeight || 0;
       travel = Math.min(scene.sink * section.getBoundingClientRect().height, 0.5 * vh);
-      lift = (scene.lift || 0) * vh;
+      // Desktop only. The intro's torn paper edge hangs over the top of this
+      // section by design, and on a phone that overhang reaches far enough down
+      // that raising the copy tucked its first line underneath the tear — you
+      // could read "ART" and nothing else. There is no shortage of sky on a
+      // phone anyway: the section is taller than the viewport, so the copy has
+      // plenty of travel without being lifted into the paper.
+      lift = window.innerWidth >= 768 ? (scene.lift || 0) * vh : 0;
 
       // Reproduce object-fit: cover on the background photograph, then place the
       // mask over the rectangle it actually draws into. Measured from the image
