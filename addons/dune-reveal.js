@@ -7,32 +7,38 @@
 // resolved images to land on precisely the same pixel, and any disagreement
 // prints a second, offset copy of whatever stands against the sky.
 //
-// So there is no second photograph. The *text* carries the cut-out: each block
-// that should sink is masked with the inverse silhouette — opaque across the
-// sky, transparent everywhere the landscape stands — so the copy is erased as it
+// So there is no second photograph. The *text* carries the cut-out: its
+// container is masked with the inverse silhouette — opaque across the sky,
+// transparent everywhere the landscape stands — so the copy is erased as it
 // descends past the ridge. Squarespace's own background is the only image on
 // screen and nothing can misregister against it.
 //
-// Three things this file has learned the hard way:
+// Four things this file has learned the hard way:
 //
-//   1. A mask travels with its own element. So the mask goes on the block and
-//      the movement goes on the block's child — mask the thing that slides and
-//      the sky slides with it, occluding nothing.
+//   1. A mask travels with its own element. So the mask goes on the content
+//      wrapper, which never moves, and the travel goes on the blocks inside it.
+//      Mask the thing that slides and the sky slides with it, occluding nothing.
 //
-//   2. Where a block sits is not stable after load. Squarespace's scaled-text
-//      sizer re-fits the copy once it has measured it, the webfont swaps, and
-//      lifting the button out of the grid drops a row. None of that resizes the
-//      section, so a placement measured once at load quietly slides off the
-//      picture — and a mask slid up by a couple of hundred pixels puts the men's
-//      silhouettes in open sky, where they cut people-shaped holes out of the
-//      letters. It is reconciled every frame now, and written only when it has
-//      actually drifted.
+//   2. The mask must be worn by something that spans the whole section.
+//      mask-clip is border-box by default, so masking each block individually
+//      clipped its copy at the block's own edge the moment it travelled outside
+//      — a flat horizontal cut nowhere near the ridge.
 //
-//   3. Only the copy that is meant to sink may wear a mask. Masking the whole
-//      content wrapper also erased the copy sitting further down the section —
-//      "YOUR STORY DESERVES TO BE TOLD" and "Stills. Motion. Paint." were below
-//      the ridge line, so they were transparent from the moment the page loaded
-//      and no amount of scrolling brought them back.
+//   3. Where the copy sits is not stable after load. Squarespace's scaled-text
+//      sizer re-fits it once it has measured it, the webfont swaps, and lifting
+//      the button out of the grid drops a row. None of that resizes the section,
+//      so a placement measured once at load quietly slides off the picture — and
+//      a mask slid up by a couple of hundred pixels puts the men's silhouettes
+//      in open sky, where they cut people-shaped holes out of the letters. It is
+//      reconciled every frame now, and written only when it has actually drifted.
+//
+//   4. Only the copy that is meant to sink may be erased. The wrapper also holds
+//      copy further down the section — "YOUR STORY DESERVES TO BE FELT" and
+//      "Stills. Motion. Paint." — which sits below the ridge line and was
+//      therefore transparent from the moment the page loaded, with no amount of
+//      scrolling bringing it back. A second, opaque mask layer covers that band
+//      so it is always painted, and the travel is capped so the sinking copy
+//      never lands in it.
 //
 // Nothing here is destructive: no markup is added inside the section apart from
 // the CTA being reparented, and every change is a class or a custom property.
@@ -77,7 +83,7 @@ const SCENES = [
 // window is now the section's own scroll-through — how far it can travel while
 // still covering the viewport — so the descent always completes in view.
 const SPAN_MIN = 0.55;    // ...but never quicker than this, in viewport heights
-const BURY = 0.07;        // clearance past the ridge, in viewport heights
+const BURY = 0.06;        // clearance past the ridge, in viewport heights
 const EASE = 0.16;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
@@ -98,7 +104,7 @@ const axis = (token, free) => {
 
 defineAddon('dune-reveal', () => {
   if (location.pathname !== '/') return;
-  if (document.querySelector('.taro-dune-block')) return;
+  if (document.querySelector('.taro-dune-wrap')) return;
 
   const sections = [...document.querySelectorAll('article#sections > section')];
   const found = SCENES
@@ -128,20 +134,37 @@ defineAddon('dune-reveal', () => {
   if (!found.length) return;
 
   css('dune-reveal', `
-    /* The wearer of the cut-out: one masked block per line of sinking copy,
-       each placed in pixels computed from the background photograph's own drawn
-       rectangle so the sky in the mask sits exactly over the sky in the picture.
-       It must not move — the travel goes on its child. */
-    .taro-dune-block {
+    /* The wearer of the cut-out. It spans the section and never moves: the
+       travel below is applied to the blocks inside it, because a mask travels
+       with its own element and a sky that slides with the text occludes nothing.
+       Two layers, unioned by the default add compositing:
+
+         1. the silhouette, placed in pixels computed from the photograph's own
+            drawn rectangle so its sky sits exactly over the sky in the picture;
+         2. a plain opaque band over the copy that lives further down the
+            section, which is below the ridge line and would otherwise be
+            transparent from the moment the page loaded. */
+    .taro-dune-wrap {
       /* The mask carries its cut-out in the ALPHA channel, and CSS mask-image
          reads alpha by default — a plain greyscale PNG is fully opaque here. */
-      -webkit-mask-image: var(--taro-sky);   mask-image: var(--taro-sky);
-      -webkit-mask-mode: alpha;              mask-mode: alpha;
-      -webkit-mask-size: var(--taro-sky-size);      mask-size: var(--taro-sky-size);
-      -webkit-mask-position: var(--taro-sky-pos);   mask-position: var(--taro-sky-pos);
-      -webkit-mask-repeat: no-repeat;        mask-repeat: no-repeat;
+      -webkit-mask-image: var(--taro-sky), var(--taro-keep);
+              mask-image: var(--taro-sky), var(--taro-keep);
+      -webkit-mask-mode: alpha, alpha;        mask-mode: alpha, alpha;
+      -webkit-mask-size: var(--taro-sky-size), var(--taro-keep-size);
+              mask-size: var(--taro-sky-size), var(--taro-keep-size);
+      -webkit-mask-position: var(--taro-sky-pos), var(--taro-keep-pos);
+              mask-position: var(--taro-sky-pos), var(--taro-keep-pos);
+      -webkit-mask-repeat: no-repeat, no-repeat;
+              mask-repeat: no-repeat, no-repeat;
+      -webkit-mask-composite: source-over, source-over;
+              mask-composite: add, add;
+      /* Defaults, so a scene with nothing to protect simply gets an empty band
+         rather than an invalid mask-image list (which would blank the copy). */
+      --taro-keep: linear-gradient(#000, #000);
+      --taro-keep-size: 0 0;
+      --taro-keep-pos: 0 0;
     }
-    .taro-dune-block > * { will-change: transform; }
+    .taro-dune-move { will-change: transform; }
 
     /* Centred — as a pair, not each line inside its own box. Fluid Engine gives
        every block its own grid span, so centring the text alone left the two
@@ -170,8 +193,8 @@ defineAddon('dune-reveal', () => {
     }
 
     /* The call to action is lifted out of the sinking copy and parked at the
-       foot of the photograph — outside any masked block, so the landscape never
-       eats it. Everything else is meant to be swallowed; a button that
+       foot of the photograph — outside the masked wrapper, so the landscape
+       never eats it. Everything else is meant to be swallowed; a button that
        disappears is just a button you cannot press. */
     .taro-dune-cta {
       position: absolute; left: 0; right: 0;
@@ -190,7 +213,7 @@ defineAddon('dune-reveal', () => {
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .taro-dune-block > * { transform: none !important; }
+      .taro-dune-move { transform: none !important; }
     }
   `);
 
@@ -203,6 +226,8 @@ defineAddon('dune-reveal', () => {
     if (!bgImg || !wrapper || !content) return;
 
     const maskUrl = ASSET(scene.mask);
+    wrapper.classList.add('taro-dune-wrap');
+    wrapper.style.setProperty('--taro-sky', `url("${maskUrl}")`);
     content.classList.add('taro-dune-content');
     if (scene.taller) section.classList.add('taro-dune-section--taller');
 
@@ -220,11 +245,11 @@ defineAddon('dune-reveal', () => {
       section.appendChild(cta);
     }
 
-    let travel = 0, lift = 0, span = 1, curY = 0;
-    let dw0 = NaN, dh0 = NaN;
+    let travel = 0, lift = 0, span = 1;
+    let mx0 = NaN, my0 = NaN, dw0 = NaN, dh0 = NaN;
     let focal = ['50%', '50%'];
-    /** [{ el, inner }] — the blocks that start in the sky and therefore sink. */
-    let blocks = null;
+    /** The blocks that start in the sky, and therefore sink. */
+    let movers = null;
 
     /** Where the photograph is actually drawn, in viewport pixels. Reproduces
      *  object-fit: cover from the image element's own box, so however
@@ -248,47 +273,16 @@ defineAddon('dune-reveal', () => {
     // same batch and cost no extra layout flush, and the write — the part that
     // would repaint — happens only on the rare frame where something moved.
     const syncMask = () => {
-      if (!blocks) return;
       const p = photoRect();
       if (!p) return;
-      dw0 = p.dw; dh0 = p.dh;
-      blocks.forEach((b) => {
-        const r = b.el.getBoundingClientRect();
-        // mask-position is measured from the masked element's own border box.
-        const mx = p.left - r.left;
-        const my = p.top - r.top;
-        if (Math.abs(mx - b.mx) < 0.5 && Math.abs(my - b.my) < 0.5
-            && Math.abs(p.dw - b.dw) < 0.5 && Math.abs(p.dh - b.dh) < 0.5) return;
-        b.mx = mx; b.my = my; b.dw = p.dw; b.dh = p.dh;
-        b.el.style.setProperty('--taro-sky-size', `${p.dw.toFixed(2)}px ${p.dh.toFixed(2)}px`);
-        b.el.style.setProperty('--taro-sky-pos', `${mx.toFixed(2)}px ${my.toFixed(2)}px`);
-      });
-    };
-
-    /** Choose which blocks sink: the ones whose top starts in the sky. Anything
-     *  already below the ridge is other copy that lives further down the
-     *  section, and masking it would simply delete it. */
-    const pickBlocks = () => {
-      const p = photoRect();
-      if (!p) return false;
-      const ridgeY = p.top + scene.ridge * p.dh;
-      const chosen = [];
-      content.querySelectorAll('.fe-block').forEach((el) => {
-        if (!el.querySelector('h1, h2, h3, h4, p')) return;
-        const inner = el.firstElementChild;
-        if (!inner) return;
-        // The block itself never moves — only its child does — so its own box
-        // is always the resting position, whatever the travel is doing.
-        if (el.getBoundingClientRect().top >= ridgeY) return;
-        chosen.push({ el, inner, mx: NaN, my: NaN, dw: NaN, dh: NaN });
-      });
-      if (!chosen.length) return false;
-      blocks = chosen;
-      blocks.forEach((b) => {
-        b.el.classList.add('taro-dune-block');
-        b.el.style.setProperty('--taro-sky', `url("${maskUrl}")`);
-      });
-      return true;
+      // mask-position is measured from the masked element's own border box.
+      const wrap = wrapper.getBoundingClientRect();
+      const mx = p.left - wrap.left, my = p.top - wrap.top;
+      if (Math.abs(mx - mx0) < 0.5 && Math.abs(my - my0) < 0.5
+          && Math.abs(p.dw - dw0) < 0.5 && Math.abs(p.dh - dh0) < 0.5) return;
+      mx0 = mx; my0 = my; dw0 = p.dw; dh0 = p.dh;
+      wrapper.style.setProperty('--taro-sky-size', `${p.dw.toFixed(2)}px ${p.dh.toFixed(2)}px`);
+      wrapper.style.setProperty('--taro-sky-pos', `${mx.toFixed(2)}px ${my.toFixed(2)}px`);
     };
 
     const measure = () => {
@@ -307,21 +301,52 @@ defineAddon('dune-reveal', () => {
       lift = window.innerWidth >= 768 ? (scene.lift || 0) * vh : 0;
       focal = (getComputedStyle(bgImg).objectPosition || '50% 50%').split(/\s+/);
       if (!focal[1]) focal[1] = '50%';
+      syncMask();
 
-      if (!blocks && !pickBlocks()) return;
       const p = photoRect();
       if (!p) return;
+      const ridgeY = p.top + scene.ridge * p.dh;
+
+      // Sort every block into the copy that sinks and the copy that stays. A
+      // block that already begins below the ridge is not part of this effect —
+      // it is other copy further down the section, and erasing it is the bug.
+      const wrap = wrapper.getBoundingClientRect();
+      let sinkTop = Infinity, sinkBottom = -Infinity, keepTop = Infinity;
+      const chosen = [];
+      content.querySelectorAll('.fe-block').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        // The blocks themselves are what move, and getBoundingClientRect
+        // reports the transformed box — so back the travel out to get the
+        // resting position, or re-measuring mid-scroll would reclassify a block
+        // as "stays" the moment it had sunk past the ridge.
+        const t = el.__taroY || 0;
+        const top = r.top - t, bottom = r.bottom - t;
+        if (top < ridgeY && el.querySelector('h1, h2, h3, h4, p')) {
+          chosen.push(el);
+          sinkTop = Math.min(sinkTop, top);
+          sinkBottom = Math.max(sinkBottom, bottom);
+        } else {
+          keepTop = Math.min(keepTop, top);
+        }
+      });
+      if (!chosen.length) return;
+      movers = chosen;
+      movers.forEach((el) => el.classList.add('taro-dune-move'));
+
+      // The band that must never be erased, in the wrapper's own coordinates.
+      if (Number.isFinite(keepTop)) {
+        wrapper.style.setProperty('--taro-keep-size', `100% ${Math.max(0, wrap.height).toFixed(0)}px`);
+        wrapper.style.setProperty('--taro-keep-pos', `0 ${(keepTop - wrap.top).toFixed(2)}px`);
+      }
 
       // How far the copy must fall to be gone. Measured from the TOP of the
-      // highest sinking line to the ridge: reaching it with the bottom edge
-      // leaves the whole line still standing above the sand, which is what it
-      // did — the copy slid off the top of the window with the dune never quite
-      // catching it.
-      let top = Infinity;
-      blocks.forEach((b) => { top = Math.min(top, b.el.getBoundingClientRect().top); });
-      const ridgeY = p.top + scene.ridge * p.dh;
-      travel = Math.max(0, Math.min(ridgeY - top + BURY * vh, 1.8 * span));
-      syncMask();
+      // highest sinking line: reaching the ridge with its bottom edge leaves the
+      // whole line still standing above the sand, which is what it did — the
+      // print heading slid off the top of the window with the dune never quite
+      // catching it. Capped so the sunk copy never comes to rest inside the
+      // protected band, where it would be painted back in.
+      const room = Number.isFinite(keepTop) ? keepTop - sinkBottom - 8 : Infinity;
+      travel = Math.max(0, Math.min(ridgeY - sinkTop + BURY * vh, room, 1.8 * span));
     };
 
     // Zero until the section's top reaches the top of the window, then all the
@@ -342,9 +367,9 @@ defineAddon('dune-reveal', () => {
       // screen before the sink caught up, which is what "you scroll past before
       // the motion hits" was describing. The frame-rate-independent follower
       // below is what smooths this; the trajectory itself wants to be straight.
-      curY = travel * p - lift * (1 - p);
-      const t = `translate3d(0, ${curY.toFixed(2)}px, 0)`;
-      if (blocks) blocks.forEach((b) => { b.inner.style.transform = t; });
+      const y = travel * p - lift * (1 - p);
+      const t = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+      if (movers) movers.forEach((el) => { el.__taroY = y; el.style.transform = t; });
     };
 
     let shownP = 0, lastFrame = 0, raf = 0;
@@ -396,7 +421,7 @@ defineAddon('dune-reveal', () => {
     // entirely. Losing the effect is fine; losing the words is not.
     const probe = new Image();
     probe.onerror = () => {
-      if (blocks) blocks.forEach((b) => b.el.classList.remove('taro-dune-block'));
+      wrapper.classList.remove('taro-dune-wrap');
       warn(`dune-reveal: ${scene.mask} failed to load`);
     };
     probe.src = maskUrl;
