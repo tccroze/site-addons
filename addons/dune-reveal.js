@@ -111,7 +111,14 @@ defineAddon('dune-reveal', () => {
          against the sky. Driving both off the same numbers cannot drift. */
       -webkit-mask-size: var(--taro-fg-size);    mask-size: var(--taro-fg-size);
       -webkit-mask-repeat: no-repeat;            mask-repeat: no-repeat;
-      -webkit-mask-position: var(--taro-fg-pos); mask-position: var(--taro-fg-pos);
+      /* Positioned with the photograph's own object-position string, not with a
+         number parsed out of it. Percentages here resolve against the used mask
+         size, which is set in pixels below to the photograph's drawn size — so
+         the two offsets are identical by definition. Parsing was the bug: if the
+         browser serialises object-position as anything but percentages the parse
+         fell back to 50% while the picture kept 15.9%, which throws the mask a
+         few hundred pixels sideways and prints a second set of figures. */
+      -webkit-mask-position: var(--taro-fg-focal); mask-position: var(--taro-fg-focal);
     }
     .taro-dune__photo {
       position: absolute; inset: 0;
@@ -229,12 +236,6 @@ defineAddon('dune-reveal', () => {
     // Cached on relayout, never read per frame: a bounding rect inside the scroll
     // path forces a layout flush mid-animation, which is what makes this kind of
     // thing feel steppy.
-    // Percentages out of the focal point, so the mask can be placed with the
-    // same arithmetic object-fit uses rather than a second interpretation of it.
-    const pct = (focal.match(/-?[\d.]+%/g) || ['50%', '50%'])
-      .map((v) => parseFloat(v) / 100);
-    const fx = pct[0] ?? 0.5, fy = pct[1] ?? 0.5;
-
     let travel = 0, lift = 0;
     const measure = () => {
       const box = section.getBoundingClientRect();
@@ -251,9 +252,10 @@ defineAddon('dune-reveal', () => {
       if (!box.width || !box.height || !iw || !ih) return;
       const scale = Math.max(box.width / iw, box.height / ih);
       const dw = iw * scale, dh = ih * scale;
+      // Only the size. The offset comes from mask-position: var(--taro-fg-focal),
+      // resolved by the browser against exactly this size — the same arithmetic
+      // object-fit does, rather than a second copy of it that can disagree.
       layer.style.setProperty('--taro-fg-size', `${dw.toFixed(2)}px ${dh.toFixed(2)}px`);
-      layer.style.setProperty('--taro-fg-pos',
-        `${((box.width - dw) * fx).toFixed(2)}px ${((box.height - dh) * fy).toFixed(2)}px`);
     };
 
     const targetProgress = () => {
