@@ -1,23 +1,33 @@
 // Sections whose copy sinks into the landscape as you scroll, passing behind
 // whatever stands against the sky — dead trees, a dune ridge, two walkers on it.
 //
-// Same idea as the homepage intro, but the occluder cannot be a polygon here.
-// The intro's skyline is one y per column, so a clip-path traces it exactly. Bare
-// trees are not: branches fork, and there is sky in the gaps between them. That
-// needs a real per-pixel cut-out, so the foreground is the same photograph with
-// an alpha mask over it — sky transparent, everything else opaque — laid over the
-// text:
+// This used to work by laying a second copy of the photograph over the text and
+// punching the sky out of it, so the trees and figures were redrawn on top. That
+// is the obvious way to do it and it was wrong. It asks two independently
+// resolved images — different srcset variants, different intrinsic sizes,
+// different object-fit arithmetic — to land on precisely the same pixel, and any
+// disagreement at all prints a second, offset copy of whatever stands against
+// the sky. On this page that was a ghost of the left-hand walker on the dune. It
+// survived four separate fixes, each of which corrected a real divergence and
+// none of which removed the possibility of another one.
 //
-//     Squarespace's own background photo  →  its copy  →  photo again, masked
+// So there is no second photograph any more. Instead the *text* carries the
+// cut-out: its container is masked with the inverse silhouette — opaque across
+// the sky, transparent everywhere the landscape stands — so the copy is simply
+// erased as it descends past the ridge. Squarespace's own background photo is
+// the only photo on screen, and nothing can misregister against it because
+// there is nothing to register.
 //
-// The masks are generated offline. Both frames separate almost perfectly on
-// blue-minus-red: sky sits at +105 and above, every dune, tree, sand and figure
-// pixel at 0 and below, so a soft ramp cuts them with feathered edges and no
-// hand-painting. They are grey+alpha PNGs — the cut-out lives in the alpha
-// channel because that is what CSS mask-image reads — and pack into ~30KB each.
+// It is also cheaper: no second full-size decode, no tint layer, one less
+// composited surface on a phone.
 //
-// Nothing here is destructive: each section's markup is untouched apart from a
-// transform on its content wrapper, and the foreground layer is appended.
+// The mask goes on .content-wrapper and the travel goes on its .content child.
+// That split matters — a mask moves with its own element, so masking the thing
+// that slides would carry the sky along with the text and nothing would ever be
+// occluded.
+//
+// Nothing here is destructive: no markup is added inside the section apart from
+// the CTA being reparented, and every change is a class or a custom property.
 
 import { defineAddon, css, warn } from '../lib/util.js';
 
@@ -33,14 +43,17 @@ const ASSET = (name) => new URL(`../assets/${name}`, import.meta.url).href;
  * already shows its full height and the ridge sits high in the frame: a taller
  * section scales the photograph up and carries the ridge down, which is the only
  * way to buy more room once re-cropping has nothing left to give.
+ *
+ * The masks are the inverse of the silhouette — sky opaque, landscape clear —
+ * because they are worn by the text, not by a copy of the picture.
  */
 const SCENES = [
   // `lift` raises the copy before it starts falling. The print section already
   // holds its copy near the top of the picture, so lifting it there only pushed
   // it out under the header — it is the dune section, where Squarespace centres
   // the copy in a very tall section, that needs the room.
-  { match: /deadvlei/i, mask: 'deadvlei-mask.png', sink: 0.42, lift: 0, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-mask.png', sink: 0.30, lift: 0.14, taller: false },
+  { match: /deadvlei/i, mask: 'deadvlei-sky.png', sink: 0.42, lift: 0, taller: true },
+  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', sink: 0.30, lift: 0.14, taller: false },
 ];
 
 // Where the travel starts and ends, in viewport heights of the section's top.
@@ -53,18 +66,29 @@ const FROM = 0.10, TO = -1.2;
 const EASE = 0.16;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
+// object-position keywords, as fractions of the free space. Chrome serialises
+// the computed value as percentages, but Safari and Firefox do not always, and
+// a parse that quietly falls back to centre is how the old ghost got a few
+// hundred pixels of horizontal offset in the first place.
+const KEYWORD = { left: 0, top: 0, center: 0.5, right: 1, bottom: 1 };
+
+/** Resolve one axis of an object-position against the free space around the
+ *  drawn image, in pixels. `free` is container size minus drawn size. */
+const axis = (token, free) => {
+  if (token in KEYWORD) return KEYWORD[token] * free;
+  if (token.endsWith('%')) return (parseFloat(token) / 100) * free;
+  const px = parseFloat(token);
+  return Number.isFinite(px) ? px : 0.5 * free;
+};
+
 defineAddon('dune-reveal', () => {
   if (location.pathname !== '/') return;
-  if (document.querySelector('.taro-dune')) return;
+  if (document.querySelector('.taro-dune-content')) return;
 
   const sections = [...document.querySelectorAll('article#sections > section')];
   const found = SCENES
     .map((scene) => ({
       scene,
-      // Squarespace ships hidden duplicates of a section for other breakpoints,
-      // and they carry the same background photograph. Matching on the picture
-      // alone found one of those first — it has no content wrapper and no height,
-      // so nothing mounted and the real section was never reached.
       section: sections.find((s) => {
         const img = s.querySelector('.section-background img');
         if (!img) return false;
@@ -89,50 +113,19 @@ defineAddon('dune-reveal', () => {
   if (!found.length) return;
 
   css('dune-reveal', `
-    /* The cut-out foreground. Above the copy — Squarespace's Fluid Engine puts
-       its blocks on z-index 1 — but below the site header at 10. Everything that
-       varies between sections is a custom property set on the element, because
-       each one has its own photograph, focal point and colour overlay. */
-    .taro-dune {
-      position: absolute; inset: 0;
-      z-index: 3;
-      pointer-events: none;
+    /* The wearer of the cut-out. Sized and placed in pixels computed from the
+       background photograph's own drawn rectangle, so the sky in the mask sits
+       exactly over the sky in the picture. It must not move: the travel below is
+       applied to its child, because a mask travels with its own element and a
+       sky that slides with the text occludes nothing. */
+    .taro-dune-wrap {
       /* The mask carries its cut-out in the ALPHA channel, and CSS mask-image
-         reads alpha by default — a plain greyscale PNG is fully opaque here and
-         simply covers the copy, which is exactly what it did at first. */
-      -webkit-mask-image: var(--taro-fg-mask);   mask-image: var(--taro-fg-mask);
-      -webkit-mask-mode: alpha;                  mask-mode: alpha;
-      /* Sized and placed in pixels, computed from the photograph's own frame —
-         not by mask-size: cover. Both are "cover", but they are fitted from
-         different intrinsic sizes: the mask is 2000x1333 and the picture 1500x1000,
-         and the browser resolves the two independently. On a tall section that
-         drifted the mask 41px above the picture, so the cut-out silhouette was
-         lifted clear of the figures it was cut from and printed a ghost of them
-         against the sky. Driving both off the same numbers cannot drift. */
-      -webkit-mask-size: var(--taro-fg-size);    mask-size: var(--taro-fg-size);
-      -webkit-mask-repeat: no-repeat;            mask-repeat: no-repeat;
-      /* Positioned with the photograph's own object-position string, not with a
-         number parsed out of it. Percentages here resolve against the used mask
-         size, which is set in pixels below to the photograph's drawn size — so
-         the two offsets are identical by definition. Parsing was the bug: if the
-         browser serialises object-position as anything but percentages the parse
-         fell back to 50% while the picture kept 15.9%, which throws the mask a
-         few hundred pixels sideways and prints a second set of figures. */
-      -webkit-mask-position: var(--taro-fg-focal); mask-position: var(--taro-fg-focal);
-    }
-    .taro-dune__photo {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      object-position: var(--taro-fg-focal);
-    }
-    /* These sections carry a colour overlay of their own, painted under the copy
-       — so the foreground has to reproduce it, or the trees and figures would
-       come back at full contrast against a tinted picture. */
-    .taro-dune__tint {
-      position: absolute; inset: 0;
-      background: var(--taro-fg-tint);
-      opacity: var(--taro-fg-tint-o);
+         reads alpha by default — a plain greyscale PNG is fully opaque here. */
+      -webkit-mask-image: var(--taro-sky);   mask-image: var(--taro-sky);
+      -webkit-mask-mode: alpha;              mask-mode: alpha;
+      -webkit-mask-size: var(--taro-sky-size);      mask-size: var(--taro-sky-size);
+      -webkit-mask-position: var(--taro-sky-pos);   mask-position: var(--taro-sky-pos);
+      -webkit-mask-repeat: no-repeat;        mask-repeat: no-repeat;
     }
     .taro-dune-content { will-change: transform; }
 
@@ -163,8 +156,9 @@ defineAddon('dune-reveal', () => {
     }
 
     /* The call to action is lifted out of the sinking copy and parked at the
-       foot of the photograph. Everything else is meant to be swallowed by the
-       landscape; a button that disappears is just a button you cannot press. */
+       foot of the photograph — outside the masked wrapper, so the landscape
+       never eats it. Everything else is meant to be swallowed; a button that
+       disappears is just a button you cannot press. */
     .taro-dune-cta {
       position: absolute; left: 0; right: 0;
       bottom: clamp(28px, 5vh, 64px);
@@ -190,43 +184,14 @@ defineAddon('dune-reveal', () => {
 
   found.forEach(({ scene, section }) => {
     const bgImg = section.querySelector('.section-background img');
-    const content = section.querySelector('.content-wrapper') || section.firstElementChild;
-    if (!content) return;
+    const wrapper = section.querySelector('.content-wrapper');
+    // The travelling element is the wrapper's child, never the wrapper itself.
+    const content = wrapper && (wrapper.querySelector(':scope > .content') || wrapper.firstElementChild);
+    if (!bgImg || !wrapper || !content) return;
 
-    // Match whatever Squarespace is doing with the photograph rather than
-    // assuming. The mask has the same aspect ratio as the frame, so mask-size:
-    // cover crops it exactly as object-fit: cover crops the picture — as long as
-    // the positions agree, which is why the focal point is copied across. These
-    // sections do not use the centre.
-    const focal = getComputedStyle(bgImg).objectPosition || '50% 50%';
-    const overlay = section.querySelector('.section-background-overlay');
     const maskUrl = ASSET(scene.mask);
-
-    const layer = document.createElement('div');
-    layer.className = 'taro-dune';
-    layer.setAttribute('aria-hidden', 'true');
-    layer.style.setProperty('--taro-fg-mask', `url("${maskUrl}")`);
-    layer.style.setProperty('--taro-fg-focal', focal);
-    layer.style.setProperty('--taro-fg-tint',
-      overlay ? getComputedStyle(overlay).backgroundColor : 'transparent');
-    layer.style.setProperty('--taro-fg-tint-o', overlay ? getComputedStyle(overlay).opacity : '0');
-    layer.innerHTML =
-      `<img class="taro-dune__photo" alt="">` +
-      '<div class="taro-dune__tint"></div>';
-    section.appendChild(layer);
-    const photo = layer.querySelector('.taro-dune__photo');
-    // Take the background's srcset and sizes verbatim, so the copy resolves to
-    // exactly the same variant. Left to itself it picked a different one — the
-    // background reported an intrinsic 1970x1313 on a retina screen against the
-    // copy's 2500x1667 — and two images fitted with cover from different
-    // intrinsic sizes land in slightly different places, which is what prints a
-    // ghost of the figures beside the real ones.
-    if (bgImg.srcset) photo.srcset = bgImg.srcset;
-    if (bgImg.sizes) photo.sizes = bgImg.sizes;
-    photo.src = bgImg.currentSrc || bgImg.src || bgImg.getAttribute('data-src') || '';
-    if (!photo.complete) photo.addEventListener('load', () => relayout(), { once: true });
-    if (!bgImg.complete) bgImg.addEventListener('load', () => relayout(), { once: true });
-
+    wrapper.classList.add('taro-dune-wrap');
+    wrapper.style.setProperty('--taro-sky', `url("${maskUrl}")`);
     content.classList.add('taro-dune-content');
     if (scene.taller) section.classList.add('taro-dune-section--taller');
 
@@ -249,24 +214,29 @@ defineAddon('dune-reveal', () => {
     // thing feel steppy.
     let travel = 0, lift = 0;
     const measure = () => {
-      const box = section.getBoundingClientRect();
       const vh = window.innerHeight || 0;
-      travel = Math.min(scene.sink * box.height, 0.5 * vh);
+      travel = Math.min(scene.sink * section.getBoundingClientRect().height, 0.5 * vh);
       lift = (scene.lift || 0) * vh;
 
-      // Reproduce object-fit: cover, then hand the mask the very same box.
-      // Measured from the BACKGROUND image, because that is the picture the
-      // visitor sees underneath; naturalWidth is the density-corrected intrinsic
-      // size, which is exactly what object-fit itself uses.
-      const iw = bgImg.naturalWidth || photo.naturalWidth || 1500;
-      const ih = bgImg.naturalHeight || photo.naturalHeight || 1000;
+      // Reproduce object-fit: cover on the background photograph, then place the
+      // mask over the rectangle it actually draws into. Measured from the image
+      // element's own box rather than the section's, so however Squarespace
+      // chooses to inset .section-background the mask follows it.
+      const box = bgImg.getBoundingClientRect();
+      const iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
       if (!box.width || !box.height || !iw || !ih) return;
       const scale = Math.max(box.width / iw, box.height / ih);
       const dw = iw * scale, dh = ih * scale;
-      // Only the size. The offset comes from mask-position: var(--taro-fg-focal),
-      // resolved by the browser against exactly this size — the same arithmetic
-      // object-fit does, rather than a second copy of it that can disagree.
-      layer.style.setProperty('--taro-fg-size', `${dw.toFixed(2)}px ${dh.toFixed(2)}px`);
+      const [px = '50%', py = '50%'] =
+        (getComputedStyle(bgImg).objectPosition || '50% 50%').split(/\s+/);
+      // Where the photograph's top-left corner lands, in page terms, then
+      // rebased onto the wrapper — mask-position is measured from the masked
+      // element's own border box, and the wrapper is inset from the section.
+      const wrap = wrapper.getBoundingClientRect();
+      const mx = box.left - wrap.left + axis(px, box.width - dw);
+      const my = box.top - wrap.top + axis(py, box.height - dh);
+      wrapper.style.setProperty('--taro-sky-size', `${dw.toFixed(2)}px ${dh.toFixed(2)}px`);
+      wrapper.style.setProperty('--taro-sky-pos', `${mx.toFixed(2)}px ${my.toFixed(2)}px`);
     };
 
     const targetProgress = () => {
@@ -276,10 +246,9 @@ defineAddon('dune-reveal', () => {
       return Math.max(0, Math.min(1, (from - top) / (from - to)));
     };
 
-    // No scale, deliberately. The element being moved is Squarespace's own
-    // content wrapper, the full width of the page: scaling it up by even a few
-    // percent pushes it past the viewport and the document grows a horizontal
-    // scrollbar, which reads as a dead strip down the side.
+    // No scale, deliberately. Scaling a full-width wrapper by even a few percent
+    // pushes it past the viewport and the document grows a horizontal scrollbar,
+    // which reads as a dead strip down the side.
     const render = (p) => {
       // Starts at -lift and ends at +travel: raised while it is being read, then
       // carried down behind the ridge.
@@ -307,15 +276,21 @@ defineAddon('dune-reveal', () => {
     const relayout = () => { measure(); shownP = targetProgress(); render(shownP); };
 
     relayout();
+    // The background is lazy-loaded, so on first run it usually has no intrinsic
+    // size yet and measure() bails; this is the call that actually places the mask.
     if (!bgImg.complete) bgImg.addEventListener('load', relayout, { once: true });
     window.addEventListener('scroll', request, { passive: true });
     window.addEventListener('resize', relayout, { passive: true });
     if (typeof ResizeObserver === 'function') new ResizeObserver(relayout).observe(section);
 
-    // A mask that fails to load leaves an opaque copy of the photograph sitting
-    // on top of the copy, which is far worse than not having the effect at all.
+    // A mask that fails to load takes the copy with it — an unloadable mask
+    // image is treated as fully transparent, which would blank the text
+    // entirely. Losing the effect is fine; losing the words is not.
     const probe = new Image();
-    probe.onerror = () => { layer.remove(); warn(`dune-reveal: ${scene.mask} failed to load`); };
+    probe.onerror = () => {
+      wrapper.classList.remove('taro-dune-wrap');
+      warn(`dune-reveal: ${scene.mask} failed to load`);
+    };
     probe.src = maskUrl;
   });
 });
