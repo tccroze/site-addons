@@ -247,22 +247,30 @@ defineAddon('dune-reveal', () => {
 
     let travel = 0, lift = 0, span = 1;
     let mx0 = NaN, my0 = NaN, dw0 = NaN, dh0 = NaN;
-    let focal = ['50%', '50%'];
     /** The blocks that start in the sky, and therefore sink. */
     let movers = null;
 
     /** Where the photograph is actually drawn, in viewport pixels. Reproduces
      *  object-fit: cover from the image element's own box, so however
-     *  Squarespace insets .section-background the mask follows it. */
+     *  Squarespace insets .section-background the mask follows it.
+     *
+     *  The focal point is re-read here rather than cached. It is Squarespace's
+     *  own property, written inline on the image, and it can change after load
+     *  without changing the image's box — so no resize and no ResizeObserver
+     *  fires, and a cached copy is never invalidated. That was the one drift
+     *  nothing could repair: the mask stranded 224px sideways, permanently,
+     *  which is exactly far enough to drop the men's silhouettes into open sky
+     *  where they cut people-shaped holes out of the letters. */
     const photoRect = () => {
       const box = bgImg.getBoundingClientRect();
       const iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
       if (!box.width || !box.height || !iw || !ih) return null;
+      const f = (getComputedStyle(bgImg).objectPosition || '50% 50%').split(/\s+/);
       const scale = Math.max(box.width / iw, box.height / ih);
       const dw = iw * scale, dh = ih * scale;
       return {
-        left: box.left + axis(focal[0], box.width - dw),
-        top: box.top + axis(focal[1], box.height - dh),
+        left: box.left + axis(f[0] || '50%', box.width - dw),
+        top: box.top + axis(f[1] || '50%', box.height - dh),
         dw, dh,
       };
     };
@@ -299,8 +307,6 @@ defineAddon('dune-reveal', () => {
       // phone anyway: the section is taller than the viewport, so the copy has
       // plenty of travel without being lifted into the paper.
       lift = window.innerWidth >= 768 ? (scene.lift || 0) * vh : 0;
-      focal = (getComputedStyle(bgImg).objectPosition || '50% 50%').split(/\s+/);
-      if (!focal[1]) focal[1] = '50%';
       syncMask();
 
       const p = photoRect();
@@ -388,7 +394,13 @@ defineAddon('dune-reveal', () => {
     };
 
     const request = () => {
-      if (reduced.matches || raf) return;
+      // The mask is reconciled even for visitors who have asked for no motion.
+      // The travel is theirs to decline; a mask stranded off the picture is not
+      // — and it is exactly these visitors who could never recover from one,
+      // because the scroll loop that repairs it is the thing reduced motion
+      // switches off. Left as it was, the drift was permanent for them.
+      if (reduced.matches) { syncMask(); return; }
+      if (raf) return;
       lastFrame = 0;
       raf = requestAnimationFrame(step);
     };
@@ -415,6 +427,20 @@ defineAddon('dune-reveal', () => {
     }
     // The webfont swap re-flows the copy after everything else has settled.
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+
+    // A ResizeObserver watches size, not position. A wrapper that MOVES without
+    // changing size — an alignment change, a row collapsing above it — leaves
+    // the mask behind, and nothing reports it: no resize, no observer, and the
+    // per-frame reconcile only runs while a scroll is in flight. Standing still
+    // on a section, you would just look at it. A quarter-second poll, gated on
+    // the section being anywhere near the screen, costs two rects a second.
+    let near = true;
+    if (typeof IntersectionObserver === 'function') {
+      near = false;
+      new IntersectionObserver(([e]) => { near = e.isIntersecting; },
+        { rootMargin: '250px' }).observe(section);
+    }
+    setInterval(() => { if (near) syncMask(); }, 250);
 
     // A mask that fails to load takes the copy with it — an unloadable mask
     // image is treated as fully transparent, which would blank the text
