@@ -34,7 +34,10 @@ function isInternalNavigation(e, link) {
 }
 
 defineAddon('page-transition', () => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // Kept as a MediaQueryList, not a frozen boolean — the OS setting can change
+  // mid-visit, so the click handler consults it again at decision time.
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduced.matches) return;
 
   // Deliberately off on touch. This intercepts every link tap and holds
   // navigation for a third of a second, and there is an unreproduced scroll
@@ -82,6 +85,10 @@ defineAddon('page-transition', () => {
   window.addEventListener('pageshow', clear);
 
   document.addEventListener('click', (e) => {
+    // Checked live — if reduced motion was switched on since boot, hand
+    // navigation straight back to the browser, no fade.
+    if (reduced.matches) return;
+
     const link = e.target.closest?.('a[href]');
     if (!isInternalNavigation(e, link)) return;
 

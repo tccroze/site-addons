@@ -28,37 +28,56 @@ defineAddon('testimonial-rotator', () => {
 
   css('testimonial-rotator', `
     /* One full-width column; every quote shares the single cell.
-       align-items must be forced: Squarespace centres them, and since the
-       quotes differ in height that put each at a different offset. */
+       align-items must be forced: Squarespace's own centring dated from when
+       the quotes sat in separate cells, where their differing heights put
+       each at a different offset. Sharing one cell they have a common centre,
+       so 'center' is safe here — and it stops a short quote leaving a dead
+       band above the dots, since the cell still sizes to the tallest quote. */
     ul.taro-rotator {
       grid-template-columns: 1fr !important;
-      align-items: start !important;
+      align-items: center !important;
     }
     ul.taro-rotator > .list-item {
       grid-area: 1 / 1 / 2 / 2 !important;
-      align-self: start !important;
+      align-self: center !important;
       transition: opacity ${FADE_MS}ms ease;
     }
     .taro-dots {
       display: flex;
       justify-content: center;
-      gap: 0.7rem;
-      margin: 1.75rem auto 0;
+      gap: 0; /* the buttons are 44px wide already; they may touch, never overlap */
+      margin: 0.75rem auto -0.5rem; /* the centred cell now supplies the space above */
       padding: 0;
     }
+    /* Each button is a 44px square — the minimum comfortable touch target —
+       but only a 7px dot is painted. box-sizing plus the padding leaves a
+       7px content box, and the ::after draws the dot inside it: a border on
+       the button itself would trace the 44px edge, not the dot. */
     .taro-dots__dot {
-      width: 7px; height: 7px; padding: 0;
-      border: 1px solid currentColor;
-      border-radius: 50%;
+      box-sizing: border-box;
+      width: 44px; height: 44px;
+      padding: 18.5px;
+      border: 0;
       background: transparent;
       opacity: 0.35;
       cursor: pointer;
-      transition: opacity 0.3s ease, background-color 0.3s ease;
+      transition: opacity 0.3s ease;
+    }
+    .taro-dots__dot::after {
+      content: '';
+      display: block;
+      box-sizing: border-box;
+      width: 7px; height: 7px;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      background: transparent;
+      transition: background-color 0.3s ease;
     }
     .taro-dots__dot:hover { opacity: 0.7; }
-    .taro-dots__dot[aria-current="true"] { opacity: 1; background: currentColor; }
+    .taro-dots__dot[aria-current="true"] { opacity: 1; }
+    .taro-dots__dot[aria-current="true"]::after { background: currentColor; }
     @media (prefers-reduced-motion: reduce) {
-      ul.taro-rotator > .list-item, .taro-dots__dot { transition: none; }
+      ul.taro-rotator > .list-item, .taro-dots__dot, .taro-dots__dot::after { transition: none; }
     }
   `);
 
@@ -126,19 +145,35 @@ defineAddon('testimonial-rotator', () => {
     restart();
   }, { passive: true });
 
-  // Auto-advance. Only a hidden tab stops it — an earlier version also paused
+  // Auto-advance. A hidden tab stops it — an earlier version also paused
   // on hover over the whole section, which on a desktop meant it frequently
-  // never advanced at all and looked broken.
+  // never advanced at all and looked broken. The timer is also gated on the
+  // section actually being in the viewport: left on wall clock it kept
+  // rotating while the visitor read the rest of the page, so scrolling back
+  // routinely landed mid-fade on a half-opacity quote.
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let cycle;
+  let onScreen = true; // stays true where IntersectionObserver is missing — the old behaviour
   function restart() {
     clearInterval(cycle);
-    if (!still) cycle = setInterval(() => goTo(index + 1), INTERVAL_MS);
+    if (!still && onScreen) cycle = setInterval(() => goTo(index + 1), INTERVAL_MS);
   }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) clearInterval(cycle);
     else restart();
   });
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => {
+      onScreen = entries[entries.length - 1].isIntersecting;
+      if (!onScreen) { clearInterval(cycle); return; }
+      // Coming back into view: if a swap was caught mid-fade, cancel it and
+      // repaint so the visitor arrives to a fully opaque quote, then resume.
+      clearTimeout(swapTimer);
+      paint();
+      restart();
+    }, { threshold: 0.2 }).observe(list);
+  }
 
   restart();
 });

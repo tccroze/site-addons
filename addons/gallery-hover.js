@@ -20,6 +20,14 @@ defineAddon('gallery-hover', () => {
     .gallery-masonry-item-wrapper {
       transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
                   filter 0.4s ease;
+    }
+    /* will-change is granted only while the tile is hovered or holds focus.
+       Held permanently it pinned a composited layer per wrapper — fifty-odd
+       tiles of GPU memory on a full gallery page, paid even by phones that
+       can never hover. Promoting on entry costs one frame, and the 0.6s
+       transition absorbs it. */
+    .gallery-masonry-item:hover .gallery-masonry-item-wrapper,
+    .gallery-masonry-item:focus-within .gallery-masonry-item-wrapper {
       will-change: transform;
     }
     .gallery-masonry-item:hover .gallery-masonry-item-wrapper {
@@ -56,12 +64,14 @@ defineAddon('gallery-hover', () => {
       }
     }
 
-    /* Touch devices have no hover; the scale would stick after a tap. */
+    /* Touch devices have no hover; the scale would stick after a tap — and so
+       would the layer promotion. */
     @media (hover: none) {
       .gallery-masonry-item:hover .gallery-masonry-item-wrapper,
       .grid-item:hover img {
         transform: none;
         filter: none;
+        will-change: auto;
       }
     }
   `);

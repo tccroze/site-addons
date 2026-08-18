@@ -26,7 +26,11 @@ import { defineAddon, css } from '../lib/util.js';
 // Squarespace was only 2048px wide, which had the browser upscaling it about
 // 1.9x; from here the largest variant covers a retina desktop with a little to
 // spare. Sized off the module's own URL so it resolves wherever this is hosted.
-const ASSET = (name) => new URL(`../assets/${name}`, import.meta.url).href;
+// ?v= because the assets otherwise ride GitHub Pages' independent ten-minute
+// cache, which can pair fresh JS with a stale image — the half-deploy class
+// main.js documents. Stamped by scripts/release.sh along with everything else.
+const V = '2.39.0';
+const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 const PHOTO = ASSET('spitzkoppe-2600.jpg');
 const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
 // object-fit: cover scales the picture up past the element's own width, and the
@@ -50,7 +54,13 @@ const SUBLINE = 'STILLS.  MOTION.  PAINT.';
 // the gesture the same on a short laptop window as on a tall monitor — in vh it
 // ate exactly the room the section below needed on short windows, which pushed
 // the copy under it off the bottom of the screen.
-const PIN = 0.62;
+// 0.76 rather than 0.62: at 0.62 the whole gesture fitted in ~3 wheel notches
+// (325px at 1440x900) and was followed by ~400px in which nothing on screen
+// responded at all — the most compressed movement on the page, straight into
+// its largest dead zone. At 0.76 the intro's span meets the first landscape
+// section's copy almost exactly, so the wordmark finishes sinking at the same
+// scroll where the next section's type begins to move: one continuous handoff.
+const PIN = 0.76;
 const STAGE_VH = 125;
 const SINK = 0.74;        // how far the type sinks, as a fraction of frame height
 const GROW = 1.16;        // how much it scales on the way down
@@ -244,8 +254,12 @@ defineAddon('masked-intro', () => {
   } catch { /* no FontFaceSet — fall through to the inherited stack */ }
   const displayFont = nimbus ? `'${nimbus}', ${inherited}` : inherited;
   // The subline is a caption, not a headline. TAN Nimbus is a display face and
-  // goes clumsy at caption size under wide tracking, so it stays on body type.
-  const bodyFont = getComputedStyle(document.body).fontFamily.replace(/"/g, "'");
+  // goes clumsy at caption size under wide tracking, so it stays on body type —
+  // sampled from a real content paragraph, because Squarespace sets its body
+  // face on the content, not on <body>, which reports a generic sans-serif.
+  const para = document.querySelector('#sections .sqs-html-content p, .sqs-html-content p');
+  const bodyFont = ((para && getComputedStyle(para).fontFamily)
+    || getComputedStyle(document.body).fontFamily).replace(/"/g, "'");
 
   css('masked-intro', `
     .taro-intro {
@@ -384,8 +398,21 @@ defineAddon('masked-intro', () => {
     @media (max-width: 700px) {
       /* A 2.75:1 band off a phone's width is a 140px sliver, so height is set
          directly here. The crop is heavy either way at this width, so the extra
-         height costs little sharpness and stops the screen reading as empty. */
-      .taro-intro { --taro-frame-h: 56vh; }
+         height costs little sharpness and stops the screen reading as empty.
+         64vh, up from 56: at 56 the first screen was 44% contentless — an 88px
+         cream cap over a band of featureless gradient sky. The taller frame
+         brings the horizon up into view under the tear. */
+      .taro-intro { --taro-frame-h: 64vh; }
+      /* When the header hides itself on scroll-down, the strip it vacates sat
+         as a dead cream band above the print for the whole pinned phase. The
+         print glides up to take the strip — one deliberate move when the
+         direction changes, transitioned, not the per-frame tracking that made
+         the desktop version jerky. Desktop keeps holding still: its strip is
+         proportionally a sliver, and the glide would be all cost there. */
+      .taro-intro__stage { transition: top 340ms cubic-bezier(0.33, 1, 0.68, 1); }
+      .taro-intro--tuck .taro-intro__stage { top: 0; }
+      .taro-intro__cap { transition: opacity 200ms ease; }
+      .taro-intro--tuck .taro-intro__cap { opacity: 0; }
       /* A phone sees about a fifth of the frame. Centred on the near dome that
          fifth is all pale glow and granite, which leaves cream type with nothing
          to sit against; centred on Spitzkoppe it gets deep sky above a hard
@@ -443,7 +470,9 @@ defineAddon('masked-intro', () => {
     const W = frame.clientWidth, H = frame.clientHeight;
     if (!W || !H) return null;
     const iw = back.naturalWidth || PHOTO_W, ih = back.naturalHeight || PHOTO_H;
-    const fx = parseFloat(getComputedStyle(frame).getPropertyValue('--taro-fx')) || 0.4;
+    // The fallback is the desktop value, not a third number: 0.4 matched
+    // neither branch, so a failed custom-property read jumped the crop 28%.
+    const fx = parseFloat(getComputedStyle(frame).getPropertyValue('--taro-fx')) || 0.12;
     const scale = Math.max(W / iw, H / ih);
     const dw = iw * scale, dh = ih * scale;
     return { W, H, dw, dh, ox: (W - dw) * fx, oy: (H - dh) / 2 };  // matches object-position
@@ -475,6 +504,18 @@ defineAddon('masked-intro', () => {
     const y = Math.max(0, Math.min(yFrac, RIDGE_MAX_Y - 1e-4));
     for (let i = RIDGE.length - 1; i >= 0; i--) if (RIDGE[i][1] > y) return RIDGE[i][0];
     return 1;
+  };
+
+  /** Skyline depth at a given x, both in image fractions. Linear between the
+   *  traced points; past the last one the trace runs along the top (y = 0). */
+  const ridgeYAt = (xFrac) => {
+    for (let i = 1; i < RIDGE.length; i++) {
+      if (RIDGE[i][0] >= xFrac) {
+        const [x0, y0] = RIDGE[i - 1], [x1, y1] = RIDGE[i];
+        return x1 === x0 ? y0 : y0 + ((xFrac - x0) / (x1 - x0)) * (y1 - y0);
+      }
+    }
+    return 0;
   };
 
   // Below this the wordmark would be shrunk past the point of being a wordmark.
@@ -621,6 +662,16 @@ defineAddon('masked-intro', () => {
     return span > 0 ? Math.max(0, Math.min(1, (y - start) / span)) : 0;
   };
 
+  // Where in the progress the type starts fading, and over how much of it. At
+  // 0.86/0.14 the whole dissolve happened inside 45px of scroll — one wheel
+  // notch — so the wordmark blinked out rather than faded. Desktop starts the
+  // ramp at 0.62 and spends the rest of the gesture on it. On a phone the crop
+  // centres the type over the dome, whose wall the fore mask does not treat as
+  // terrain, so the letters would slide down ON TOP of the rock — there the
+  // ramp is re-anchored geometrically in relayout() to where the type actually
+  // meets the skyline, and the fade does the occluding that the mask cannot.
+  let fadeStart = 0.62, fadeSpan = 0.38;
+
   const render = (p) => {
     // The type sinks and grows; the ridge in front of it does the hiding. This
     // is the only thing written per frame — the photograph itself no longer
@@ -630,7 +681,8 @@ defineAddon('masked-intro', () => {
     const sink = SINK * p * p * geoFrameH;
     type.style.transform =
       `translate3d(0, ${sink.toFixed(2)}px, 0) scale(${(1 + (GROW - 1) * p).toFixed(4)})`;
-    type.style.opacity = p > 0.86 ? Math.max(0, 1 - (p - 0.86) / 0.14).toFixed(3) : 1;
+    type.style.opacity = p > fadeStart
+      ? Math.max(0, 1 - (p - fadeStart) / fadeSpan).toFixed(3) : 1;
   };
 
   /**
@@ -644,7 +696,11 @@ defineAddon('masked-intro', () => {
    * The per-frame factor is derived from how long the frame actually took, so a
    * 120Hz display eases at the same rate as 60Hz rather than twice as fast.
    */
-  const EASE = 0.16;                  // proportion of the gap closed per 60Hz frame
+  // 0.30, up from 0.16. At 0.16 the follower took ~17 frames (~280ms) to close
+  // 95% of a wheel notch, which reads as the type being towed behind the page
+  // rather than part of it — and every eased effect on the page now uses this
+  // same constant, so one gesture gets one answer instead of four.
+  const EASE = 0.30;                  // proportion of the gap closed per 60Hz frame
   const FRAME = 1000 / 60;
   let shownP = 0, lastFrame = 0, raf = 0;
 
@@ -664,7 +720,23 @@ defineAddon('masked-intro', () => {
     render(shownP);
   };
 
+  // Mirrors the header's own hide-on-scroll-down rule rather than observing the
+  // header: tracking its transform would mean a style read per scroll event,
+  // and the rule is simple enough to restate — down past the top hides, any
+  // scroll up shows. Drives the phone-only cap collapse; see the CSS.
+  let lastY = window.scrollY || 0, tucked = false;
+  const syncTuck = () => {
+    const y = window.scrollY || 0;
+    const wantTuck = y > lastY + 2 ? y > 80 : (y < lastY - 2 ? false : tucked);
+    lastY = y;
+    if (wantTuck !== tucked) {
+      tucked = wantTuck;
+      wrap.classList.toggle('taro-intro--tuck', tucked);
+    }
+  };
+
   const request = () => {
+    syncTuck();
     if (reduced.matches) { draw(); return; }
     if (raf) return;
     lastFrame = 0;
@@ -699,6 +771,29 @@ defineAddon('masked-intro', () => {
     wrap.style.marginBottom = `${-Math.round(overlap)}px`;
   };
 
+  /**
+   * Re-anchor the fade to where the type actually meets the skyline. Only the
+   * phone needs this: its crop centres the type over the dome, and the fore
+   * mask treats only the left peak as terrain, so without it the letters slide
+   * down on top of the rock in full ink. The ramp starts as the type's midline
+   * reaches the ridge under the middle of the frame and is done shortly after
+   * — the fade does there what the mask does on desktop.
+   */
+  const anchorFade = (g) => {
+    if (!window.matchMedia('(max-width: 700px)').matches || !g) {
+      fadeStart = 0.62; fadeSpan = 0.38;
+      return;
+    }
+    const xCentre = (g.W / 2 - g.ox) / g.dw;
+    const ridgePx = g.oy + ridgeYAt(Math.max(0, Math.min(1, xCentre))) * g.dh;
+    const mid = type.offsetTop + type.offsetHeight * 0.45;
+    const sinkAtRidge = ridgePx - mid;
+    const denom = SINK * (geoFrameH || frame.clientHeight || 1);
+    const pAtRidge = sinkAtRidge > 0 && denom > 0 ? Math.sqrt(sinkAtRidge / denom) : 0.3;
+    fadeStart = Math.max(0.28, Math.min(0.8, pAtRidge));
+    fadeSpan = Math.max(0.2, Math.min(0.38, 1 - fadeStart));
+  };
+
   const relayout = () => {
     // Re-found on every relayout because the header swaps between breakpoints.
     findHeader();
@@ -709,6 +804,7 @@ defineAddon('masked-intro', () => {
     layoutSheet();
     setOverlap();
     measure();          // after setOverlap: it is what sizes the wrapper
+    anchorFade(g);      // after measure: it needs geoFrameH
     draw();
   };
 

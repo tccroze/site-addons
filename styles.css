@@ -14,3 +14,34 @@
 :root {
   /* Handy place to park values you reuse across rules. */
 }
+
+/* Buttons never wrap. "READY? LET'S TALK" broke onto two lines at laptop
+ * widths (a 218px block for ~190px of tracked text); a button is a label,
+ * not a paragraph. */
+.sqs-block-button-element {
+  white-space: nowrap;
+  width: max-content;
+  max-width: 92vw;
+  padding-inline: clamp(28px, 3.5vw, 54px);
+}
+
+/* The footer email started at x=8 at laptop widths while every other section
+ * kept its ~39px gutter — at 1440 it only looked right by centring accident. */
+footer .fluid-engine {
+  padding-inline: clamp(24px, 4vw, 58px);
+}
+
+/* Header cart and burger are 25px hit areas on a phone; pad the interactive
+ * box out to ~44px without moving the visual. */
+@media (max-width: 700px) {
+  #header a[href*="/cart"],
+  #header [class*="burger"] button {
+    position: relative;
+  }
+  #header a[href*="/cart"]::after,
+  #header [class*="burger"] button::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+}

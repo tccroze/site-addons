@@ -21,7 +21,12 @@ defineAddon('parallax', () => {
 
   // Wrong where it would feel laggy or unwanted.
   if (window.matchMedia('(hover: none)').matches) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  // Reduced motion is kept as the live MediaQueryList rather than read once
+  // into a boolean at boot — the user can flip the OS setting mid-session, and
+  // a stale capture would keep the images drifting regardless. update()
+  // consults .matches at decision time.
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   // The footer is excluded outright. Parallax scales an image up so its drift
   // never exposes a bare edge, but the footer signature sits in a tightly
@@ -38,8 +43,12 @@ defineAddon('parallax', () => {
     });
   if (!imgs.length) return;
 
+  // The class only carries the will-change hint. It used to be stamped on
+  // every image up front, but will-change pins a compositor layer for as long
+  // as it is set, and at any moment most of these images are nowhere near the
+  // viewport. The observer below already knows which ones are close, so it
+  // grants the hint on entry and withdraws it on exit.
   css('parallax', `.taro-parallax { will-change: transform; }`);
-  imgs.forEach((img) => img.classList.add('taro-parallax'));
 
   // travel = how far it drifts each way; scale = just enough to hide that drift
   const geom = new Map();
@@ -53,7 +62,15 @@ defineAddon('parallax', () => {
 
   const onScreen = new Set();
   const io = new IntersectionObserver((entries) => {
-    entries.forEach((e) => (e.isIntersecting ? onScreen.add(e.target) : onScreen.delete(e.target)));
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        onScreen.add(e.target);
+        e.target.classList.add('taro-parallax');
+      } else {
+        onScreen.delete(e.target);
+        e.target.classList.remove('taro-parallax');
+      }
+    });
     request();
   }, { rootMargin: '20% 0px' });
   imgs.forEach((img) => io.observe(img));
@@ -61,6 +78,12 @@ defineAddon('parallax', () => {
   let queued = false;
   const update = () => {
     queued = false;
+    if (reduceMotion.matches) {
+      // Clear rather than freeze, so nothing is left scaled or shifted once
+      // motion is switched off.
+      onScreen.forEach((img) => { img.style.transform = ''; });
+      return;
+    }
     const mid = window.innerHeight / 2;
     onScreen.forEach((img) => {
       const g = geom.get(img);
@@ -81,5 +104,9 @@ defineAddon('parallax', () => {
   measure();
   window.addEventListener('scroll', request, { passive: true });
   window.addEventListener('resize', () => { measure(); request(); }, { passive: true });
+  // A flip of the setting should take effect immediately, not on the next
+  // scroll. Older Safari lacks addEventListener on MediaQueryList; for it the
+  // next scroll frame picks the change up anyway.
+  reduceMotion.addEventListener?.('change', request);
   update();
 });

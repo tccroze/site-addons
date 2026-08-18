@@ -45,7 +45,11 @@
 
 import { defineAddon, css, warn } from '../lib/util.js';
 
-const ASSET = (name) => new URL(`../assets/${name}`, import.meta.url).href;
+// ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
+// cache, which can pair fresh JS with a stale mask — a re-traced silhouette
+// beside old ridge constants. Stamped by scripts/release.sh.
+const V = '2.39.0';
+const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
  * One entry per section. Matched on the background photograph's filename rather
@@ -68,9 +72,21 @@ const SCENES = [
   // holds its copy near the top of the picture, so lifting it there only pushed
   // it out under the header — it is the dune section, where Squarespace centres
   // the copy in a very tall section, that needs the room.
+  // `clearTear` starts the copy lower on phones: the intro's torn edge hangs
+  // over this section's top by design, and at rest it guillotined the first
+  // headline for ~130px of scroll. Applied as part of the transform, not as
+  // layout — margins inside a Fluid Engine grid overflow their cell.
   { match: /deadvlei/i, mask: 'deadvlei-sky.png', ridge: 0.60, lift: 0, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0.14, taller: false },
+  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0.14, taller: false, clearTear: true },
 ];
+
+// The copy must fall at least this fraction of the rate the section scrolls,
+// or the sink reads as parallax drift rather than the landscape climbing over
+// the words — at 1440x900 the dune copy was falling at 0.53x over a 1000px
+// span while the deadvlei copy fell at 1.16x a few hundred pixels later, and
+// the two same-language gestures obeying different physics is part of what
+// read as clunk. The span is capped so travel/span stays at or above this.
+const FALL_MIN = 0.85;
 
 // The copy holds still until the section's top reaches the top of the window —
 // the moment the photograph fills the screen — and the whole descent then plays
@@ -82,9 +98,12 @@ const SCENES = [
 // scrolled past and never saw the copy meet the dune, only a slow drift. The
 // window is now the section's own scroll-through — how far it can travel while
 // still covering the viewport — so the descent always completes in view.
-const SPAN_MIN = 0.55;    // ...but never quicker than this, in viewport heights
-const BURY = 0.06;        // clearance past the ridge, in viewport heights
-const EASE = 0.16;        // proportion of the remaining distance closed per frame
+const SPAN_MIN = 0.45;    // ...but never quicker than this, in viewport heights
+const BURY = 0.10;        // clearance past the ridge, in viewport heights
+// 0.30, up from 0.16 — the one lag constant the whole page now shares. At 0.16
+// the follower answered a wheel notch ~280ms late, which reads as the copy
+// being towed rather than moving with the page.
+const EASE = 0.30;        // proportion of the remaining distance closed per frame
 const FRAME = 1000 / 60;
 
 // object-position keywords, as fractions of the free space. Chrome serialises
@@ -189,7 +208,11 @@ defineAddon('dune-reveal', () => {
        scales the picture up and carries the ridge down the frame while the copy
        stays near the top. Desktop only; the phone layout stacks. */
     @media (min-width: 768px) {
-      .taro-dune-section--taller { min-height: min(1100px, 76vw); }
+      /* min(1300px, 88vw), up from min(1100px, 76vw): the deadvlei swallow was
+         playing out 61% after the section had stopped covering the viewport —
+         you watched the tail of it over a band of bare teal. The taller runway
+         lets the descent complete while the photograph still fills the screen. */
+      .taro-dune-section--taller { min-height: min(1300px, 88vw); }
     }
 
     /* The call to action is lifted out of the sinking copy and parked at the
@@ -210,6 +233,15 @@ defineAddon('dune-reveal', () => {
       grid-area: auto;
       width: auto; max-width: min(92vw, 520px);
       margin: 0; padding: 0;
+    }
+    /* On phones the button can land over the brightest clay pan, where its
+       outline drops to ~2.2:1 against the sand. A light scrim under the whole
+       button block carries it over any part of the photograph. */
+    @media (max-width: 767px) {
+      .taro-dune-cta a {
+        background: rgba(24, 22, 12, 0.30);
+        border-radius: 999px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -245,7 +277,7 @@ defineAddon('dune-reveal', () => {
       section.appendChild(cta);
     }
 
-    let travel = 0, lift = 0, span = 1;
+    let travel = 0, lift = 0, span = 1, clearPx = 0;
     let mx0 = NaN, my0 = NaN, dw0 = NaN, dh0 = NaN;
     /** The blocks that start in the sky, and therefore sink. */
     let movers = null;
@@ -298,8 +330,10 @@ defineAddon('dune-reveal', () => {
       const secRect = section.getBoundingClientRect();
       // How far the section can scroll while still covering the window. Short
       // sections get a floor, or the whole descent would happen in a few dozen
-      // pixels of wheel and read as a jump rather than a movement.
-      span = Math.max(secRect.height - vh, SPAN_MIN * vh);
+      // pixels of wheel and read as a jump rather than a movement. This is only
+      // the raw ceiling — the real span is set below, once the travel is known,
+      // so the fall keeps pace with the scroll (see FALL_MIN).
+      const rawSpan = Math.max(secRect.height - vh, SPAN_MIN * vh);
       // Desktop only. The intro's torn paper edge hangs over the top of this
       // section by design, and on a phone that overhang reaches far enough down
       // that raising the copy tucked its first line underneath the tear — you
@@ -307,6 +341,7 @@ defineAddon('dune-reveal', () => {
       // phone anyway: the section is taller than the viewport, so the copy has
       // plenty of travel without being lifted into the paper.
       lift = window.innerWidth >= 768 ? (scene.lift || 0) * vh : 0;
+      clearPx = scene.clearTear && window.innerWidth < 768 ? 80 : 0;
       syncMask();
 
       const p = photoRect();
@@ -352,7 +387,20 @@ defineAddon('dune-reveal', () => {
       // catching it. Capped so the sunk copy never comes to rest inside the
       // protected band, where it would be painted back in.
       const room = Number.isFinite(keepTop) ? keepTop - sinkBottom - 8 : Infinity;
-      travel = Math.max(0, Math.min(ridgeY - sinkTop + BURY * vh, room, 1.8 * span));
+      const travelRaw = Math.max(0, Math.min(ridgeY - sinkTop + BURY * vh, room));
+      // The span serves the travel, not the other way round. Left at the raw
+      // ceiling, the dune copy spread 437px of fall over 1000px of scroll —
+      // 0.53x, a drift, while the print section fell at 1.16x: two identical
+      // gestures on different physics. Capped by FALL_MIN the copy falls at
+      // very nearly the rate the picture rises and reads as pinned while the
+      // landscape climbs over it. The keep-copy cap ends the descent before
+      // the standing copy below reaches mid-screen, so the two messages are
+      // never both asking to be read at once.
+      const keepCap = Number.isFinite(keepTop)
+        ? keepTop - secRect.top - vh / 2 : Infinity;
+      span = Math.max(SPAN_MIN * vh,
+        Math.min(rawSpan, (travelRaw + lift + clearPx) / FALL_MIN, keepCap));
+      travel = Math.min(travelRaw, 1.8 * span);
     };
 
     // Zero until the section's top reaches the top of the window, then all the
@@ -363,8 +411,8 @@ defineAddon('dune-reveal', () => {
     // pushes it past the viewport and the document grows a horizontal scrollbar,
     // which reads as a dead strip down the side.
     const render = (p) => {
-      // Starts at -lift and ends at +travel: raised while it is being read, then
-      // carried down behind the ridge.
+      // Starts at -lift (or +clearPx below the tear, on phones) and ends at
+      // +travel: held where it can be read, then carried down behind the ridge.
       //
       // Linear, not eased. The descent is measured against the section's own
       // scroll, so a linear ramp means the copy falls at very nearly the rate
@@ -373,7 +421,7 @@ defineAddon('dune-reveal', () => {
       // screen before the sink caught up, which is what "you scroll past before
       // the motion hits" was describing. The frame-rate-independent follower
       // below is what smooths this; the trajectory itself wants to be straight.
-      const y = travel * p - lift * (1 - p);
+      const y = travel * p - (lift - clearPx) * (1 - p);
       const t = `translate3d(0, ${y.toFixed(2)}px, 0)`;
       if (movers) movers.forEach((el) => { el.__taroY = y; el.style.transform = t; });
     };
@@ -440,7 +488,9 @@ defineAddon('dune-reveal', () => {
       new IntersectionObserver(([e]) => { near = e.isIntersecting; },
         { rootMargin: '250px' }).observe(section);
     }
-    setInterval(() => { if (near) syncMask(); }, 250);
+    // Skipped while the scroll loop is live — step() already reconciles every
+    // frame, so the poll only matters when the visitor is standing still.
+    const poll = setInterval(() => { if (near && !raf) syncMask(); }, 250);
 
     // A mask that fails to load takes the copy with it — an unloadable mask
     // image is treated as fully transparent, which would blank the text
@@ -448,6 +498,11 @@ defineAddon('dune-reveal', () => {
     const probe = new Image();
     probe.onerror = () => {
       wrapper.classList.remove('taro-dune-wrap');
+      // The listeners and the poll go with it: a scene without its mask has
+      // nothing to reconcile, and a timer writing custom properties onto a
+      // wrapper that no longer wears them would run forever for nothing.
+      clearInterval(poll);
+      window.removeEventListener('scroll', request);
       warn(`dune-reveal: ${scene.mask} failed to load`);
     };
     probe.src = maskUrl;

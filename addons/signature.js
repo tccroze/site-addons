@@ -61,23 +61,31 @@ defineAddon('signature', () => {
     );
   };
 
+  // The measurements are cached, not taken per frame. update() used to call
+  // getBoundingClientRect() and read scrollHeight on every scroll frame of
+  // every page — two forced layouts, for an effect only visible in the last
+  // 340px. remeasure() captures everything a frame needs and runs only on the
+  // rare events that can actually change those numbers — the same caching
+  // pattern scroll-progress.js uses for the document height.
+  let near = true, ready = false, maxScroll = 0;
+  const remeasure = () => {
+    // Unmeasurable (not laid out or not yet loaded) means show it in full.
+    // A mask we cannot compute a position for must never leave it invisible.
+    ready = !!(sig.complete && sig.offsetHeight);
+    maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (!ready) sig.style.setProperty('--taro-sig-mask', 'none');
+  };
+
   let queued = false;
   const update = () => {
     queued = false;
-    const r = sig.getBoundingClientRect();
-    // Unmeasurable (not laid out or not yet loaded) means show it in full.
-    // A mask we cannot compute a position for must never leave it invisible.
-    if (!r.height) {
-      sig.style.setProperty('--taro-sig-mask', 'none');
-      return;
-    }
+    if (!ready) return;
     // Measured as distance from the bottom of the page, not from the element.
     // The signature sits in the footer, so it can only ever rise a little above
     // the viewport edge — tying completion to its own travel meant the last
     // stroke landed within ~37px of the absolute bottom, and anyone stopping
     // short of that saw a half-written name and read it as a cropped image.
     // This finishes it a clear 70px before the end of the page.
-    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     const remaining = maxScroll - window.scrollY;
     const span = START_FROM_BOTTOM - FINISH_FROM_BOTTOM;
     const progress = Math.max(0, Math.min(1, (START_FROM_BOTTOM - remaining) / span));
@@ -88,12 +96,33 @@ defineAddon('signature', () => {
     queued = true;
     requestAnimationFrame(update);
   };
+  const refresh = () => { remeasure(); request(); };
 
-  window.addEventListener('scroll', request, { passive: true });
-  window.addEventListener('resize', request, { passive: true });
-  window.addEventListener('load', request);
+  // The scroll handler stays inert until the footer is close, so on a long
+  // page this add-on costs nothing per frame for the whole scroll above it.
+  window.addEventListener('scroll', () => { if (near) request(); }, { passive: true });
+
+  // The 400px margin flips `near` comfortably before the 340px start distance,
+  // and arriving is also the moment to refresh the cached measurements.
+  // Without IntersectionObserver `near` simply stays true — the old always-on
+  // behaviour, correct if not as cheap.
+  if (typeof IntersectionObserver !== 'undefined') {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { near = e.isIntersecting; });
+      if (near) refresh();
+    }, { rootMargin: '400px 0px' });
+    io.observe(footer);
+  }
+
+  window.addEventListener('resize', refresh, { passive: true });
+  window.addEventListener('load', refresh);
   // The image often has no box yet on first run; re-measure once it decodes so
   // the mask starts from a real position rather than a guess.
-  if (!sig.complete) sig.addEventListener('load', request, { once: true });
-  update();
+  if (!sig.complete) sig.addEventListener('load', refresh, { once: true });
+  // The document keeps growing as lazy images load, and nothing announces it.
+  // A slow interval, gated on being near the footer, is the backstop that
+  // keeps the cached height honest.
+  setInterval(() => { if (near) refresh(); }, 1000);
+
+  refresh();
 });
