@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.5';
+const V = '2.39.6';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -94,7 +94,7 @@ const SCENES = [
   // The print scene needs none of this: no tear above it, and its copy rests
   // high above its ridge, so the plain pinned fall is already readable there.
   { match: /deadvlei/i, mask: 'deadvlei-sky.png', ridge: 0.60, lift: 0, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.25, 0.62] },
+  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.25, 0.68] },
 ];
 
 // The copy must fall at least this fraction of the rate the section scrolls,
@@ -426,10 +426,19 @@ defineAddon('dune-reveal', () => {
       // landscape climbs over it. The keep-copy cap ends the descent before
       // the standing copy below reaches mid-screen, so the two messages are
       // never both asking to be read at once.
+      // 0.38vh rather than half a viewport: the sink may still be finishing as
+      // the standing copy reaches the upper third — the handover reads as one
+      // message leaving while the next arrives, and the extra span it buys is
+      // pure reading time for the sinking copy.
       const keepCap = Number.isFinite(keepTop)
-        ? keepTop - secRect.top - vh / 2 : Infinity;
+        ? keepTop - secRect.top - 0.38 * vh : Infinity;
+      // For a phased scene only the falling segments must keep pace with the
+      // scroll, so the FALL_MIN cap is measured against their combined share
+      // of the window, not the whole of it — the hold is free span.
+      const fallShare = scene.phase
+        ? scene.phase[0] + 1 - scene.phase[1] : 1;
       span = Math.max(SPAN_MIN * vh,
-        Math.min(rawSpan, (travelRaw + lift + clearPx) / FALL_MIN, keepCap));
+        Math.min(rawSpan, (travelRaw + lift + clearPx) / (FALL_MIN * fallShare), keepCap));
       travel = Math.min(travelRaw, 1.8 * span);
       // The early-fall share for a phased scene: enough displacement, at the
       // scroll rate, to keep the copy beneath the tear while it is pinned —
