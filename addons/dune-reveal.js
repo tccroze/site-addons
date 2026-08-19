@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.10';
+const V = '2.39.11';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -211,21 +211,14 @@ defineAddon('dune-reveal', () => {
        asking to be read at once. It now enters only after the sink completes,
        rising into a section that has finished moving; scrolling back up hands
        the stage back the same way. */
-    /* The doubled selectors out-specify scroll-reveal's
-       .taro-reveal-on [data-taro-reveal="in"] rule, which also sets opacity on
-       these blocks and loads later — same property, later stylesheet, and it
-       was quietly winning the tie. */
-    .taro-reveal-on .taro-dune-later[data-taro-reveal],
+    /* Only the transition lives in CSS. The opacity and transform themselves
+       are written inline from render(): these blocks carry the owner's own
+       per-block styles and scroll-reveal's reveal rules, and a class selector
+       kept losing the cascade to one or the other — an inline write loses to
+       nothing. */
     .taro-dune-later {
-      opacity: 0;
-      transform: translateY(18px);
       transition: opacity 0.7s ease 0.15s,
                   transform 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) 0.15s;
-    }
-    .taro-reveal-on .taro-dune-done .taro-dune-later[data-taro-reveal],
-    .taro-dune-done .taro-dune-later { opacity: 1; transform: none; }
-    @media (prefers-reduced-motion: reduce) {
-      .taro-dune-later { opacity: 1 !important; transform: none !important; transition: none; }
     }
 
     /* Centred — as a pair, not each line inside its own box. Fluid Engine gives
@@ -334,6 +327,7 @@ defineAddon('dune-reveal', () => {
     }
 
     let travel = 0, lift = 0, span = 1, clearPx = 0, holdW = 0;
+    let keepers = [], shownLater = null;
     let mx0 = NaN, my0 = NaN, dw0 = NaN, dh0 = NaN;
     /** The blocks that start in the sky, and therefore sink. */
     let movers = null;
@@ -428,6 +422,7 @@ defineAddon('dune-reveal', () => {
           // scroll-reveal so its one-shot rise does not fight this one.
           if (!el.classList.contains('taro-dune-later')) {
             el.classList.add('taro-dune-later');
+            keepers.push(el);
             el.querySelectorAll('[data-taro-reveal]').forEach((t) =>
               t.setAttribute('data-taro-reveal', 'in'));
             if (el.hasAttribute('data-taro-reveal')) el.setAttribute('data-taro-reveal', 'in');
@@ -529,8 +524,16 @@ defineAddon('dune-reveal', () => {
       });
       // The standing copy's cue. For a phased scene, when the sink completes;
       // for the plain one, when the descent is most of the way through.
-      wrapper.classList.toggle('taro-dune-done',
-        p >= (scene.phase ? (scene.phase[2] || 1) - 0.02 : 0.8));
+      // Written inline, on change only — see the .taro-dune-later comment.
+      const showLater = reduced.matches
+        || p >= (scene.phase ? (scene.phase[2] || 1) - 0.02 : 0.8);
+      if (showLater !== shownLater) {
+        shownLater = showLater;
+        keepers.forEach((el) => {
+          el.style.opacity = showLater ? '1' : '0';
+          el.style.transform = showLater ? 'translateY(0px)' : 'translateY(18px)';
+        });
+      }
     };
 
     let shownP = 0, lastFrame = 0, raf = 0;
