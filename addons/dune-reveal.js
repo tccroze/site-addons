@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.7';
+const V = '2.39.8';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -94,7 +94,10 @@ const SCENES = [
   // The print scene needs none of this: no tear above it, and its copy rests
   // high above its ridge, so the plain pinned fall is already readable there.
   { match: /deadvlei/i, mask: 'deadvlei-sky.png', ridge: 0.60, lift: 0, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.25, 0.68] },
+  // The third number ends the sink early: the remaining tenth of the window
+  // belongs to the fade that sweeps the low-notch remnant, and to the standing
+  // copy below arriving into a section that has finished moving.
+  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.25, 0.66, 0.90] },
 ];
 
 // The copy must fall at least this fraction of the rate the section scrolls,
@@ -436,7 +439,7 @@ defineAddon('dune-reveal', () => {
       // scroll, so the FALL_MIN cap is measured against their combined share
       // of the window, not the whole of it — the hold is free span.
       const fallShare = scene.phase
-        ? scene.phase[0] + 1 - scene.phase[1] : 1;
+        ? scene.phase[0] + (scene.phase[2] || 1) - scene.phase[1] : 1;
       span = Math.max(SPAN_MIN * vh,
         Math.min(rawSpan, (travelRaw + lift + clearPx) / (FALL_MIN * fallShare), keepCap));
       travel = Math.min(travelRaw, 1.8 * span);
@@ -461,10 +464,11 @@ defineAddon('dune-reveal', () => {
      *  and the eased follower below rounds the two corners into curves. */
     const spent = (p) => {
       if (!scene.phase) return p;
-      const [a, b] = scene.phase;
+      const [a, b, c = 1] = scene.phase;
       if (p <= a) return (p / a) * holdW;
       if (p <= b) return holdW;
-      return holdW + ((p - b) / (1 - b)) * (1 - holdW);
+      if (p >= c) return 1;
+      return holdW + ((p - b) / (c - b)) * (1 - holdW);
     };
 
     const render = (p) => {
@@ -484,8 +488,9 @@ defineAddon('dune-reveal', () => {
       // its travel budget — capped by the keep band below — and strand a
       // fragment in that notch after the rest has gone. The mask still does
       // the swallowing; the fade only sweeps up what the ridge cannot reach.
-      const fade = scene.phase && p > 0.85 && !reduced.matches
-        ? Math.max(0, 1 - (p - 0.85) / 0.13).toFixed(3) : '';
+      const fadeAt = scene.phase ? (scene.phase[2] || 0.85) : 2;
+      const fade = p > fadeAt && !reduced.matches
+        ? Math.max(0, 1 - (p - fadeAt) / 0.08).toFixed(3) : '';
       if (movers) movers.forEach((el) => {
         el.__taroY = y;
         el.style.transform = t;
