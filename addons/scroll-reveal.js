@@ -141,15 +141,22 @@ defineAddon('scroll-reveal', () => {
         padding-inline: var(--sqs-mobile-site-gutter, 6vw);
       }
       /* Out of the grid, the image blocks have no height of their own — Fluid
-         Engine sizes a block from its grid area and fills the picture into it
-         absolutely, so flex items collapse to nothing without an explicit
-         height. 72vw restores the cards' portrait rhythm; the film tile sits
+         Engine sizes a block from its grid area and the picture fills it with
+         a chain of height: 100% wrappers. So the height must be explicit, not
+         a minimum: a percentage only resolves against a definite height, and
+         against min-height the whole inner chain collapsed to a 1px sliver.
+         72vw restores the cards' portrait rhythm; the film tile sits
          shallower, as a frame of footage should. */
-      .taro-tiles .fe-block { position: relative; min-height: 72vw; }
+      .taro-tiles .fe-block { position: relative; height: 72vw; }
       .taro-tiles .fe-block:has(a[href*="/stills"]) { order: 1; }
-      .taro-tiles .fe-block:has(video) { order: 2; min-height: 56vw; }
+      .taro-tiles .fe-block:has(video) { order: 2; height: 56vw; }
       .taro-tiles .fe-block:has(a[href*="/paint"]) { order: 3; }
       .taro-tiles .fe-block:has(a[href*="/venues"]) { order: 4; }
+      .taro-tiles .fe-block .sqs-block,
+      .taro-tiles .fe-block .sqs-block-content,
+      .taro-tiles .fe-block .fluid-image-component-root,
+      .taro-tiles .fe-block .fluid-image-animation-wrapper,
+      .taro-tiles .fe-block .fluid-image-container { height: 100% !important; }
       .taro-tiles .fe-block:has(video) a { display: block; height: 100%; }
       .taro-tiles .fe-block:has(video) video {
         width: 100%; height: 100%; min-height: 56vw;
