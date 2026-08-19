@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.8';
+const V = '2.39.9';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -204,6 +204,23 @@ defineAddon('dune-reveal', () => {
       --taro-keep-pos: 0 0;
     }
     .taro-dune-move { will-change: transform; }
+
+    /* The copy that stands below the ridge waits its turn. It used to reveal
+       on plain scroll position, which put "YOUR STORY DESERVES TO BE FELT" on
+       screen while the dune was still taking the headline — two messages
+       asking to be read at once. It now enters only after the sink completes,
+       rising into a section that has finished moving; scrolling back up hands
+       the stage back the same way. */
+    .taro-dune-later {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.7s ease 0.15s,
+                  transform 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) 0.15s;
+    }
+    .taro-dune-done .taro-dune-later { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-dune-later { opacity: 1 !important; transform: none !important; transition: none; }
+    }
 
     /* Centred — as a pair, not each line inside its own box. Fluid Engine gives
        every block its own grid span, so centring the text alone left the two
@@ -401,6 +418,14 @@ defineAddon('dune-reveal', () => {
           sinkBottom = Math.max(sinkBottom, bottom);
         } else {
           keepTop = Math.min(keepTop, top);
+          // Staged entrance — see .taro-dune-later. Marked revealed for
+          // scroll-reveal so its one-shot rise does not fight this one.
+          if (!el.classList.contains('taro-dune-later')) {
+            el.classList.add('taro-dune-later');
+            el.querySelectorAll('[data-taro-reveal]').forEach((t) =>
+              t.setAttribute('data-taro-reveal', 'in'));
+            if (el.hasAttribute('data-taro-reveal')) el.setAttribute('data-taro-reveal', 'in');
+          }
         }
       });
       if (!chosen.length) return;
@@ -496,6 +521,10 @@ defineAddon('dune-reveal', () => {
         el.style.transform = t;
         el.style.opacity = fade;
       });
+      // The standing copy's cue. For a phased scene, when the sink completes;
+      // for the plain one, when the descent is most of the way through.
+      wrapper.classList.toggle('taro-dune-done',
+        p >= (scene.phase ? (scene.phase[2] || 1) - 0.02 : 0.8));
     };
 
     let shownP = 0, lastFrame = 0, raf = 0;
