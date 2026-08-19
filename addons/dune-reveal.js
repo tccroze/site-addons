@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.11';
+const V = '2.39.12';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -532,6 +532,10 @@ defineAddon('dune-reveal', () => {
         keepers.forEach((el) => {
           el.style.opacity = showLater ? '1' : '0';
           el.style.transform = showLater ? 'translateY(0px)' : 'translateY(18px)';
+          // So measure() anchors the keep band to the SHOWN position — it was
+          // measured 18px low while the blocks waited, and the risen line's
+          // top poked above the band and was shaved by the sky mask.
+          el.__taroY = showLater ? 0 : 18;
         });
       }
     };
