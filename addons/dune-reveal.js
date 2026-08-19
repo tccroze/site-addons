@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.0';
+const V = '2.39.1';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -68,16 +68,18 @@ const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v
  * buy more room once re-cropping has nothing left to give.
  */
 const SCENES = [
-  // `lift` raises the copy before it starts falling. The print section already
-  // holds its copy near the top of the picture, so lifting it there only pushed
-  // it out under the header — it is the dune section, where Squarespace centres
-  // the copy in a very tall section, that needs the room.
+  // `lift` is gone from both scenes, deliberately. It bought the dune copy
+  // reading room by raising it before the fall — but the raise held the first
+  // line up inside the intro's pinned torn edge, which cut it mid-read. The
+  // room is now bought honestly: the copy rests where Squarespace put it, and
+  // because the fall runs at FALL_MIN of the scroll rate, the line drifts up
+  // the screen slower than the tear leaves it, and the two never meet.
   // `clearTear` starts the copy lower on phones: the intro's torn edge hangs
   // over this section's top by design, and at rest it guillotined the first
   // headline for ~130px of scroll. Applied as part of the transform, not as
   // layout — margins inside a Fluid Engine grid overflow their cell.
   { match: /deadvlei/i, mask: 'deadvlei-sky.png', ridge: 0.60, lift: 0, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0.14, taller: false, clearTear: true },
+  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true },
 ];
 
 // The copy must fall at least this fraction of the rate the section scrolls,
@@ -213,6 +215,19 @@ defineAddon('dune-reveal', () => {
          you watched the tail of it over a band of bare teal. The taller runway
          lets the descent complete while the photograph still fills the screen. */
       .taro-dune-section--taller { min-height: min(1300px, 88vw); }
+      /* Squarespace sizes the background image inline, from the height the
+         section had when its own script measured it — before this min-height
+         had grown it. The stale size left a band of bare section colour under
+         the photograph. !important because inline style wins every tie that
+         isn't one. object-fit keeps the crop; the focal point still comes from
+         Squarespace's own object-position, which is not overridden. */
+      .taro-dune-section--taller .section-background img {
+        width: 100% !important;
+        height: 100% !important;
+        top: 0 !important;
+        left: 0 !important;
+        object-fit: cover;
+      }
     }
 
     /* The call to action is lifted out of the sinking copy and parked at the
