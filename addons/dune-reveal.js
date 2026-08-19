@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.6';
+const V = '2.39.7';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -479,7 +479,18 @@ defineAddon('dune-reveal', () => {
       // The frame-rate-independent follower below is what smooths this.
       const y = travel * spent(p) - (lift - clearPx) * (1 - p);
       const t = `translate3d(0, ${y.toFixed(2)}px, 0)`;
-      if (movers) movers.forEach((el) => { el.__taroY = y; el.style.transform = t; });
+      // The last of the sink is a fade as well as a fall. At the far left the
+      // ridge dips low and the sky reaches deep, so a first letter can outfall
+      // its travel budget — capped by the keep band below — and strand a
+      // fragment in that notch after the rest has gone. The mask still does
+      // the swallowing; the fade only sweeps up what the ridge cannot reach.
+      const fade = scene.phase && p > 0.85 && !reduced.matches
+        ? Math.max(0, 1 - (p - 0.85) / 0.13).toFixed(3) : '';
+      if (movers) movers.forEach((el) => {
+        el.__taroY = y;
+        el.style.transform = t;
+        el.style.opacity = fade;
+      });
     };
 
     let shownP = 0, lastFrame = 0, raf = 0;
