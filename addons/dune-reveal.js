@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.4';
+const V = '2.39.5';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -70,16 +70,31 @@ const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v
 const SCENES = [
   // `lift` is gone from both scenes, deliberately. It bought the dune copy
   // reading room by raising it before the fall — but the raise held the first
-  // line up inside the intro's pinned torn edge, which cut it mid-read. The
-  // room is now bought honestly: the copy rests where Squarespace put it, and
-  // because the fall runs at FALL_MIN of the scroll rate, the line drifts up
-  // the screen slower than the tear leaves it, and the two never meet.
+  // line up inside the intro's pinned torn edge, which cut it mid-read.
   // `clearTear` starts the copy lower on phones: the intro's torn edge hangs
   // over this section's top by design, and at rest it guillotined the first
   // headline for ~130px of scroll. Applied as part of the transform, not as
   // layout — margins inside a Fluid Engine grid overflow their cell.
+  //
+  // `phase` is the dune scene's answer to an impossible triangle. Its copy
+  // rests only ~150px above the ridge, under a torn edge that stays pinned on
+  // screen for the first quarter of the window. A fall welded to the scroll
+  // rate keeps the copy out of the tear but lets the ridge catch it almost
+  // immediately — it was gone before it could be read. No fall at all keeps it
+  // readable but rides it up into the pinned tear. So the fall is piecewise:
+  //
+  //   p 0 → phase[0]   fall AT the scroll rate — the copy hangs still on
+  //                    screen just beneath the tear while the tear plays out;
+  //   p → phase[1]     hold — the tear has scrolled away, the copy rides up
+  //                    with the page, high and readable, and the ridge gains
+  //                    nothing on it;
+  //   p → 1            the sink — the remaining travel lands at ~1.4x, which
+  //                    reads as the dune decisively taking the words.
+  //
+  // The print scene needs none of this: no tear above it, and its copy rests
+  // high above its ridge, so the plain pinned fall is already readable there.
   { match: /deadvlei/i, mask: 'deadvlei-sky.png', ridge: 0.60, lift: 0, taller: true },
-  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true },
+  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.25, 0.62] },
 ];
 
 // The copy must fall at least this fraction of the rate the section scrolls,
@@ -292,7 +307,7 @@ defineAddon('dune-reveal', () => {
       section.appendChild(cta);
     }
 
-    let travel = 0, lift = 0, span = 1, clearPx = 0;
+    let travel = 0, lift = 0, span = 1, clearPx = 0, holdW = 0;
     let mx0 = NaN, my0 = NaN, dw0 = NaN, dh0 = NaN;
     /** The blocks that start in the sky, and therefore sink. */
     let movers = null;
@@ -416,6 +431,11 @@ defineAddon('dune-reveal', () => {
       span = Math.max(SPAN_MIN * vh,
         Math.min(rawSpan, (travelRaw + lift + clearPx) / FALL_MIN, keepCap));
       travel = Math.min(travelRaw, 1.8 * span);
+      // The early-fall share for a phased scene: enough displacement, at the
+      // scroll rate, to keep the copy beneath the tear while it is pinned —
+      // never more than half the whole travel, or the hold has nothing left.
+      holdW = scene.phase && travel > 0
+        ? Math.min(0.5, (FALL_MIN * scene.phase[0] * span) / travel) : 0;
     };
 
     // Zero until the section's top reaches the top of the window, then all the
@@ -425,18 +445,30 @@ defineAddon('dune-reveal', () => {
     // No scale, deliberately. Scaling a full-width block by even a few percent
     // pushes it past the viewport and the document grows a horizontal scrollbar,
     // which reads as a dead strip down the side.
+    /** Fraction of the travel spent by progress p. Linear for a plain scene —
+     *  the fall tracks the scroll and reads as pinned. Piecewise for a phased
+     *  one: fall at the scroll rate while the tear is pinned, hold while the
+     *  copy is being read, then sink the remainder. Each segment is linear,
+     *  and the eased follower below rounds the two corners into curves. */
+    const spent = (p) => {
+      if (!scene.phase) return p;
+      const [a, b] = scene.phase;
+      if (p <= a) return (p / a) * holdW;
+      if (p <= b) return holdW;
+      return holdW + ((p - b) / (1 - b)) * (1 - holdW);
+    };
+
     const render = (p) => {
       // Starts at -lift (or +clearPx below the tear, on phones) and ends at
       // +travel: held where it can be read, then carried down behind the ridge.
       //
-      // Linear, not eased. The descent is measured against the section's own
-      // scroll, so a linear ramp means the copy falls at very nearly the rate
-      // the picture rises and reads as pinned in place while the dune climbs
-      // over it. Squaring it made the copy lag at the start — it drifted up the
-      // screen before the sink caught up, which is what "you scroll past before
-      // the motion hits" was describing. The frame-rate-independent follower
-      // below is what smooths this; the trajectory itself wants to be straight.
-      const y = travel * p - (lift - clearPx) * (1 - p);
+      // Linear segments, not curves. The descent is measured against the
+      // section's own scroll, so a linear ramp means the copy falls at a fixed
+      // fraction of the rate the picture rises. Squaring it made the copy lag
+      // at the start — it drifted up the screen before the sink caught up,
+      // which is what "you scroll past before the motion hits" was describing.
+      // The frame-rate-independent follower below is what smooths this.
+      const y = travel * spent(p) - (lift - clearPx) * (1 - p);
       const t = `translate3d(0, ${y.toFixed(2)}px, 0)`;
       if (movers) movers.forEach((el) => { el.__taroY = y; el.style.transform = t; });
     };
