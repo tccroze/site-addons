@@ -137,10 +137,17 @@ defineAddon('scroll-reveal', () => {
       .taro-tiles .fluid-engine {
         display: flex; flex-direction: column;
         gap: 14px;
+        padding-block: 8px;
         padding-inline: var(--sqs-mobile-site-gutter, 6vw);
       }
+      /* Out of the grid, the image blocks have no height of their own — Fluid
+         Engine sizes a block from its grid area and fills the picture into it
+         absolutely, so flex items collapse to nothing without an explicit
+         height. 72vw restores the cards' portrait rhythm; the film tile sits
+         shallower, as a frame of footage should. */
+      .taro-tiles .fe-block { position: relative; min-height: 72vw; }
       .taro-tiles .fe-block:has(a[href*="/stills"]) { order: 1; }
-      .taro-tiles .fe-block:has(video) { order: 2; position: relative; min-height: 56vw; }
+      .taro-tiles .fe-block:has(video) { order: 2; min-height: 56vw; }
       .taro-tiles .fe-block:has(a[href*="/paint"]) { order: 3; }
       .taro-tiles .fe-block:has(a[href*="/venues"]) { order: 4; }
       .taro-tiles .fe-block:has(video) a { display: block; height: 100%; }
@@ -161,13 +168,19 @@ defineAddon('scroll-reveal', () => {
 
   // The labels themselves. Keyed off the card's own destination, so a renamed
   // or reordered card in the editor stays truthful without touching this file.
+  // Set in the same face as the MOTION overlay, read from it live — the four
+  // tiles should speak in one voice, and hard-coding the font here would break
+  // the moment Squarespace re-hashes the uploaded family name.
   if (tiles) {
+    const overlay = tiles.querySelector('.video-overlay');
+    const overlayFont = overlay && getComputedStyle(overlay).fontFamily;
     ['venues', 'stills', 'paint'].forEach((name) => {
       const a = tiles.querySelector(`.fe-block a[href*="/${name}"]`);
       if (!a || a.querySelector('.taro-tile-label')) return;
       const label = document.createElement('span');
       label.className = 'taro-tile-label';
       label.textContent = name.toUpperCase();
+      if (overlayFont) label.style.fontFamily = overlayFont;
       a.appendChild(label);
     });
   }
