@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.9';
+const V = '2.39.10';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -211,12 +211,18 @@ defineAddon('dune-reveal', () => {
        asking to be read at once. It now enters only after the sink completes,
        rising into a section that has finished moving; scrolling back up hands
        the stage back the same way. */
+    /* The doubled selectors out-specify scroll-reveal's
+       .taro-reveal-on [data-taro-reveal="in"] rule, which also sets opacity on
+       these blocks and loads later — same property, later stylesheet, and it
+       was quietly winning the tie. */
+    .taro-reveal-on .taro-dune-later[data-taro-reveal],
     .taro-dune-later {
       opacity: 0;
       transform: translateY(18px);
       transition: opacity 0.7s ease 0.15s,
                   transform 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) 0.15s;
     }
+    .taro-reveal-on .taro-dune-done .taro-dune-later[data-taro-reveal],
     .taro-dune-done .taro-dune-later { opacity: 1; transform: none; }
     @media (prefers-reduced-motion: reduce) {
       .taro-dune-later { opacity: 1 !important; transform: none !important; transition: none; }
