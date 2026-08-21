@@ -47,9 +47,13 @@ const BLUR = '7px';
 const DIM = 'brightness(0.72)';   // matched to the veil's own dimming
 
 defineAddon('video-focus', () => {
-  const players = [...document.querySelectorAll('.sqs-block-video .plyr')]
-    .filter((p) => p.querySelector('video'));
-  if (!players.length) return;
+  // Gated on the BLOCKS, not on the players. Squarespace builds its Plyr
+  // instances well after DOMContentLoaded — measured here, there are six
+  // .sqs-block-video blocks and zero .plyr elements at the moment this runs,
+  // and the first version of this file enumerated players, found none, and
+  // returned before it had even installed its stylesheet. Nothing worked and
+  // nothing said why.
+  if (!document.querySelector('.sqs-block-video')) return;
 
   const main = document.querySelector('main#page') || document.querySelector('main');
   if (!main) return;                       // nothing to hang the veil inside
@@ -253,15 +257,18 @@ defineAddon('video-focus', () => {
     });
   };
 
-  players.forEach((player) => {
-    player.addEventListener('click', () => {
-      if (open) return;                // clicks inside the focused film are Plyr's
-      openFor(player);
-      // Played from inside the click, not from a later frame: these films
-      // carry sound, and a browser only grants that to a live user gesture.
-      const v = player.querySelector('video');
-      if (v && v.paused) v.play().catch(() => {});
-    });
+  // Delegated, for the same reason: the players do not exist yet, and binding
+  // to them on a timer would only move the race. Matching at click time cannot
+  // be early or late.
+  document.addEventListener('click', (e) => {
+    if (open) return;                  // clicks inside the focused film are Plyr's
+    const player = e.target.closest && e.target.closest('.sqs-block-video .plyr');
+    if (!player || !player.querySelector('video')) return;
+    openFor(player);
+    // Played from inside the click, not from a later frame: these films carry
+    // sound, and a browser only grants that to a live user gesture.
+    const v = player.querySelector('video');
+    if (v && v.paused) v.play().catch(() => {});
   });
 
   document.addEventListener('keydown', (e) => {
