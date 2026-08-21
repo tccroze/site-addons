@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.12';
+const V = '2.39.13';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -145,7 +145,12 @@ defineAddon('dune-reveal', () => {
   if (location.pathname !== '/') return;
   if (document.querySelector('.taro-dune-wrap')) return;
 
-  const sections = [...document.querySelectorAll('article#sections > section')];
+  // By data-section-id, not by wrapper: Squarespace retired the
+  // <article id="sections"> container for page-regions markup, and a selector
+  // keyed to it found nothing — both scenes silently failed to mount. Footer
+  // sections carry the same attribute and are excluded.
+  const sections = [...document.querySelectorAll('section[data-section-id]')]
+    .filter((s) => !s.closest('footer'));
   const found = SCENES
     .map((scene) => ({
       scene,

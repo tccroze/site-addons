@@ -29,7 +29,7 @@ import { defineAddon, css } from '../lib/util.js';
 // ?v= because the assets otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale image — the half-deploy class
 // main.js documents. Stamped by scripts/release.sh along with everything else.
-const V = '2.39.12';
+const V = '2.39.13';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 const PHOTO = ASSET('spitzkoppe-2600.jpg');
 const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
@@ -232,8 +232,16 @@ const deckleFilter = (id) =>
 defineAddon('masked-intro', () => {
   if (location.pathname !== '/') return;
 
-  const host = document.querySelector('article#sections, article.sections');
-  const firstSection = host?.querySelector('section[data-section-id]');
+  // Anchored on the first visible page section, not on a named wrapper.
+  // Squarespace moved the homepage from <article id="sections"> to its
+  // page-regions markup (article#page-regions > section.region > section…)
+  // without notice, and an addon keyed to the old id silently inserted
+  // nothing — the panorama vanished and the page opened on bare dune sky.
+  // Whatever element holds the first section is the host; the intro is
+  // inserted as its elder sibling and pulls it up under the tear as before.
+  const firstSection = [...document.querySelectorAll('section[data-section-id]')]
+    .find((s) => !s.closest('footer') && getComputedStyle(s).display !== 'none');
+  const host = firstSection && firstSection.parentElement;
   if (!host || !firstSection) return;
   if (document.querySelector('.taro-intro')) return;
 
