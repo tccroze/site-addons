@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.16';
+const V = '2.39.17';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -493,8 +493,16 @@ defineAddon('dune-reveal', () => {
       // of the window, not the whole of it — the hold is free span.
       const fallShare = scene.phase
         ? scene.phase[0] + (scene.phase[2] || 1) - scene.phase[1] : 1;
-      span = Math.max(SPAN_MIN * vh,
-        Math.min(rawSpan, (travelRaw + lift + clearPx) / (FALL_MIN * fallShare), keepCap));
+      // A masked scene sizes its window so the copy keeps pace with the
+      // scroll (FALL_MIN). A maskless one has no ridge to keep pace with, and
+      // that formula — fed a negative, lifting travel — collapsed it onto the
+      // SPAN_MIN floor: ~320px readable then a 100px snap of a fade. It gets a
+      // window sized to the viewport instead, which roughly doubles the time
+      // the words are on screen and spreads the dissolve over ~230px.
+      span = maskUrl
+        ? Math.max(SPAN_MIN * vh,
+            Math.min(rawSpan, (travelRaw + lift + clearPx) / (FALL_MIN * fallShare), keepCap))
+        : Math.max(SPAN_MIN * vh, Math.min(rawSpan, 0.95 * vh, keepCap));
       travel = maskUrl ? Math.min(travelRaw, 1.8 * span) : travelRaw;
       // The early-fall share for a phased scene: enough displacement, at the
       // scroll rate, to keep the copy beneath the tear while it is pinned —
