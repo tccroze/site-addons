@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.15';
+const V = '2.39.16';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -657,6 +657,9 @@ defineAddon('dune-reveal', () => {
     // A mask that fails to load takes the copy with it — an unloadable mask
     // image is treated as fully transparent, which would blank the text
     // entirely. Losing the effect is fine; losing the words is not.
+    // Only a masked scene has anything to probe; without this the maskless
+    // one requested the literal string "null" and logged a 404 per page view.
+    if (!maskUrl) return;
     const probe = new Image();
     probe.onerror = () => {
       wrapper.classList.remove('taro-dune-wrap');
