@@ -1,370 +1,224 @@
-// A 35mm contact-sheet strip above the homepage footer.
+// A strip of 35mm contact sheet above the footer, on the homepage.
 //
-// A dark band of film drifts slowly leftwards between the red "READY? LET'S
-// TALK" section and the footer: sprocket holes top and bottom, a dozen of the
-// site's own stills framed at 3:2, and a tiny orange edge-print along the
-// rebate — "TARO CROZE 400TX" and the frame numbers, the way Kodak prints
-// them. The whole strip is one link to /stills. Hovering it stops the reel.
+// The page ends on a call to action. Before it does, this offers a second,
+// quieter way back into the work: a band of frames drifting slowly past, each
+// one a link into the gallery it came from. It is the photographer's answer to
+// the social-feed strip a lot of sites end on — same job, but it speaks film.
 //
-// Where the frames come from. The brief had them scraped from /stills, but
-// the live /stills page is a landing page — the only <img> tags on it are the
-// header logo — and the masonry galleries live one level down: /wildlife,
-// /portraits, /35film and friends. So the frames are fetched from /35film,
-// the 35mm gallery (thirty-odd photographs, most of them landscape), which is
-// also the only honest source for a strip pretending to be a roll of 400TX.
-// /stills is kept as a second attempt in case a gallery is ever placed there.
-// Landscape frames are preferred — a portrait cropped to 3:2 loses its
-// subject — and the pick is spread evenly across the roll rather than being
-// the first twelve, so the strip samples the gallery instead of its opening.
+// The film language is doing real work here, not decoration. Sprocket holes
+// down both rebates and an orange edge print reading TARO CROZE 400TX with
+// advancing frame numbers say "this is a roll, there is more of it" without a
+// line of copy. A plain row of thumbnails says nothing.
 //
-// Every dimension is a pixel constant, on purpose. The copy width is
-// FRAMES × FRAME_PITCH, which means the drift distance, the number of copies
-// needed to cover the viewport, and the sprocket pitch are all known without
-// measuring a single box. The sprocket rows are a one-tile SVG background
-// exactly one cell wide (eight holes, as on real 35mm), so no fractional
-// background-repeat ever has to meet itself at a cell boundary.
+// COST. This is deliberately the cheapest moving thing on the page. The drift
+// is one CSS animation on one transform — no scroll listener, no rAF, nothing
+// per frame. The whole strip is built only once the visitor is near the footer,
+// so a reader who never reaches the bottom pays nothing at all, and the images
+// are lazy so only what is on screen is fetched.
 //
-// Drift is a CSS animation on transform only. The reel is duplicated and the
-// keyframe travels exactly one copy, so the wrap is invisible. It pauses on
-// hover (fenced on hover:hover and pointer:fine, like cursor.js), on keyboard
-// focus, and — via IntersectionObserver — whenever the strip is off screen,
-// so it costs nothing while the visitor is anywhere else on the page.
-// prefers-reduced-motion is a media query in the stylesheet: the browser
-// consults it live, and a mid-session flip stops the reel where it stands.
+// WHY THE FRAMES ARE WRITTEN DOWN HERE. The obvious thing is to fetch /stills
+// and /venues at runtime and read them, so the strip refreshes itself when new
+// work goes up. Measured, those two pages are 210KB and 405KB of HTML — 615KB
+// to decorate a footer, for content that changes a few times a year. The list
+// below costs about a kilobyte instead. The trade is that adding a photograph
+// to a gallery does not add it here.
 //
-// Lazy by construction: nothing is fetched or built until the footer comes
-// within 800px of the viewport. If the fetch fails, or the page parses to
-// fewer than six usable frames, nothing is inserted and nothing is logged
-// above a note — the homepage simply ends the way it always did.
+//   TO ADD A FRAME: paste its URL into FRAMES with the gallery it belongs to.
+//   The URLs are stable — Squarespace keys them by upload id, not by position.
 //
-// Progressive enhancement: the strip does not exist without JS. No content is
-// hidden waiting on it, and the footer's own add-ons (signature.js measures
-// from the page bottom and re-measures on a slow interval) absorb the extra
-// height without being told.
+// Paintings are left out on purpose: an orange 400TX edge print running under a
+// watercolour is a small lie, and the strip stops meaning anything if it holds
+// everything. Stills and venues are both camera work, so the roll holds.
 
-import { defineAddon, css, log } from '../lib/util.js';
+import { defineAddon, css } from '../lib/util.js';
 
-const SOURCES = ['/35film', '/stills'];  // tried in order; first with enough frames wins
-const LINK = '/stills';                  // where a click on the strip lands
-const FRAMES = 12;                       // frames per copy of the reel
-const MIN_FRAMES = 6;                    // fewer than this and no strip is built
-const FRAME_BASE = 12;                   // edge-print numbering starts here: 12, 12A, 13…
-const STOCK = 'TARO CROZE 400TX';        // house brand posing as a film stock
-const NEAR = '800px 0px';                // footer distance at which the build starts
-const LOOP_S = 40;                       // seconds for one copy to drift past
+// [url, gallery, alt]. Alt is empty where Squarespace has none — those frames
+// are then hidden from screen readers rather than announced as "image".
+const FRAMES = [
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/8daf43ee-6250-4f07-932a-1c26dfa95872/9S0A9692.jpg', 'stills', 'A jaguar perched on a tree branch in a jungle setting'],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/f7b716d1-3aa1-40ad-99ee-fa147a656bdb/P1025178.jpg', 'venues', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/90f65d73-f903-4c52-b964-2a8c308b1f08/IMG_6100.JPG', 'stills', 'People gathered at night around a fire'],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/c0d505e6-542b-45a2-9c44-f506d588d73d/P1026138.jpg', 'venues', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/32076646-f9f0-4d8a-831d-6d12c094129f/P1022405-2.jpg', 'stills', 'Night sky, stars through tree branches'],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/587907c0-246d-4c65-a6b7-cfaf66ccaca1/P1027259.jpg', 'venues', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/e986bedd-1a1a-42d0-af83-776112e2cf5f/IMG_2215.JPG', 'stills', 'A vintage red Chevrolet convertible on a street'],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/bb40183e-1bdb-4035-8af2-1606627e01e6/P1025212.jpg', 'venues', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/97cc1228-f871-431c-9df9-487c218585ff/P1023658.jpg', 'stills', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/050ee6ee-d04a-483b-a484-87fbb1307587/P1025761.jpg', 'venues', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/7a77ac9b-eee8-4407-a2e2-09ef62c24492/P1023579.jpg', 'stills', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/f61d6313-78d1-400a-9dcb-425c8dff2123/P1026480.jpg', 'venues', ''],
+  ['https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/548a8cb7-dd27-482c-9652-1c80151caba6/P1025440.jpg', 'venues', ''],
+];
 
-// Geometry — all px. A 35mm frame pitch is 38mm with a 36×24 image, so a
-// 190px cell holds a 180×120 image with 5px of rebate each side. Perforations
-// run eight to the frame (pitch 23.75px); KS perfs are 2.8×2mm with rounded
-// corners, scaled here to 14×10 with r=2.5.
-const FRAME_PITCH = 190;
-const IMG_W = 180, IMG_H = 120;
-const PERF_ROW = 18, PRINT_ROW = 16;
-const HOLE_W = 14, HOLE_H = 10, HOLE_R = 2.5;
-const HOLES_PER_FRAME = 8;
-const COPY_W = FRAMES * FRAME_PITCH;
-
-const INK = '#e8934a';                   // edge-print orange
-const BASE = '#151515';                  // the film base
-const HOLE = 'rgba(246,238,213,0.38)';   // page cream, dimmed: light through a hole
+const STOCK = 'TARO CROZE 400TX';
+const FIRST_FRAME = 12;        // rolls lead in; frame 1 is never the first usable one
+const SECONDS_PER_FRAME = 4.6; // drift speed, expressed per frame so it reads the
+                               // same however many frames the roll holds
+const INK = '#e8934a';         // edge-print orange
+const BASE = '#17150f';        // the film's own dark ground
 
 defineAddon('film-strip', () => {
   if (location.pathname !== '/') return;
+  if (document.querySelector('.taro-film')) return;
+
   const footer = document.querySelector('footer');
-  if (!footer || !footer.parentNode) return;
-  if (document.querySelector('.taro-film')) return;   // idempotent
+  if (!footer || FRAMES.length < 4) return;   // too few frames is not a roll
 
-  // One SVG tile, one cell wide, eight rounded holes. Built as a data URI so
-  // there is no asset to deploy and no second request.
-  const pitch = FRAME_PITCH / HOLES_PER_FRAME;
-  const holes = Array.from({ length: HOLES_PER_FRAME }, (_, i) =>
-    `<rect x="${(i * pitch + (pitch - HOLE_W) / 2).toFixed(3)}" y="0" width="${HOLE_W}" height="${HOLE_H}" rx="${HOLE_R}"/>`
-  ).join('');
-  const perfs = `url("data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${FRAME_PITCH}" height="${HOLE_H}" fill="${HOLE}">${holes}</svg>`
-  )}")`;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  const injectCss = () => css('film-strip', `
+  css('film-strip', `
     .taro-film {
       position: relative;
-      width: 100%;
-      background: ${BASE};
-      /* clip, not hidden: a focused element inside an overflow:hidden box can
-         scroll that box to reveal itself, and a stray scrollLeft here would
-         shove the reel off its keyframe. clip cannot be scrolled. hidden is
-         kept first as the fallback for browsers without clip. */
       overflow: hidden;
-      overflow: clip;
-      contain: layout paint;
-      line-height: 0;
-      font-size: 0;   /* no whitespace gaps between inline-ish children */
+      background: ${BASE};
+      /* Sprocket rows are a fixed background rather than part of the drifting
+         track. They are periodic, so holding them still is indistinguishable
+         from moving them, and it saves scrolling a second large layer. */
+      --taro-sprocket: url("data:image/svg+xml;charset=utf-8,\
+%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='20'%3E\
+%3Crect x='5' y='5' width='24' height='11' rx='3' fill='%23f6eed5' fill-opacity='0.93'/%3E%3C/svg%3E");
     }
-    .taro-film,
-    .taro-film * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* The two rebates. Pseudo-elements so the markup stays one band. */
+    .taro-film::before, .taro-film::after {
+      content: ''; position: absolute; left: 0; right: 0; height: 20px;
+      background-image: var(--taro-sprocket);
+      background-repeat: repeat-x;
+      z-index: 2; pointer-events: none;
+    }
+    .taro-film::before { top: 6px; }
+    .taro-film::after  { bottom: 6px; }
 
-    .taro-film-link {
-      display: block;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    /* The focus ring is drawn on the link's own box, which is the visible
-       band (the 4000px track overflows it), and only for keyboard focus: a
-       mouse click focuses a link too, and the ring would otherwise flash up
-       under the page-transition veil on the way out. */
-    .taro-film-link:focus-visible {
-      outline: 2px solid ${INK};
-      outline-offset: -2px;
-    }
-
-    .taro-film-track {
+    .taro-film__track {
       display: flex;
       width: max-content;
-      transform: translate3d(0, 0, 0);
-      animation: taro-film-drift ${LOOP_S}s linear infinite;
-      animation-play-state: paused;        /* runs only while on screen */
-    }
-    .taro-film.is-on .taro-film-track {
-      animation-play-state: running;
-      will-change: transform;              /* promoted only while visible */
+      /* Duplicated once, so translating exactly half the track wraps seamlessly. */
+      animation: taro-film-drift var(--taro-film-dur, 60s) linear infinite;
+      will-change: transform;
     }
     @keyframes taro-film-drift {
-      to { transform: translate3d(-${COPY_W}px, 0, 0); }
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(-50%, 0, 0); }
     }
+    /* Hovering anywhere on the band stops the roll so a frame can be read. */
+    .taro-film:hover .taro-film__track,
+    .taro-film:focus-within .taro-film__track { animation-play-state: paused; }
 
-    /* Hover stops the reel so a frame can be looked at. Fenced on capability
-       rather than the boot check alone, so a phone never pauses on a phantom
-       hover left behind by a tap. Focus stops it on any device. */
-    @media (hover: hover) and (pointer: fine) {
-      .taro-film:hover .taro-film-track { animation-play-state: paused; }
-    }
-    .taro-film:focus-within .taro-film-track { animation-play-state: paused; }
-
-    .taro-film-reel {
-      display: flex;
-      list-style: none;
+    .taro-film__frame {
+      position: relative;
       flex: 0 0 auto;
+      display: block;
+      margin: 32px 5px 32px;      /* clear of both sprocket rebates */
+      width: clamp(132px, 13vw, 186px);
+      text-decoration: none;
+      outline-offset: 3px;
     }
-    .taro-film-frame {
-      flex: 0 0 ${FRAME_PITCH}px;
-      width: ${FRAME_PITCH}px;
-      padding: ${PERF_ROW}px ${(FRAME_PITCH - IMG_W) / 2}px;
-      background-color: ${BASE};
-      background-image: ${perfs}, ${perfs};
-      background-repeat: no-repeat, no-repeat;
-      background-size: ${FRAME_PITCH}px ${HOLE_H}px;
-      background-position: 0 ${(PERF_ROW - HOLE_H) / 2}px, 0 calc(100% - ${(PERF_ROW - HOLE_H) / 2}px);
-    }
-    .taro-film-window {
-      width: ${IMG_W}px;
-      height: ${IMG_H}px;
-      overflow: hidden;
-      background: #0a0a0a;                 /* the frame before its image lands */
-    }
-    .taro-film-window img {
+    .taro-film__frame img {
       display: block;
       width: 100%;
-      height: 100%;
+      aspect-ratio: 3 / 2;
       object-fit: cover;
-      transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+      background: #241f16;         /* placeholder while it decodes */
+      transition: filter 400ms ease, opacity 400ms ease;
+      filter: saturate(0.92);
     }
-    @media (hover: hover) and (pointer: fine) {
-      .taro-film-frame:hover img { transform: scale(1.04); }
-    }
+    .taro-film:hover .taro-film__frame img { opacity: 0.55; }
+    .taro-film .taro-film__frame:hover img,
+    .taro-film .taro-film__frame:focus-visible img { opacity: 1; filter: saturate(1); }
 
-    /* The rebate. Same typographic voice as edge-print.js's captions so the
-       two film conceits on the site read as one; the site's own monospace
-       (Cousine) is the fallback where no condensed face exists. */
-    .taro-film-print {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: ${PRINT_ROW}px;
-      padding: 0 2px;
-      color: ${INK};
-      font-family: 'Arial Narrow', 'Helvetica Neue Condensed', 'Roboto Condensed', Cousine, 'Courier New', ui-monospace, monospace;
-      font-stretch: condensed;
+    /* The edge print, in the lower rebate, drifting with its own frame. */
+    .taro-film__num {
+      position: absolute;
+      left: 1px; bottom: -21px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 9px;
-      font-weight: 600;
+      letter-spacing: 0.16em;
       line-height: 1;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
+      color: ${INK};
       white-space: nowrap;
-      user-select: none;
+      pointer-events: none;
     }
 
+    @media (max-width: 700px) {
+      .taro-film__frame { margin: 26px 4px; width: clamp(108px, 34vw, 150px); }
+      .taro-film::before, .taro-film::after { height: 16px; }
+      .taro-film::before { top: 5px; }
+      .taro-film::after { bottom: 5px; }
+      .taro-film__num { bottom: -18px; font-size: 8px; }
+    }
+
+    /* Asked for no motion: the roll simply sits still. It is still a strip of
+       photographs and every frame is still a link, so nothing is lost. */
     @media (prefers-reduced-motion: reduce) {
-      .taro-film-track,
-      .taro-film.is-on .taro-film-track { animation: none; will-change: auto; }
-      .taro-film-window img { transition: none; }
+      .taro-film__track { animation: none; }
     }
   `);
 
-  // ---- frames -------------------------------------------------------------
-
-  // Pull a set of frames out of a gallery page's HTML. DOMParser documents
-  // have no browsing context, so nothing in the fetched page loads or runs —
-  // this is text in, a list of URLs out. Masonry tiles carry the original on
-  // data-src and its size on data-image-dimensions; the CDN cuts any width on
-  // request with ?format=Nw.
-  const parseFrames = (html) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const seen = new Set();
-    const all = [];
-    doc.querySelectorAll('.gallery-masonry-item img').forEach((img) => {
-      const raw = img.getAttribute('data-src') || img.getAttribute('src') || '';
-      const url = raw.split('?')[0];
-      if (!/^https?:\/\//.test(url) || seen.has(url)) return;
-      seen.add(url);
-      const dims = (img.getAttribute('data-image-dimensions') || '').split('x').map(Number);
-      const [fx, fy] = (img.getAttribute('data-image-focal-point') || '').split(',').map(Number);
-      all.push({
-        url,
-        landscape: dims.length === 2 && dims[0] > dims[1],
-        focal: (fx >= 0 && fx <= 1 && fy >= 0 && fy <= 1) ? `${(fx * 100).toFixed(1)}% ${(fy * 100).toFixed(1)}%` : '50% 50%',
-      });
-    });
-    // Landscape first, portraits only to make up the numbers; then sample
-    // evenly so the strip spans the roll.
-    const pool = all.filter((f) => f.landscape).concat(all.filter((f) => !f.landscape));
-    if (pool.length < MIN_FRAMES) return [];
-    const n = Math.min(FRAMES, pool.length);
-    return Array.from({ length: n }, (_, i) => pool[Math.floor((i * pool.length) / n)]);
-  };
-
-  const fetchFrames = async () => {
-    for (const path of SOURCES) {
-      try {
-        const res = await fetch(path, { credentials: 'same-origin' });
-        if (!res.ok) continue;
-        const frames = parseFrames(await res.text());
-        if (frames.length >= MIN_FRAMES) return frames;
-      } catch (_) { /* try the next source */ }
+  /** One frame. `n` counts up the roll: 12, 12A, 13, 13A… as film does. */
+  const frame = (url, gallery, alt, i, hidden) => {
+    const a = document.createElement('a');
+    a.className = 'taro-film__frame';
+    a.href = `/${gallery}`;
+    const num = FIRST_FRAME + Math.floor(i / 2) + (i % 2 ? 'A' : '');
+    if (hidden) {
+      // The duplicate half of the track exists only so the loop can wrap. It
+      // must not be reachable by tab or announced, or every photograph appears
+      // twice to a keyboard and to a screen reader.
+      a.setAttribute('aria-hidden', 'true');
+      a.tabIndex = -1;
+    } else {
+      a.setAttribute('aria-label',
+        `${alt || 'Photograph'} — open the ${gallery} gallery`);
     }
-    return [];
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = '';                 // the link carries the description
+    img.src = `${url}?format=300w`;
+    img.srcset = `${url}?format=300w 300w, ${url}?format=500w 500w`;
+    img.sizes = '(max-width: 700px) 34vw, 186px';
+    // A frame whose photograph has been deleted from the gallery leaves a
+    // dark gap rather than a broken-image glyph in the middle of the roll.
+    img.addEventListener('error', () => a.remove(), { once: true });
+    const label = document.createElement('span');
+    label.className = 'taro-film__num';
+    label.textContent = i === 0 ? `${STOCK}  ${num}` : num;
+    a.append(img, label);
+    return a;
   };
 
-  // ---- build --------------------------------------------------------------
-
-  const buildReel = (frames) => {
-    const reel = document.createElement('ul');
-    reel.className = 'taro-film-reel';
-    frames.forEach((f, i) => {
-      const li = document.createElement('li');
-      li.className = 'taro-film-frame';
-
-      const win = document.createElement('div');
-      win.className = 'taro-film-window';
-      const img = document.createElement('img');
-      img.alt = '';                 // the link carries the name; these are decoration
-      img.width = IMG_W; img.height = IMG_H;
-      // Eager, not lazy: the strip is only built once the footer is near, so
-      // the deferral has already happened, and a frame that drifts in from
-      // the right should arrive developed rather than as a black rectangle
-      // waiting on the lazy-load threshold. The clones repeat these URLs and
-      // come out of cache.
-      img.loading = 'eager'; img.decoding = 'async';
-      img.src = `${f.url}?format=500w`;
-      img.srcset = `${f.url}?format=300w 300w, ${f.url}?format=500w 500w, ${f.url}?format=750w 750w`;
-      img.sizes = `${IMG_W}px`;
-      img.style.objectPosition = f.focal;
-      win.appendChild(img);
-
-      // 12 … TARO CROZE 400TX … 12A — number at the frame's leading edge, the
-      // half-frame "A" at its trailing edge, stock name between.
-      const n = FRAME_BASE + i;
-      const print = document.createElement('div');
-      print.className = 'taro-film-print';
-      print.setAttribute('aria-hidden', 'true');
-      [`${n}`, STOCK, `${n}A`].forEach((t) => {
-        const s = document.createElement('span');
-        s.textContent = t;
-        print.appendChild(s);
-      });
-
-      li.appendChild(win);
-      li.appendChild(print);
-      reel.appendChild(li);
-    });
-    return reel;
-  };
-
-  const build = (frames) => {
-    injectCss();
-
-    const strip = document.createElement('aside');
-    strip.className = 'taro-film';
-    strip.setAttribute('aria-label', 'Contact sheet — a strip of stills');
-
-    // One link for the whole strip rather than one per frame: every frame
-    // still lands on /stills, but a keyboard user meets a single stop instead
-    // of twelve identical ones, and page-transition.js sees a plain <a>.
-    const link = document.createElement('a');
-    link.className = 'taro-film-link';
-    link.href = LINK;
-    link.setAttribute('aria-label', 'Browse the stills');
+  const build = () => {
+    const band = document.createElement('div');
+    band.className = 'taro-film';
+    band.setAttribute('role', 'region');
+    band.setAttribute('aria-label', 'Recent photographs');
 
     const track = document.createElement('div');
-    track.className = 'taro-film-track';
-    const reel = buildReel(frames);
-    track.appendChild(reel);
+    track.className = 'taro-film__track';
+    FRAMES.forEach(([u, g, alt], i) => track.appendChild(frame(u, g, alt, i, false)));
+    FRAMES.forEach(([u, g, alt], i) => track.appendChild(frame(u, g, alt, i, true)));
 
-    // Copies: enough that the strip never runs out on the right before the
-    // keyframe wraps — a 2280px copy needs three on a 2560px display, two
-    // everywhere else — and the duplicates are hidden from assistive tech.
-    // window.innerWidth is no layout read; and resize only ever adds copies.
-    let copies = 1;
-    const cover = () => {
-      const want = Math.max(2, Math.ceil(window.innerWidth / COPY_W) + 1);
-      while (copies < want) {
-        const dup = reel.cloneNode(true);
-        dup.setAttribute('aria-hidden', 'true');
-        track.appendChild(dup);
-        copies += 1;
-      }
-    };
-    cover();
-
-    link.appendChild(track);
-    strip.appendChild(link);
-    footer.parentNode.insertBefore(strip, footer);
-
-    // Run the reel only while it is on screen.
-    if (typeof IntersectionObserver !== 'undefined') {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => strip.classList.toggle('is-on', e.isIntersecting));
-      }, { rootMargin: '100px 0px' });
-      io.observe(strip);
-    } else {
-      strip.classList.add('is-on');
-    }
-
-    let timer = 0;
-    window.addEventListener('resize', () => {
-      clearTimeout(timer);
-      timer = setTimeout(cover, 200);
-    }, { passive: true });
+    // Speed is set from the frame count so the roll always passes at the same
+    // pace: add photographs and the strip gets longer, not faster.
+    track.style.setProperty('--taro-film-dur', `${(FRAMES.length * SECONDS_PER_FRAME).toFixed(1)}s`);
+    band.appendChild(track);
+    footer.parentNode.insertBefore(band, footer);
   };
 
-  // ---- arm ----------------------------------------------------------------
-
-  let started = false;
-  const start = () => {
-    if (started) return;
-    started = true;
-    fetchFrames().then((frames) => {
-      if (frames.length < MIN_FRAMES) { log('film-strip: no frames, standing down'); return; }
-      build(frames);
-    }).catch(() => { /* no strip, no noise */ });
-  };
-
-  if (typeof IntersectionObserver !== 'undefined') {
+  // Built on approach, not on load. rootMargin is generous so it is already
+  // there by the time it scrolls into view — a strip that assembles itself in
+  // front of the visitor would be worse than one that was always there.
+  if (typeof IntersectionObserver === 'function') {
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); start(); }
-    }, { rootMargin: NEAR });
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      build();
+    }, { rootMargin: '900px 0px' });
     io.observe(footer);
   } else {
-    // No observer, no way to know how near the footer is: build when the
-    // browser is idle, which is still after the page has painted.
-    (window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(start);
+    build();
   }
+
+  // Reduced motion is read live by the media query above; nothing to do here
+  // beyond keeping the reference so the intent is visible in one place.
+  void reduced;
 });
