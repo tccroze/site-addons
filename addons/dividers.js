@@ -151,7 +151,12 @@ defineAddon('dividers', () => {
   // the section itself, and then its ancestors, are the fallbacks for a
   // section that paints nothing of its own and lets the page show through.
   const paintOf = (section) => {
-    const layer = section.querySelector(':scope > .section-background');
+    // A DESCENDANT lookup, not a child one. Squarespace nests the colour layer
+    // inside .section-border, so ':scope > .section-background' matched nothing
+    // here: every section then fell through to the page's own cream, every pair
+    // of sections read as the same colour, and every seam was rejected as
+    // having no edge to draw. The add-on mounted and drew nothing at all.
+    const layer = section.querySelector('.section-background, .section-border');
     // A photograph, a video or a gradient is not a colour we can match, and a
     // seam we cannot match is a seam we leave alone. This is also the check
     // that would stand the add-on down if it were ever pointed at one of the
