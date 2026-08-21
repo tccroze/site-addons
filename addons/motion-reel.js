@@ -123,7 +123,22 @@ defineAddon('motion-reel', () => {
     return '';
   };
 
-  let src = findSrc();
+  // Nothing on /motion is copyable. Measured: every film there is delivered as
+  // encrypted, time-signed HLS (mpegts segments behind an .m3u8 and a key), and
+  // an HLS stream belongs to the player that negotiated it — a second <video>
+  // pointed at the same manifest gets nothing, which is exactly the case
+  // playable() above refuses. The page's own <video> elements carry no src at
+  // all until Plyr attaches one.
+  //
+  // So the footage comes from the one plain file the site already serves: the
+  // clip behind the MOTION tile on the homepage, which is a straight H.264 .MOV
+  // the owner uploaded and which the homepage plays in an ordinary <video>. It
+  // is the same reel this heading is announcing, and reusing it costs no new
+  // encode. If it is ever removed the fetch fails and the heading simply keeps
+  // its normal appearance — the same fallback as having no source at all.
+  const TILE_REEL = 'https://ranunculus-gold-3c63.squarespace.com/s/IMG_1748-2.MOV';
+
+  let src = findSrc() || TILE_REEL;
 
   // ---- styles ------------------------------------------------------------
 
