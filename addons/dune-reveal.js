@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.14';
+const V = '2.39.15';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -567,8 +567,14 @@ defineAddon('dune-reveal', () => {
       // The standing copy's cue. For a phased scene, when the sink completes;
       // for the plain one, when the descent is most of the way through.
       // Written inline, on change only — see the .taro-dune-later comment.
-      const showLater = reduced.matches
-        || p >= (scene.phase ? (scene.phase[2] || 1) - 0.02 : 0.8);
+      // When the standing copy takes over. Masked: as the sink completes.
+      // Maskless: once the headline is most of the way through its dissolve —
+      // keyed off the fade, not off a third phase value this scene no longer
+      // has, which left it waiting until p ~0.98 and never arriving in view.
+      const laterCue = maskUrl
+        ? (scene.phase ? (scene.phase[2] || 1) - 0.02 : 0.8)
+        : Math.min(0.95, fadeAt + 0.72 * fadeSpan);
+      const showLater = reduced.matches || p >= laterCue;
       if (showLater !== shownLater) {
         shownLater = showLater;
         keepers.forEach((el) => {
