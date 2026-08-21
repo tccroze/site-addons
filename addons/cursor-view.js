@@ -59,7 +59,13 @@ import { defineAddon, css } from '../lib/util.js';
 const TEAL = '#85b7b2';
 
 // Every photograph on the site, gallery pages and homepage tiles alike.
-const VIEW_TARGETS = 'a.sqs-block-image-link';
+// Two markups, because the site uses both: /stills and /venues are Fluid
+// Engine image blocks (a.sqs-block-image-link), while /35film and /paint are
+// real gallery sections (a.gallery-masonry-lightbox-link). Keyed to only the
+// first, the VIEW state simply never appeared on the film gallery — the one
+// with thirty-two photographs in it.
+const VIEW_TARGETS = 'a.sqs-block-image-link, a.gallery-masonry-lightbox-link, '
+  + 'a.gallery-grid-lightbox-link, a.gallery-lightbox-link';
 
 // The places a click is already obvious. Assumption worth writing down: the
 // wrapper that pins the two CTA buttons was never measured for this file, so
