@@ -48,7 +48,7 @@ import { defineAddon, css, warn } from '../lib/util.js';
 // ?v= because the masks otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale mask — a re-traced silhouette
 // beside old ridge constants. Stamped by scripts/release.sh.
-const V = '2.39.13';
+const V = '2.39.14';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 
 /**
@@ -67,6 +67,22 @@ const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v
  * scales the photograph up and carries the ridge down, which is the only way to
  * buy more room once re-cropping has nothing left to give.
  */
+// FRAGMENTS, and why one of these scenes has no mask.
+//
+// Masking the copy works when the skyline is roughly level: the words meet the
+// landscape all at once and go behind it together. The dune frame is not level
+// — its crest is a steep diagonal that dips deep at the left — so a full-width
+// headline crossing it has one end buried in sand while the other is still in
+// open sky. Every intermediate frame is a row of half-letters, and stray glyphs
+// strand in the low notch after the rest of the line has gone. That is not a
+// tuning error; it is what a per-pixel cut does to a wide line over a diagonal
+// edge, and no amount of ridge-fitting removes it.
+//
+// So that scene is maskless. The copy holds where it can be read, then lifts
+// and dissolves as the dune climbs the frame: it still reads as the landscape
+// taking the words, it cannot fragment, and it has nothing to misregister
+// against. The print frame keeps its mask — its treeline is level, the cut is
+// clean there, and it has never been the one that looked wrong.
 const SCENES = [
   // `lift` is gone from both scenes, deliberately. It bought the dune copy
   // reading room by raising it before the fall — but the raise held the first
@@ -83,13 +99,10 @@ const SCENES = [
   // immediately — it was gone before it could be read. No fall at all keeps it
   // readable but rides it up into the pinned tear. So the fall is piecewise:
   //
-  //   p 0 → phase[0]   fall AT the scroll rate — the copy hangs still on
-  //                    screen just beneath the tear while the tear plays out;
-  //   p → phase[1]     hold — the tear has scrolled away, the copy rides up
-  //                    with the page, high and readable, and the ridge gains
-  //                    nothing on it;
-  //   p → 1            the sink — the remaining travel lands at ~1.4x, which
-  //                    reads as the dune decisively taking the words.
+  //   masked scene:   fall at the scroll rate under the tear, hold to be read,
+  //                   then sink bodily past the ridge;
+  //   maskless scene: hold to be read for phase[1] of the window, then one
+  //                   smoothstep lift-and-dissolve over the remainder.
   //
   // The print scene needs none of this: no tear above it, and its copy rests
   // high above its ridge, so the plain pinned fall is already readable there.
@@ -97,7 +110,8 @@ const SCENES = [
   // The third number ends the sink early: the remaining tenth of the window
   // belongs to the fade that sweeps the low-notch remnant, and to the standing
   // copy below arriving into a section that has finished moving.
-  { match: /\bdune\.jpg/i, mask: 'dune-sky.png', ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.25, 0.66, 0.90] },
+  // No mask on this one, deliberately — see FRAGMENTS below.
+  { match: /\bdune\.jpg/i, mask: null, ridge: 0.58, lift: 0, taller: false, clearTear: true, phase: [0.30, 0.72] },
 ];
 
 // The copy must fall at least this fraction of the rate the section scrolls,
@@ -311,9 +325,11 @@ defineAddon('dune-reveal', () => {
     const content = wrapper && (wrapper.querySelector(':scope > .content') || wrapper.firstElementChild);
     if (!bgImg || !wrapper || !content) return;
 
-    const maskUrl = ASSET(scene.mask);
-    wrapper.classList.add('taro-dune-wrap');
-    wrapper.style.setProperty('--taro-sky', `url("${maskUrl}")`);
+    const maskUrl = scene.mask ? ASSET(scene.mask) : null;
+    if (maskUrl) {
+      wrapper.classList.add('taro-dune-wrap');
+      wrapper.style.setProperty('--taro-sky', `url("${maskUrl}")`);
+    }
     content.classList.add('taro-dune-content');
     if (scene.taller) section.classList.add('taro-dune-section--taller');
 
@@ -368,6 +384,7 @@ defineAddon('dune-reveal', () => {
     // same batch and cost no extra layout flush, and the write — the part that
     // would repaint — happens only on the rare frame where something moved.
     const syncMask = () => {
+      if (!maskUrl) return;
       const p = photoRect();
       if (!p) return;
       // mask-position is measured from the masked element's own border box.
@@ -439,7 +456,7 @@ defineAddon('dune-reveal', () => {
       movers.forEach((el) => el.classList.add('taro-dune-move'));
 
       // The band that must never be erased, in the wrapper's own coordinates.
-      if (Number.isFinite(keepTop)) {
+      if (maskUrl && Number.isFinite(keepTop)) {
         wrapper.style.setProperty('--taro-keep-size', `100% ${Math.max(0, wrap.height).toFixed(0)}px`);
         wrapper.style.setProperty('--taro-keep-pos', `0 ${(keepTop - wrap.top).toFixed(2)}px`);
       }
@@ -451,7 +468,12 @@ defineAddon('dune-reveal', () => {
       // catching it. Capped so the sunk copy never comes to rest inside the
       // protected band, where it would be painted back in.
       const room = Number.isFinite(keepTop) ? keepTop - sinkBottom - 8 : Infinity;
-      const travelRaw = Math.max(0, Math.min(ridgeY - sinkTop + BURY * vh, room));
+      // A masked scene must carry the copy bodily past the ridge. A maskless
+      // one only has to move enough to read as leaving — the fade finishes the
+      // job — so it travels a short, fixed distance and never chases geometry.
+      const travelRaw = maskUrl
+        ? Math.max(0, Math.min(ridgeY - sinkTop + BURY * vh, room))
+        : -0.10 * vh;   // negative: it LIFTS away, see below
       // The span serves the travel, not the other way round. Left at the raw
       // ceiling, the dune copy spread 437px of fall over 1000px of scroll —
       // 0.53x, a drift, while the print section fell at 1.16x: two identical
@@ -473,11 +495,11 @@ defineAddon('dune-reveal', () => {
         ? scene.phase[0] + (scene.phase[2] || 1) - scene.phase[1] : 1;
       span = Math.max(SPAN_MIN * vh,
         Math.min(rawSpan, (travelRaw + lift + clearPx) / (FALL_MIN * fallShare), keepCap));
-      travel = Math.min(travelRaw, 1.8 * span);
+      travel = maskUrl ? Math.min(travelRaw, 1.8 * span) : travelRaw;
       // The early-fall share for a phased scene: enough displacement, at the
       // scroll rate, to keep the copy beneath the tear while it is pinned —
       // never more than half the whole travel, or the hold has nothing left.
-      holdW = scene.phase && travel > 0
+      holdW = scene.phase && maskUrl && travel > 0
         ? Math.min(0.5, (FALL_MIN * scene.phase[0] * span) / travel) : 0;
     };
 
@@ -495,6 +517,16 @@ defineAddon('dune-reveal', () => {
      *  and the eased follower below rounds the two corners into curves. */
     const spent = (p) => {
       if (!scene.phase) return p;
+      // Maskless: still, then a single smooth lift over the final segment. The
+      // copy rises out of frame as the dune climbs into it — the opposite
+      // direction to a masked sink, because with nothing cutting the letters a
+      // downward slide would just park them on top of the sand.
+      if (!maskUrl) {
+        const b = scene.phase[1];
+        if (p <= b) return 0;
+        const t = (p - b) / (1 - b);
+        return t * t * (3 - 2 * t);
+      }
       const [a, b, c = 1] = scene.phase;
       if (p <= a) return (p / a) * holdW;
       if (p <= b) return holdW;
@@ -519,9 +551,14 @@ defineAddon('dune-reveal', () => {
       // its travel budget — capped by the keep band below — and strand a
       // fragment in that notch after the rest has gone. The mask still does
       // the swallowing; the fade only sweeps up what the ridge cannot reach.
-      const fadeAt = scene.phase ? (scene.phase[2] || 0.85) : 2;
+      // Maskless: the fade is the exit, spread over the whole final segment so
+      // it reads as the copy dissolving into the dune rather than blinking off.
+      // Masked: a short sweep at the very end, only to catch a low-notch tail.
+      const fadeAt = maskUrl ? (scene.phase ? (scene.phase[2] || 0.85) : 2)
+                             : (scene.phase ? scene.phase[1] : 0.7);
+      const fadeSpan = maskUrl ? 0.08 : (1 - fadeAt);
       const fade = p > fadeAt && !reduced.matches
-        ? Math.max(0, 1 - (p - fadeAt) / 0.08).toFixed(3) : '';
+        ? Math.max(0, 1 - (p - fadeAt) / fadeSpan).toFixed(3) : '';
       if (movers) movers.forEach((el) => {
         el.__taroY = y;
         el.style.transform = t;
