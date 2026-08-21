@@ -8,21 +8,21 @@ import { log } from './lib/util.js';
 
 // Imported first on purpose: each module is a separate network fetch, so the
 // hero's starting state lands sooner the earlier this appears.
-import './addons/hero-reveal.js?v=2.39.19';
+import './addons/hero-reveal.js?v=2.39.20';
 
-import './addons/gallery-hover.js?v=2.39.19';
-import './addons/gallery-filter.js?v=2.39.19';
-import './addons/cursor.js?v=2.39.19';
-import './addons/page-transition.js?v=2.39.19';
-import './addons/signature.js?v=2.39.19';
+import './addons/gallery-hover.js?v=2.39.20';
+import './addons/gallery-filter.js?v=2.39.20';
+import './addons/cursor.js?v=2.39.20';
+import './addons/page-transition.js?v=2.39.20';
+import './addons/signature.js?v=2.39.20';
 
 // Homepage only
-import './addons/masked-intro.js?v=2.39.19';
-import './addons/dune-reveal.js?v=2.39.19';
-import './addons/scroll-reveal.js?v=2.39.19';
-import './addons/testimonial-rotator.js?v=2.39.19';
-import './addons/parallax.js?v=2.39.19';
-import './addons/film-strip.js?v=2.39.19';
+import './addons/masked-intro.js?v=2.39.20';
+import './addons/dune-reveal.js?v=2.39.20';
+import './addons/scroll-reveal.js?v=2.39.20';
+import './addons/testimonial-rotator.js?v=2.39.20';
+import './addons/parallax.js?v=2.39.20';
+import './addons/film-strip.js?v=2.39.20';
 
 // Cache busting: GitHub Pages caches every file for ten minutes independently,
 // so a visitor can pair a fresh main.js with an add-on from before the deploy.
@@ -32,6 +32,6 @@ import './addons/film-strip.js?v=2.39.19';
 //
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '2.39.19';
+export const VERSION = '2.39.20';
 
 log(`ready — v${VERSION}`);
