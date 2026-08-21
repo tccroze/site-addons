@@ -91,7 +91,7 @@ import { defineAddon, css } from '../lib/util.js';
 // Sized off the module's own URL so it resolves wherever this is hosted, and
 // versioned for the same reason masked-intro's photographs are: GitHub Pages
 // caches each file for ten minutes independently. Stamped by scripts/release.sh.
-const V = '2.39.18';
+const V = '2.39.19';
 const TILE = `${new URL('../assets/grain.png', import.meta.url).href}?v=${V}`;
 const TILE_PX = 180;   // the PNG's own size, drawn 1:1 in CSS px — one fleck per CSS pixel
 

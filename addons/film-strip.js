@@ -85,8 +85,8 @@ defineAddon('film-strip', () => {
       background-repeat: repeat-x;
       z-index: 2; pointer-events: none;
     }
-    .taro-film::before { top: 6px; }
-    .taro-film::after  { bottom: 6px; }
+    .taro-film::before { top: 3px; }
+    .taro-film::after  { bottom: 3px; }
 
     .taro-film__track {
       display: flex;
@@ -107,7 +107,10 @@ defineAddon('film-strip', () => {
       position: relative;
       flex: 0 0 auto;
       display: block;
-      margin: 32px 5px 32px;      /* clear of both sprocket rebates */
+      /* Asymmetric on purpose: the lower rebate has to hold the edge print
+         AND the sprocket row without them touching, the upper one only the
+         sprockets. At 32/32 the frame numbers sat inside the holes. */
+      margin: 26px 5px 46px;
       width: clamp(132px, 13vw, 186px);
       text-decoration: none;
       outline-offset: 3px;
@@ -128,7 +131,7 @@ defineAddon('film-strip', () => {
     /* The edge print, in the lower rebate, drifting with its own frame. */
     .taro-film__num {
       position: absolute;
-      left: 1px; bottom: -21px;
+      left: 1px; bottom: -16px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 9px;
       letter-spacing: 0.16em;
@@ -139,11 +142,13 @@ defineAddon('film-strip', () => {
     }
 
     @media (max-width: 700px) {
-      .taro-film__frame { margin: 26px 4px; width: clamp(108px, 34vw, 150px); }
-      .taro-film::before, .taro-film::after { height: 16px; }
-      .taro-film::before { top: 5px; }
-      .taro-film::after { bottom: 5px; }
-      .taro-film__num { bottom: -18px; font-size: 8px; }
+      .taro-film__frame { margin: 22px 4px 38px; width: clamp(108px, 34vw, 150px); }
+      .taro-film::before, .taro-film::after {
+        height: 16px; background-size: 27px 16px;
+      }
+      .taro-film::before { top: 3px; }
+      .taro-film::after { bottom: 3px; }
+      .taro-film__num { bottom: -14px; font-size: 8px; }
     }
 
     /* Asked for no motion: the roll simply sits still. It is still a strip of
