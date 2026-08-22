@@ -65,7 +65,6 @@ import { defineAddon, css } from '../lib/util.js';
 
 const STOCK = 'TARO CROZE 400TX';  // the house name posing as a film stock
 const FRAME_BASE = 10;             // first numbered frame on a fresh roll
-const NOTE_MAX = 40;               // characters of alt text before it is cut
 const SLIDE_MS = 220;
 const AMBER = '#f7941d';           // Kodak edge-print amber, near enough
 const STRIP_PX = 26;
@@ -123,15 +122,7 @@ defineAddon('edge-print', () => {
         transition: transform ${SLIDE_MS}ms cubic-bezier(0.2, 0.7, 0.2, 1);
       }
       .taro-edge-print-code { flex: 0 0 auto; }
-      .taro-edge-print-note {
-        flex: 0 1 auto;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        opacity: 0.75;
-      }
-
-      /* Fenced on capability as well as the boot check above — a device
+/* Fenced on capability as well as the boot check above — a device
          that loses its pointer stops answering phantom hovers. */
       @media (hover: hover) and (pointer: fine) {
         .gallery-masonry-item:hover > .taro-edge-print { transform: translateY(0); }
@@ -182,27 +173,16 @@ defineAddon('edge-print', () => {
       code.textContent = `${STOCK} — FRAME ${FRAME_BASE + shot}A`;
       strip.appendChild(code);
 
-      // The alt text is real prose written for the image; it becomes a
-      // caption by cutting at a word boundary, with any dangling comma or
-      // dash dropped before the ellipsis. textContent throughout — this is
-      // data, never markup.
-      const img = item.querySelector('img');
-      let note = ((img && img.alt) || '').replace(/\s+/g, ' ').trim();
-      // Almost every alt on these pages is a written sentence, but the odd
-      // one is a bare camera filename ("P1022133.jpg", live on /wildlife).
-      // Uppercased on a film rebate that reads as a digital artefact, which
-      // is the one thing this strip must never admit to. No note, then.
-      if (/^[\w()\[\] -]+\.(jpe?g|png|gif|webp|heic|tiff?|dng|raw)$/i.test(note)) note = '';
-      if (note.length > NOTE_MAX) {
-        const cut = note.slice(0, NOTE_MAX + 1).replace(/\s*\S*$/, '');
-        note = (cut || note.slice(0, NOTE_MAX)).replace(/[\s,;:\-—–]+$/, '') + '…';
-      }
-      if (note) {
-        const span = document.createElement('span');
-        span.className = 'taro-edge-print-note';
-        span.textContent = note;
-        strip.appendChild(span);
-      }
+      // NO CAPTION. The alt text on these galleries is auto-generated — a
+      // machine's guess at the photograph, and the owner's verdict on it was
+      // that it is inaccurate. Printing a wrong description in the rebate of a
+      // photographer's own contact sheet is worse than printing nothing: the
+      // rebate is where a photographer writes what a frame IS. The stock name
+      // and the frame number are true of every frame on the roll, so they
+      // stay; anything claiming to describe the picture does not.
+      //
+      // If real captions are ever written by hand, this is where they go —
+      // read them from a data attribute set in the editor, never from alt.
 
       item.classList.add('taro-edge-print-host');
       item.appendChild(strip);

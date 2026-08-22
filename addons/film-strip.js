@@ -36,7 +36,12 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-// [url, alt, portrait]. Portrait frames are narrower rather than cropped to
+// [url, note, portrait]. The middle column is a maintenance hint only — it
+// says which photograph a URL is, so the list can be read by a human. It is
+// NEVER shown or announced: it came from Squarespace's auto-generated alt
+// text, which is inaccurate. Do not wire it back into the page.
+//
+// Portrait frames are narrower rather than cropped to
 // landscape: a real contact sheet carries both orientations at one height, and
 // forcing a standing photograph into a 3:2 gate throws most of it away.
 const FRAMES = [
@@ -203,7 +208,12 @@ defineAddon('film-strip', () => {
       a.setAttribute('aria-hidden', 'true');
       a.tabIndex = -1;
     } else {
-      a.setAttribute('aria-label', `${alt || 'Photograph'} — open the film gallery`);
+      // Deliberately NOT the alt text. Squarespace generated those descriptions
+      // automatically and they are wrong often enough that the owner asked for
+      // them off the site; a screen reader is no better served by a confident
+      // wrong description than a visitor is. The frame number is true, so that
+      // is what identifies the link.
+      a.setAttribute('aria-label', `Frame ${num} — open the film gallery`);
     }
     const img = document.createElement('img');
     img.loading = 'lazy';
