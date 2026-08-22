@@ -188,7 +188,14 @@ defineAddon('motion-reel', () => {
          middle of the frame — which is the point: it reads as footage seen
          through a slot, not as a video squashed into a word. */
       object-fit: cover;
-      object-position: 50% 50%;
+      /* Not centred. The clip is a wide sunset with two figures walking a dune
+         ridge, and they sit low in it — heads at about 68% of the frame, feet
+         at 92%. The letterforms are a far wider band than the video, so cover
+         crops the height hard: centred, the word filled with empty sky and
+         read as an abstract amber wash. Centring the crop on 80% puts the
+         walkers inside the letters, which is what makes the heading legible
+         as footage rather than as a gradient. */
+      object-position: 50% 80%;
       opacity: 0;
       transition: opacity ${FADE_MS}ms ease;
     }
