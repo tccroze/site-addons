@@ -471,12 +471,22 @@
 /* Set large, and still left, and still short of 30 characters a line. Large
    display type is the one place a centred line would have been defensible; it
    is left anyway, so that every line on the page starts at the same edge. */
+/* The one line on the page allowed to run its full width, and the only one set
+   in the signal red. It is the page's closing claim, so it gets the emphasis
+   the rest of the copy deliberately refuses.
+
+   Red measures 3.84:1 on cream. That clears WCAG's 3:1 for LARGE text (24px+,
+   or 18.66px bold) and this line never renders below 30px — but it would fail
+   at body size, which is why the red appears nowhere else as a word. Do not
+   copy this rule onto smaller type. */
 .tc-about .tc-promise .tc-promise__line {
-  max-width: 22ch;
-  margin-top: 1rem;
-  font-size: clamp(1.9rem, 5.6vw, 3.1rem);
-  line-height: 1.08;
-  color: var(--tc-ink);
+  max-width: none;
+  margin-top: 1.1rem;
+  font-size: clamp(1.9rem, 6.6vw, 4.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.005em;
+  color: var(--tc-red);
+  text-wrap: balance;
 }
 
 .tc-about .tc-promise .tc-btn { margin-top: clamp(1.75rem, 4vw, 2.5rem); }
@@ -614,7 +624,6 @@
   <div class="tc-hero">
 
     <div class="tc-hero__text">
-      <p class="tc-eyebrow">About</p>
       <h1 class="tc-hero__title" id="tc-about-heading">meet taro.</h1>
 
       <!-- PLACEHOLDER-APPROVAL · the two paragraphs below are the ONLY redrafted
@@ -815,7 +824,10 @@
     <h2 class="tc-promise__line" id="tc-about-promise">
       Your story, told properly, and made to last.
     </h2>
-    <a class="tc-btn" href="/contact">Let&rsquo;s talk</a>
+    <!-- /letstalk, not /contact. The page this replaced linked to
+     /contact, which is a 404 on this site — the contact page has
+     always lived at /letstalk. Verified live: /contact 404, /letstalk 200. -->
+    <a class="tc-btn" href="/letstalk">Let&rsquo;s talk</a>
   </section>
 
   <!-- ===========================================================================

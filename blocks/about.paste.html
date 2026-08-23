@@ -255,11 +255,13 @@
 }
 
 .tc-about .tc-promise .tc-promise__line {
-  max-width: 22ch;
-  margin-top: 1rem;
-  font-size: clamp(1.9rem, 5.6vw, 3.1rem);
-  line-height: 1.08;
-  color: var(--tc-ink);
+  max-width: none;
+  margin-top: 1.1rem;
+  font-size: clamp(1.9rem, 6.6vw, 4.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.005em;
+  color: var(--tc-red);
+  text-wrap: balance;
 }
 
 .tc-about .tc-promise .tc-btn { margin-top: clamp(1.75rem, 4vw, 2.5rem); }
@@ -370,7 +372,6 @@
   <div class="tc-hero">
 
     <div class="tc-hero__text">
-      <p class="tc-eyebrow">About</p>
       <h1 class="tc-hero__title" id="tc-about-heading">meet taro.</h1>
 
       <p class="tc-hero__lede">
@@ -531,7 +532,7 @@
     <h2 class="tc-promise__line" id="tc-about-promise">
       Your story, told properly, and made to last.
     </h2>
-    <a class="tc-btn" href="/contact">Let&rsquo;s talk</a>
+    <a class="tc-btn" href="/letstalk">Let&rsquo;s talk</a>
   </section>
 
   <section class="tc-croze" aria-labelledby="tc-about-croze">
