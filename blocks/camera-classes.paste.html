@@ -1,0 +1,598 @@
+<!-- Camera Classes — paste-ready. Documented version: blocks/camera-classes.html in the site-addons repo. -->
+<style>
+.tc-classes {
+  --tc-cream: #f6eed5;
+  --tc-ink: #243230;
+  --tc-teal: #85b7b2;
+  --tc-red: #e23318;
+  --tc-orange: #e8934a;
+  --tc-ink-soft: #4c554e;              --tc-hair: rgba(36, 50, 48, 0.22);   --tc-hair-dark: rgba(246, 238, 213, 0.28);
+
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vw, 5.5rem) clamp(1.25rem, 5vw, 4rem);
+  background: var(--tc-cream);
+  color: var(--tc-ink);
+  overflow-wrap: break-word;
+}
+
+.tc-classes *,
+.tc-classes *::before,
+.tc-classes *::after { box-sizing: border-box; }
+
+.tc-classes p,
+.tc-classes h2,
+.tc-classes h3,
+.tc-classes h4,
+.tc-classes dl,
+.tc-classes dd,
+.tc-classes figure,
+.tc-classes blockquote { margin: 0; padding: 0; }
+
+.tc-classes h2,
+.tc-classes h3,
+.tc-classes h4 {
+  font-weight: 400;
+  color: var(--tc-ink);
+  line-height: 1.05;
+}
+
+.tc-classes .tc-vh {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tc-classes p.tc-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  margin: 0 0 0.9rem;
+}
+
+.tc-classes .tc-intro { max-width: 52ch; }
+
+.tc-classes .tc-intro .tc-intro__title {
+  font-size: clamp(2.1rem, 6.4vw, 3.5rem);
+  letter-spacing: 0.005em;
+  margin-bottom: 1.5rem;
+  color: var(--tc-ink);
+}
+
+.tc-classes .tc-intro .tc-intro__title::after {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: 2px;
+  margin-top: 1.4rem;
+  background: var(--tc-red);
+}
+
+.tc-classes .tc-intro .tc-intro__lede {
+  font-size: clamp(1.02rem, 1.5vw, 1.2rem);
+  line-height: 1.65;
+  color: var(--tc-ink);
+}
+
+.tc-classes .tc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.6rem;
+  margin-top: clamp(2.75rem, 6vw, 4.5rem);
+}
+
+.tc-classes .tc-track {
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--tc-ink);   }
+.tc-classes .tc-track .tc-track__name {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  color: var(--tc-ink);
+}
+.tc-classes .tc-track .tc-track__blurb {
+  margin-top: 0.75rem;
+  max-width: 46ch;
+  font-size: 0.97rem;
+  line-height: 1.6;
+  color: var(--tc-ink-soft);
+}
+.tc-classes .tc-track--motion { margin-top: 1.5rem; }
+
+.tc-classes .tc-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--tc-hair);
+  padding: clamp(1.4rem, 3.4vw, 2.1rem);
+  background: var(--tc-cream);
+}
+
+.tc-classes .tc-card .tc-card__track {
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  margin-bottom: 0.85rem;
+}
+
+.tc-classes .tc-card .tc-card__title {
+  font-size: clamp(1.35rem, 2.4vw, 1.7rem);
+  margin-bottom: 1.35rem;
+  color: var(--tc-ink);
+}
+
+.tc-classes .tc-card .tc-card__meta { margin-bottom: 1.6rem; }
+.tc-classes .tc-card .tc-card__row + .tc-card__row { margin-top: 1rem; }
+
+.tc-classes .tc-card .tc-card__meta dt {
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  margin-bottom: 0.35rem;
+}
+
+.tc-classes .tc-card .tc-card__meta dd {
+  font-size: 0.95rem;
+  line-height: 1.58;
+  color: var(--tc-ink);
+}
+
+.tc-classes .tc-card .tc-card__fee {
+  margin-top: auto;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--tc-hair);
+  color: var(--tc-ink);
+}
+
+.tc-classes .tc-card .tc-card__fee-label {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  margin-bottom: 0.4rem;
+}
+
+.tc-classes .tc-card .tc-card__fee-amount {
+  display: block;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
+  color: var(--tc-ink);
+}
+
+.tc-classes .tc-card .tc-card__fee-note {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--tc-ink-soft);
+}
+
+.tc-classes h2,
+.tc-classes h3,
+.tc-classes h4,
+.tc-classes .tc-card__fee-amount {
+  font-family: 'tan---nimbus-regular-webfont-tn3woj', 'Times New Roman', Georgia, serif;
+  font-weight: 400;
+}
+
+.tc-classes .tc-gallery { margin-top: clamp(3rem, 6vw, 5rem); }
+.tc-classes .tc-gallery__grid:empty { display: none; }
+.tc-classes .tc-gallery:has(.tc-gallery__grid:empty) { display: none; }
+.tc-classes .tc-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 1.6rem;
+}
+.tc-classes .tc-gallery figure { margin: 0; }
+.tc-classes .tc-gallery img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: rgba(36, 50, 48, 0.08);
+}
+@media (max-width: 1000px) {
+  .tc-classes .tc-gallery__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .tc-classes .tc-gallery__grid { grid-template-columns: 1fr; gap: 16px; }
+  .tc-classes .tc-gallery img { aspect-ratio: 4 / 5; }
+}
+
+.tc-classes .tc-gallery figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tc-soft-ink);
+}
+
+.tc-classes .tc-card .tc-btn {
+  align-self: flex-start;
+  margin-top: 1.5rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--tc-ink);
+  background: transparent;
+  border: 1px solid var(--tc-red);
+  border-radius: 999px;
+  padding: 0.85em 1.7em;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 170ms ease, color 170ms ease, border-color 170ms ease;
+}
+
+.tc-classes a:focus-visible,
+.tc-classes .tc-btn:focus-visible {
+  outline: 2px solid var(--tc-ink);
+  outline-offset: 3px;
+}
+
+.tc-classes .tc-card--dark {
+  background: var(--tc-ink);
+  border-color: var(--tc-hair-dark);
+}
+.tc-classes .tc-card--dark .tc-card__title,
+.tc-classes .tc-card--dark .tc-card__meta dd,
+.tc-classes .tc-card--dark .tc-card__fee-amount { color: var(--tc-cream); }
+.tc-classes .tc-card--dark .tc-card__track,
+.tc-classes .tc-card--dark .tc-card__meta dt,
+.tc-classes .tc-card--dark .tc-card__fee-label,
+.tc-classes .tc-card--dark .tc-card__fee-note { color: var(--tc-teal); }
+.tc-classes .tc-card--dark .tc-card__fee { border-top-color: var(--tc-hair-dark); }
+.tc-classes .tc-card--dark .tc-btn {
+  color: var(--tc-cream);
+  border-color: var(--tc-teal);
+}
+.tc-classes .tc-card--dark a:focus-visible { outline-color: var(--tc-cream); }
+
+.tc-classes p.tc-note {
+  margin-top: 1.75rem;
+  max-width: 60ch;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--tc-ink-soft);
+}
+
+.tc-classes .tc-quotes {
+  position: relative;
+  margin-top: clamp(3rem, 7vw, 5.5rem);
+  background: var(--tc-ink);
+  color: var(--tc-cream);
+  padding: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+.tc-classes .tc-quotes::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: -15px;
+  height: 16px;
+  background-repeat: repeat-x;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 16' preserveAspectRatio='none'%3E%3Cpath d='M0,16 L0,7 C42,3 78,11 132,8 C190,4 232,12 292,9 C352,6 392,2 452,7 C512,12 558,14 618,10 C678,6 722,1 782,6 C842,11 878,13 938,9 C998,5 1048,10 1108,7 C1148,4 1178,9 1200,6 L1200,16 Z' fill='%23243230'/%3E%3C/svg%3E");
+}
+
+.tc-classes .tc-quotes .tc-quotes__title {
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+  color: var(--tc-cream);
+  margin-bottom: 2rem;
+}
+.tc-classes .tc-quotes p.tc-quotes__eyebrow { color: var(--tc-teal); }
+
+.tc-classes .tc-quotes .tc-quotes__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+.tc-classes .tc-quotes .tc-quote blockquote p {
+  font-size: clamp(1rem, 1.5vw, 1.08rem);
+  line-height: 1.62;
+  color: var(--tc-cream);
+}
+
+.tc-classes .tc-quotes .tc-quote figcaption {
+  margin-top: 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tc-orange);
+}
+
+@media (min-width: 640px) and (max-width: 899px) {
+  .tc-classes .tc-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.6rem;
+    grid-template-areas:
+      "t1 t1"
+      "c1 c2"
+      "t2 t2"
+      "c3 c3";
+  }
+  .tc-classes .tc-track--photo { grid-area: t1; }
+  .tc-classes .tc-card--a { grid-area: c1; }
+  .tc-classes .tc-card--b { grid-area: c2; }
+  .tc-classes .tc-track--motion { grid-area: t2; }
+  .tc-classes .tc-card--c { grid-area: c3; }
+}
+
+@media (min-width: 900px) {
+  .tc-classes .tc-grid {
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: clamp(1.5rem, 2.6vw, 2.5rem);
+    row-gap: 2rem;
+    grid-template-areas:
+      "t1 t1 t2"
+      "c1 c2 c3";
+  }
+  .tc-classes .tc-track--photo { grid-area: t1; }
+  .tc-classes .tc-track--motion { grid-area: t2; margin-top: 0; }
+  .tc-classes .tc-card--a { grid-area: c1; }
+  .tc-classes .tc-card--b { grid-area: c2; }
+  .tc-classes .tc-card--c { grid-area: c3; }
+}
+
+@media (hover: hover) {
+  .tc-classes .tc-btn:hover {
+    background: var(--tc-ink);
+    color: var(--tc-cream);
+  }
+  .tc-classes .tc-card--dark .tc-btn:hover {
+    background: var(--tc-cream);
+    color: var(--tc-ink);
+    border-color: var(--tc-cream);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-classes *,
+  .tc-classes *::before,
+  .tc-classes *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+</style>
+
+<section class="tc-classes" aria-labelledby="tc-classes-heading">
+
+  <div class="tc-intro">
+    <p class="tc-eyebrow">Teaching</p>
+    <h2 class="tc-intro__title" id="tc-classes-heading">Camera Classes</h2>
+    <p class="tc-intro__lede">
+      Most of what I know about a camera I learned by getting it wrong on
+      somebody else&rsquo;s time. These classes are the shorter way round: small
+      groups, your own camera, and a day given over to the handful of decisions
+      that actually change a picture. Two tracks, stills and motion, taught the
+      same way and in whichever order suits you.
+    </p>
+  </div>
+
+  <div class="tc-grid">
+
+    <div class="tc-track tc-track--photo">
+      <p class="tc-eyebrow">Track One</p>
+      <h3 class="tc-track__name">Photography</h3>
+      <p class="tc-track__blurb">
+        Light, exposure, and the edge of the frame. Two classes: start at the
+        beginning, or arrive with a few thousand frames behind you and fix what
+        keeps going wrong.
+      </p>
+    </div>
+
+    <article class="tc-card tc-card--a">
+      <p class="tc-card__track">Photography &middot; Beginner</p>
+      <h4 class="tc-card__title">Reading Light</h4>
+      <dl class="tc-card__meta">
+        <div class="tc-card__row">
+          <dt>Who it is for</dt>
+          <dd>
+            First timers with any camera at all &mdash; a mirrorless body, a
+            DSLR, or the film SLR that has been in a drawer since your father
+            owned it.
+          </dd>
+        </div>
+        <div class="tc-card__row">
+          <dt>Format</dt>
+          <dd>One session of two and a half hours, arranged to suit you.</dd>
+        </div>
+        <div class="tc-card__row">
+          <dt>You come away with</dt>
+          <dd>
+            A working grip on exposure, and six frames of your own, edited
+            together with me before you leave.
+          </dd>
+        </div>
+      </dl>
+            <p class="tc-card__fee">
+        <span class="tc-card__fee-label">Fee</span>
+        <span class="tc-card__fee-amount">A$250</span>
+        <span class="tc-card__fee-note">2.5 hours</span>
+      </p>
+      <a class="tc-btn"
+         href="mailto:create@tarocroze.com?subject=Camera%20Classes%20%E2%80%94%20Beginner%20Photography">
+        Enquire<span class="tc-vh"> about Reading Light, the beginner photography class</span>
+      </a>
+    </article>
+
+    <article class="tc-card tc-card--b">
+      <p class="tc-card__track">Photography &middot; Advanced</p>
+      <h4 class="tc-card__title">Working the Frame</h4>
+      <dl class="tc-card__meta">
+        <div class="tc-card__row">
+          <dt>Who it is for</dt>
+          <dd>
+            Photographers who already shoot manually and want to know why their
+            pictures are not landing.
+          </dd>
+        </div>
+        <div class="tc-card__row">
+          <dt>Format</dt>
+          <dd>
+Half a day, arranged to suit you.
+          </dd>
+        </div>
+        <div class="tc-card__row">
+          <dt>You come away with</dt>
+          <dd>
+            An edited sequence of twelve frames and a printed contact sheet.
+            A body of work, not a folder.
+          </dd>
+        </div>
+      </dl>
+            <p class="tc-card__fee">
+        <span class="tc-card__fee-label">Fee</span>
+        <span class="tc-card__fee-amount">A$450</span>
+        <span class="tc-card__fee-note">half day</span>
+      </p>
+      <a class="tc-btn"
+         href="mailto:create@tarocroze.com?subject=Camera%20Classes%20%E2%80%94%20Advanced%20Photography">
+        Enquire<span class="tc-vh"> about Working the Frame, the advanced photography class</span>
+      </a>
+    </article>
+
+    <div class="tc-track tc-track--motion">
+      <p class="tc-eyebrow">Track Two</p>
+      <h3 class="tc-track__name">Motion</h3>
+      <p class="tc-track__blurb">
+        The crossing from stills to moving pictures: shot sizes, sound, and
+        cutting something that holds together. One class, taught over a weekend.
+      </p>
+    </div>
+
+    <article class="tc-card tc-card--c tc-card--dark">
+      <p class="tc-card__track">Motion &middot; All levels</p>
+      <h4 class="tc-card__title">Moving Pictures</h4>
+      <dl class="tc-card__meta">
+        <div class="tc-card__row">
+          <dt>Who it is for</dt>
+          <dd>
+            Stills photographers crossing over, and anyone who has to make video
+            for work and would rather it were good.
+          </dd>
+        </div>
+        <div class="tc-card__row">
+          <dt>Format</dt>
+          <dd>Two hours, or half a day &mdash; whichever suits what you are making.</dd>
+        </div>
+        <div class="tc-card__row">
+          <dt>You come away with</dt>
+          <dd>
+            A finished sixty second film &mdash; shot, cut, graded and mixed
+            &mdash; that you made yourself.
+          </dd>
+        </div>
+      </dl>
+            <p class="tc-card__fee">
+        <span class="tc-card__fee-label">Fee</span>
+        <span class="tc-card__fee-amount">A$250 <span class="tc-card__fee-alt">/ A$450</span></span>
+        <span class="tc-card__fee-note">2 hours / half day</span>
+      </p>
+      <a class="tc-btn"
+         href="mailto:create@tarocroze.com?subject=Camera%20Classes%20%E2%80%94%20Motion">
+        Enquire<span class="tc-vh"> about Moving Pictures, the motion class</span>
+      </a>
+    </article>
+
+  </div>
+  <p class="tc-note">
+    All three run on the Gold Coast, at a time arranged to suit you.
+  </p>
+
+  <section class="tc-gallery" aria-labelledby="tc-classes-work">
+    <p class="tc-eyebrow" id="tc-classes-work">In class</p>
+    <div class="tc-gallery__grid">
+        <figure>
+          <img src="https://tccroze.github.io/site-addons/assets/learn/class-1-1100.jpg"
+               srcset="https://tccroze.github.io/site-addons/assets/learn/class-1-640.jpg 640w, https://tccroze.github.io/site-addons/assets/learn/class-1-1100.jpg 1100w"
+               sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 23vw"
+               alt="A student photographing into the sunset through trees, the frame visible on the camera screen" loading="lazy" decoding="async" width="800" height="1100">
+        </figure>
+        <figure>
+          <img src="https://tccroze.github.io/site-addons/assets/learn/class-2-1100.jpg"
+               srcset="https://tccroze.github.io/site-addons/assets/learn/class-2-640.jpg 640w, https://tccroze.github.io/site-addons/assets/learn/class-2-1100.jpg 1100w"
+               sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 23vw"
+               alt="Close over a student's shoulder as they compose a shot, the scene showing on the camera's screen" loading="lazy" decoding="async" width="800" height="1100">
+        </figure>
+        <figure>
+          <img src="https://tccroze.github.io/site-addons/assets/learn/class-3-1100.jpg"
+               srcset="https://tccroze.github.io/site-addons/assets/learn/class-3-640.jpg 640w, https://tccroze.github.io/site-addons/assets/learn/class-3-1100.jpg 1100w"
+               sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 23vw"
+               alt="Looking down at a camera screen framing shells and pebbles on the shore" loading="lazy" decoding="async" width="800" height="1100">
+        </figure>
+        <figure>
+          <img src="https://tccroze.github.io/site-addons/assets/learn/class-4-1100.jpg"
+               srcset="https://tccroze.github.io/site-addons/assets/learn/class-4-640.jpg 640w, https://tccroze.github.io/site-addons/assets/learn/class-4-1100.jpg 1100w"
+               sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 23vw"
+               alt="A student at the water's edge photographing the Gold Coast skyline at dusk" loading="lazy" decoding="async" width="800" height="1100">
+        </figure>
+    </div>
+  </section>
+
+  <section class="tc-quotes" aria-labelledby="tc-classes-quotes">
+    <p class="tc-eyebrow tc-quotes__eyebrow">Afterwards</p>
+    <h3 class="tc-quotes__title" id="tc-classes-quotes">From past classes</h3>
+
+    <div class="tc-quotes__list">
+
+      <figure class="tc-quote">
+        <blockquote>
+          <p>
+            &ldquo;My girlfriend and I recently bought new cameras and, being
+            completely new to photography, we had no idea where to start! We
+            booked a lesson with Taro and honestly couldn&rsquo;t have been
+            happier.&rdquo;
+          </p>
+          <p>
+            &ldquo;From the booking process, to the lesson itself, and even
+            helping us with all our questions afterwards, Taro was awesome. We
+            learnt so much during the lesson and came away feeling much more
+            confident and ready to start snapping.&rdquo;
+          </p>
+          <p>
+            &ldquo;We had a great time and would highly recommend booking a
+            lesson with Taro if you&rsquo;re looking to improve your photography
+            and take your shooting to the next level!&rdquo;
+          </p>
+        </blockquote>
+        <figcaption>Charlie and Gabby</figcaption>
+      </figure>
+
+      <figure class="tc-quote">
+        <blockquote>
+          <p>
+            &ldquo;I really loved my workshop with Taro. He took the time to
+            understand what I wanted to learn and made everything around filming
+            and camera settings feel much easier to grasp.&rdquo;
+          </p>
+          <p>
+            &ldquo;He&rsquo;s incredibly knowledgeable, creative and generous
+            with his ideas, and having him as the subject of my first mini
+            documentary was an added bonus! His background in nature photography
+            and guiding safaris in Kenya made the whole experience even more
+            interesting. I&rsquo;d definitely recommend a workshop with
+            Taro.&rdquo;
+          </p>
+        </blockquote>
+        <figcaption>Katherine</figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+</section>
