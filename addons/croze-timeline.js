@@ -65,11 +65,40 @@ defineAddon('croze-timeline', () => {
 
   // Chapters: a dated paragraph opens one and keeps the undated paragraphs
   // that follow. Anything before the first date becomes the opening chapter.
+  /** Every year a paragraph names, in the order it names them. */
+  const yearsIn = (el) => {
+    const out = [];
+    for (const m of el.textContent.matchAll(/(?<!\d)(1[89]\d{2}|20[0-2]\d)(?!\d)/g)) {
+      const y = +m[1];
+      if (y >= MIN_YEAR && y <= NEXT_YEAR) out.push(y);
+    }
+    return out;
+  };
+
+  // Chapters: a dated paragraph opens one and keeps the undated paragraphs
+  // that follow it.
+  //
+  // Which year labels a chapter takes a little care. The obvious choice — the
+  // first year in the paragraph — makes the spine run backwards, because a
+  // paragraph often opens on an aside: the Cranbrook chapter sits after 1942
+  // but its first date is Carl Milles arriving in 1931. Where a paragraph
+  // names several years, the earliest one that does not go backwards is used
+  // instead. Every year shown is still one the paragraph actually names; this
+  // only chooses between them, and where a paragraph genuinely doubles back
+  // (Nani's line begins in 1943, after Harvey Senior's story has reached the
+  // sixties) it is left alone, because the story really does double back there.
   const chapters = [];
+  let last = 0;
   paras.forEach((p) => {
-    const y = yearOf(p);
-    if (y || !chapters.length) chapters.push({ year: y, paras: [p] });
-    else chapters[chapters.length - 1].paras.push(p);
+    const years = yearsIn(p);
+    if (years.length || !chapters.length) {
+      const forward = years.filter((y) => y >= last);
+      const year = forward.length ? Math.min(...forward) : (years[0] || 0);
+      if (year) last = year;
+      chapters.push({ year, paras: [p] });
+    } else {
+      chapters[chapters.length - 1].paras.push(p);
+    }
   });
   if (chapters.length < 4) return;
 
