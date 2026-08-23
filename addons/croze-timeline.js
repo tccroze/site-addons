@@ -46,11 +46,17 @@ defineAddon('croze-timeline', () => {
   if (!host) return;
 
   const NEXT_YEAR = new Date().getFullYear() + 1;
-  /** The year a paragraph is anchored on, or 0. A comma or decimal beside the
-   *  number means it is a quantity — "2,500 individual elephants", "500
-   *  kilograms" — and this story carries enough of those to matter. */
+  /** The year a paragraph is anchored on, or 0.
+   *
+   *  The lookarounds reject only an adjacent DIGIT. An earlier version also
+   *  rejected an adjacent comma, meaning to skip thousands separators — but a
+   *  year in English prose is followed by a comma constantly ("born in 1904,
+   *  in the state's Upper Peninsula"), so it threw away most of the real dates
+   *  and labelled that paragraph 1938 from the next sentence. The comma guard
+   *  was never needed: a thousands separator leaves a three-digit run, and
+   *  three digits cannot match a four-digit year. */
   const yearOf = (el) => {
-    for (const m of el.textContent.matchAll(/(?<![\d,.])(1[89]\d{2}|20[0-2]\d)(?![\d,.])/g)) {
+    for (const m of el.textContent.matchAll(/(?<!\d)(1[89]\d{2}|20[0-2]\d)(?!\d)/g)) {
       const y = +m[1];
       if (y >= MIN_YEAR && y <= NEXT_YEAR) return y;
     }
@@ -168,13 +174,19 @@ defineAddon('croze-timeline', () => {
       font-variant-numeric: tabular-nums;
     }
     /* Separation and measure: the two things the long column never had. */
-    .taro-cl-panel p {
+    /* Doubled class, because Squarespace sets its own margins on p inside
+       .sqs-html-content and those rules load after this stylesheet. Measured:
+       the gap between paragraphs was coming out at 0px. Separation is half the
+       point of opening a chapter at all. */
+    .taro-cl-panel.taro-cl-panel p,
+    .taro-cl-panel.taro-cl-panel .sqs-html-content p {
       max-width: none;
-      font-size: 1.02rem;
-      line-height: 1.72;
-      margin: 0 0 1.35em;
+      font-size: 1.04rem;
+      line-height: 1.75;
+      margin: 0 0 1.5em;
+      text-align: left;
     }
-    .taro-cl-panel p:last-child { margin-bottom: 0; }
+    .taro-cl-panel.taro-cl-panel p:last-of-type { margin-bottom: 0; }
 
     .taro-cl-close {
       position: absolute; top: 0.5rem; right: 0.6rem;
@@ -233,7 +245,11 @@ defineAddon('croze-timeline', () => {
     body.className = 'taro-cl-body';
     ch.paras.forEach((p) => body.appendChild(p));
 
-    item.append(btn);
+    // Hidden, but IN the document. An earlier version left this div detached
+    // while the chapter was closed, which quietly took the entire story out of
+    // the page: a crawler or a screen reader found thirty paragraphs of nothing.
+    body.hidden = true;
+    item.append(btn, body);
     list.appendChild(item);
     return { ch, btn, body, i };
   });
@@ -254,8 +270,11 @@ defineAddon('croze-timeline', () => {
     document.documentElement.style.removeProperty('overflow');
     document.documentElement.style.removeProperty('padding-right');
     setTimeout(() => {
-      // Put the paragraphs back where they live before the panel goes.
-      if (p) { panels[idx].body.remove(); p.remove(); }
+      // Home again, and hidden — never detached. See the note where it is built.
+      const { body, btn: home } = panels[idx];
+      body.hidden = true;
+      home.parentElement.appendChild(body);
+      if (p) p.remove();
       if (v) v.remove();
     }, 320);
     if (lastFocus) { lastFocus.focus({ preventScroll: true }); lastFocus = null; }
@@ -303,6 +322,7 @@ defineAddon('croze-timeline', () => {
     next.addEventListener('click', () => open(i + 1));
     nav.append(prev, next);
 
+    body.hidden = false;
     panel.append(close$, year, body, nav);
     document.body.appendChild(panel);
 

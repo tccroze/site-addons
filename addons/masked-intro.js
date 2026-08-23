@@ -29,7 +29,7 @@ import { defineAddon, css } from '../lib/util.js';
 // ?v= because the assets otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale image — the half-deploy class
 // main.js documents. Stamped by scripts/release.sh along with everything else.
-const V = '2.43.0';
+const V = '2.43.1';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 const PHOTO = ASSET('spitzkoppe-2600.jpg');
 const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
