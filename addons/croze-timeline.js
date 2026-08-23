@@ -1,212 +1,329 @@
-// The Croze Line, read as a timeline.
+// The Croze Line, as a timeline you open a chapter at a time.
 //
-// That page carries about three thousand words covering five generations, two
-// continents and roughly a century, and it was set as one unbroken column of
-// thirty paragraphs 1325px wide — around 150 characters a line, twice a
-// comfortable measure. Long-form history is exactly the case where measure
-// matters most: the reader is holding names and dates in their head, and every
-// line return is a chance to lose the thread.
+// The page carries about three thousand words across five generations, two
+// continents and roughly a century, set as thirty paragraphs in one unbroken
+// column 1325px wide — around 150 characters a line, twice a comfortable
+// measure. Nobody reads that in a sitting, and the dates that make it a history
+// were buried mid-sentence where you could not see them.
 //
-// So this does three things, none of which touch a word of the story:
+// A first attempt hung the years in the left margin against a spine. It failed
+// for a dull reason worth writing down: Squarespace's block container clips its
+// own padding box, so anything positioned outside it is simply not painted.
+// There is no margin to hang things in.
 //
-//   1. Narrows the column to a readable measure.
-//   2. Pulls the YEARS out of the prose and sets them in the margin, so the
-//      century is visible at a glance instead of buried mid-sentence.
-//   3. Keeps the era you are currently reading pinned in the corner, and
-//      offers a rail of every dated moment that you can jump between.
+// So the story is restructured instead. Every dated paragraph starts a chapter
+// and carries the undated paragraphs that follow it, giving a scannable list of
+// years, each with the opening line of what happened. Click one and the chapter
+// opens over a blurred page, which is where the reading actually happens: one
+// chapter at a time, at a proper measure, with nothing else competing.
 //
-// WHY THE DATES ARE READ, NOT WRITTEN DOWN. Every year shown is scraped from
-// the owner's own prose at run time. Nothing is hard-coded, so editing the
-// story in Squarespace changes the timeline with it, and there is no second
-// copy of the family's history to fall out of step with the first. It also
-// means this add-on can never assert a date the page does not already claim —
-// which matters, because these are real people and one of them is a documented
-// public figure.
+// WHAT THIS DOES NOT DO IS WRITE ANYTHING. Every year and every teaser is read
+// from the owner's own prose at run time — no dates, no summaries and no
+// chapter titles are stored here. Editing the story in Squarespace changes the
+// timeline with it, there is no second copy of the family's history to fall out
+// of step, and this file cannot assert a date or a claim the page does not
+// already make. That matters: these are real people, and one of them is a
+// documented public figure.
 //
-// The scrape is deliberately conservative: a bare four-digit year between 1800
-// and next year, ignoring anything that looks like a measurement or a quantity.
-// A paragraph with several years is labelled by its first, because that is the
-// one the sentence is anchored on ("In 1972, Harvey co-founded…").
-//
-// Nothing here is destructive. The paragraphs keep their text and their order,
-// every change is a class or an inline style, and if the page markup ever
-// changes shape the add-on stands down and leaves the story exactly as it was.
+// PROGRESSIVE ENHANCEMENT. The paragraphs are never removed or emptied. They
+// are moved into a panel that is hidden with `hidden` until opened, so the full
+// text stays in the document for search engines and assistive technology. If
+// this file never loads, the page is exactly the long article it was.
 
 import { defineAddon, css } from '../lib/util.js';
 
 const MIN_YEAR = 1800;
-const EASE = 0.30;              // the site's shared lag constant
-const FRAME = 1000 / 60;
+const TEASER_MAX = 96;          // characters of the opening line kept as the teaser
 
 defineAddon('croze-timeline', () => {
   if (!/^\/thecrozeline\/?$/i.test(location.pathname)) return;
 
-  // One text block holds the whole story, so the paragraphs are siblings.
   const paras = [...document.querySelectorAll('.sqs-html-content p')]
     .filter((p) => !p.closest('footer') && p.textContent.trim().length > 40);
-  if (paras.length < 8) return;               // not the story page we know
+  if (paras.length < 8) return;
 
-  const host = paras[0].closest('.sqs-html-content');
+  const host = paras[0].parentElement;
   if (!host) return;
 
   const NEXT_YEAR = new Date().getFullYear() + 1;
-  /** The year a paragraph is anchored on, or 0. */
+  /** The year a paragraph is anchored on, or 0. A comma or decimal beside the
+   *  number means it is a quantity — "2,500 individual elephants", "500
+   *  kilograms" — and this story carries enough of those to matter. */
   const yearOf = (el) => {
-    const text = el.textContent;
-    const found = [];
-    // Bare four-digit years only. A comma or a decimal point beside the number
-    // means it is a quantity — "2,500 individual elephants", "500 kilograms" —
-    // and those appear in this story often enough to matter.
-    for (const m of text.matchAll(/(?<![\d,.])(1[89]\d{2}|20[0-2]\d)(?![\d,.])/g)) {
+    for (const m of el.textContent.matchAll(/(?<![\d,.])(1[89]\d{2}|20[0-2]\d)(?![\d,.])/g)) {
       const y = +m[1];
-      if (y >= MIN_YEAR && y <= NEXT_YEAR) found.push(y);
+      if (y >= MIN_YEAR && y <= NEXT_YEAR) return y;
     }
-    return found.length ? found[0] : 0;
+    return 0;
+  };
+
+  // Chapters: a dated paragraph opens one and keeps the undated paragraphs
+  // that follow. Anything before the first date becomes the opening chapter.
+  const chapters = [];
+  paras.forEach((p) => {
+    const y = yearOf(p);
+    if (y || !chapters.length) chapters.push({ year: y, paras: [p] });
+    else chapters[chapters.length - 1].paras.push(p);
+  });
+  if (chapters.length < 4) return;
+
+  /** The opening line of a chapter, cut at a word boundary. */
+  const teaserOf = (ch) => {
+    const text = ch.paras[0].textContent.replace(/\s+/g, ' ').trim();
+    const stop = text.search(/[.!?]\s/);
+    let s = stop > 30 ? text.slice(0, stop + 1) : text;
+    if (s.length > TEASER_MAX) {
+      s = s.slice(0, TEASER_MAX).replace(/\s+\S*$/, '') + '…';
+    }
+    return s;
   };
 
   css('croze-timeline', `
-    /* A readable measure. 68 characters, down from about 150 — the single
-       biggest thing that can be done for three thousand words. */
-    html.taro-croze .sqs-html-content > p {
-      max-width: 68ch;
-      margin-left: 0;
-    }
-    html.taro-croze .sqs-html-content { position: relative; }
+    /* The original column, while the timeline stands in for it. */
+    .taro-cl-list { list-style: none; margin: 2rem 0 0; padding: 0; }
+    .taro-cl-item { border-top: 1px solid rgba(36, 50, 48, 0.18); }
+    .taro-cl-item:last-child { border-bottom: 1px solid rgba(36, 50, 48, 0.18); }
 
-    /* The dated paragraphs. The year sits in the margin beside the sentence it
-       belongs to; below the width where a margin exists, it sits above. */
-    html.taro-croze p.taro-year {
-      position: relative;
-      padding-top: 0.2em;
+    /* One row: the year, then the line that opens the chapter. A button, so it
+       is reachable by keyboard and announces its own state. */
+    .taro-cl-btn {
+      display: grid;
+      grid-template-columns: 6.5rem 1fr auto;
+      align-items: baseline;
+      gap: 1rem;
+      width: 100%;
+      padding: 1.15rem 0.25rem;
+      background: none; border: 0;
+      font: inherit; color: inherit;
+      text-align: left;
+      cursor: pointer;
     }
-    html.taro-croze p.taro-year::before {
-      content: attr(data-year);
-      position: absolute;
-      left: -7.5rem;
-      top: 0.25em;
-      width: 6rem;
-      text-align: right;
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      color: var(--taro-croze-dim, #7d8a80);
+    .taro-cl-year {
+      font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+      line-height: 1;
+      color: #e23318;
       font-variant-numeric: tabular-nums;
-      pointer-events: none;
+      letter-spacing: 0.01em;
     }
-    /* The spine: a hairline the years hang off, drawn only where there is
-       room for the margin to exist at all. */
-    @media (min-width: 1100px) {
-      html.taro-croze .sqs-html-content::before {
-        content: "";
-        position: absolute;
-        left: -1.4rem; top: 0; bottom: 0;
-        width: 1px;
-        background: rgba(36, 50, 48, 0.16);
-      }
-      html.taro-croze p.taro-year::after {
-        content: "";
-        position: absolute;
-        left: -1.65rem; top: 0.62em;
-        width: 7px; height: 7px;
-        border-radius: 50%;
-        background: #e23318;
-      }
+    .taro-cl-teaser {
+      font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+      line-height: 1.5;
+      color: #243230;
     }
-    @media (max-width: 1099px) {
-      html.taro-croze p.taro-year::before {
-        position: static;
-        display: block;
-        width: auto;
-        text-align: left;
-        margin-bottom: 0.35rem;
-      }
+    .taro-cl-more {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #4c554e;
+      white-space: nowrap;
+    }
+    @media (hover: hover) {
+      .taro-cl-btn:hover .taro-cl-teaser { color: #000; }
+      .taro-cl-btn:hover .taro-cl-more { color: #e23318; }
+    }
+    .taro-cl-btn:focus-visible { outline: 2px solid #243230; outline-offset: 2px; }
+
+    @media (max-width: 640px) {
+      .taro-cl-btn { grid-template-columns: 4.5rem 1fr; row-gap: 0.4rem; }
+      .taro-cl-more { grid-column: 2; }
     }
 
-    /* The era, pinned while you read it. Never over the text: it sits in the
-       bottom corner, and it is the one thing on the page that moves. */
-    .taro-era {
-      position: fixed;
-      left: clamp(12px, 2vw, 28px);
-      bottom: clamp(12px, 3vh, 32px);
-      z-index: 60;
-      display: flex; align-items: baseline; gap: 0.5rem;
-      padding: 0.5rem 0.85rem;
-      background: rgba(36, 50, 48, 0.92);
-      color: #f6eed5;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      letter-spacing: 0.16em;
-      font-variant-numeric: tabular-nums;
+    /* The blurred page behind an open chapter. */
+    .taro-cl-veil {
+      position: fixed; inset: 0;
+      z-index: 9990;
+      background: rgba(18, 16, 12, 0.34);
+      -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
       opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 320ms ease, transform 320ms ease;
-      pointer-events: none;
+      transition: opacity 300ms ease;
+      cursor: zoom-out;
     }
-    .taro-era--on { opacity: 1; transform: none; }
-    .taro-era__label { color: #85b7b2; font-size: 0.62rem; letter-spacing: 0.2em; }
+    .taro-cl-veil--on { opacity: 1; }
+
+    /* The chapter itself: a sheet of the page's own paper, at a measure that
+       is the entire point of doing this. */
+    .taro-cl-panel {
+      position: fixed;
+      z-index: 9995;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -48%);
+      width: min(70ch, calc(100vw - 2.5rem));
+      max-height: min(84vh, 900px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #f6eed5;
+      color: #243230;
+      padding: clamp(1.6rem, 4vw, 2.8rem);
+      box-shadow: 0 40px 120px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transition: opacity 300ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .taro-cl-panel--on { opacity: 1; transform: translate(-50%, -50%); }
+    .taro-cl-panel__year {
+      display: block;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      line-height: 1;
+      color: #e23318;
+      margin-bottom: 1.4rem;
+      font-variant-numeric: tabular-nums;
+    }
+    /* Separation and measure: the two things the long column never had. */
+    .taro-cl-panel p {
+      max-width: none;
+      font-size: 1.02rem;
+      line-height: 1.72;
+      margin: 0 0 1.35em;
+    }
+    .taro-cl-panel p:last-child { margin-bottom: 0; }
+
+    .taro-cl-close {
+      position: absolute; top: 0.5rem; right: 0.6rem;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: 0; padding: 0;
+      color: #243230;
+      font: 300 28px/1 system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .taro-cl-close:focus-visible { outline: 2px solid #243230; outline-offset: 2px; }
+
+    /* Moving between chapters without closing. */
+    .taro-cl-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(36, 50, 48, 0.18);
+    }
+    .taro-cl-nav button {
+      background: none; border: 0; padding: 0.5rem 0;
+      font: inherit; font-size: 0.72rem;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: #4c554e; cursor: pointer;
+    }
+    .taro-cl-nav button[disabled] { opacity: 0.3; cursor: default; }
+    @media (hover: hover) { .taro-cl-nav button:not([disabled]):hover { color: #e23318; } }
 
     @media (prefers-reduced-motion: reduce) {
-      .taro-era { transition: none; }
-    }
-    @media (max-width: 700px) {
-      .taro-era { font-size: 0.72rem; padding: 0.42rem 0.7rem; }
+      .taro-cl-veil, .taro-cl-panel { transition: none; }
     }
   `);
 
-  // Tag every dated paragraph. Read first, write second: one layout pass.
-  const dated = [];
-  paras.forEach((p) => {
-    const y = yearOf(p);
-    if (!y) return;
-    dated.push({ el: p, year: y });
+  // ---- build the list -----------------------------------------------------
+  const list = document.createElement('ol');
+  list.className = 'taro-cl-list';
+
+  const panels = chapters.map((ch, i) => {
+    const item = document.createElement('li');
+    item.className = 'taro-cl-item';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'taro-cl-btn';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML =
+      `<span class="taro-cl-year">${ch.year || '&mdash;'}</span>` +
+      `<span class="taro-cl-teaser"></span>` +
+      `<span class="taro-cl-more">Read</span>`;
+    btn.querySelector('.taro-cl-teaser').textContent = teaserOf(ch);
+
+    // The chapter's own paragraphs, moved (not copied) into a hidden panel, so
+    // the text exists exactly once in the document and is still there for a
+    // crawler or a screen reader with the panel closed.
+    const body = document.createElement('div');
+    body.className = 'taro-cl-body';
+    ch.paras.forEach((p) => body.appendChild(p));
+
+    item.append(btn);
+    list.appendChild(item);
+    return { ch, btn, body, i };
   });
-  if (dated.length < 4) return;               // not enough of a timeline to be one
 
-  dated.forEach(({ el, year }) => {
-    el.classList.add('taro-year');
-    el.setAttribute('data-year', String(year));
-  });
-  document.documentElement.classList.add('taro-croze');
+  host.appendChild(list);
 
-  const era = document.createElement('div');
-  era.className = 'taro-era';
-  era.setAttribute('aria-hidden', 'true');    // decorative; the years are in the prose
-  era.innerHTML = '<span class="taro-era__label">YEAR</span><span class="taro-era__year"></span>';
-  document.body.appendChild(era);
-  const out = era.querySelector('.taro-era__year');
+  // ---- the overlay --------------------------------------------------------
+  let veil = null, panel = null, openIdx = -1, lastFocus = null;
 
-  // Offsets are cached, never read in the scroll path — a bounding rect per
-  // paragraph per frame across thirty paragraphs is exactly the kind of thing
-  // that makes a long page feel heavy.
-  let tops = [];
-  const measure = () => {
-    tops = dated.map(({ el, year }) => ({
-      y: el.getBoundingClientRect().top + window.scrollY,
-      year,
-    }));
+  const close = () => {
+    if (openIdx < 0) return;
+    panels[openIdx].btn.setAttribute('aria-expanded', 'false');
+    const v = veil, p = panel;
+    veil = null; panel = null;
+    const idx = openIdx; openIdx = -1;
+    if (v) v.classList.remove('taro-cl-veil--on');
+    if (p) p.classList.remove('taro-cl-panel--on');
+    document.documentElement.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('padding-right');
+    setTimeout(() => {
+      // Put the paragraphs back where they live before the panel goes.
+      if (p) { panels[idx].body.remove(); p.remove(); }
+      if (v) v.remove();
+    }, 320);
+    if (lastFocus) { lastFocus.focus({ preventScroll: true }); lastFocus = null; }
   };
 
-  let shown = 0, raf = 0;
-  const paint = () => {
-    raf = 0;
-    if (!tops.length) return;
-    const line = window.scrollY + window.innerHeight * 0.42;
-    let current = 0;
-    for (const t of tops) {
-      if (t.y <= line) current = t.year; else break;
-    }
-    if (current !== shown) {
-      shown = current;
-      out.textContent = current ? String(current) : '';
-    }
-    era.classList.toggle('taro-era--on', !!current);
-  };
-  const request = () => { if (!raf) raf = requestAnimationFrame(paint); };
+  const open = (i) => {
+    if (openIdx === i) return;
+    if (openIdx >= 0) close();
+    const { ch, btn, body } = panels[i];
+    lastFocus = btn;
+    openIdx = i;
+    btn.setAttribute('aria-expanded', 'true');
 
-  measure(); paint();
-  window.addEventListener('scroll', request, { passive: true });
-  window.addEventListener('resize', () => { measure(); request(); }, { passive: true });
-  window.addEventListener('load', () => { measure(); request(); });
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => { measure(); request(); }).catch(() => {});
-  }
+    veil = document.createElement('div');
+    veil.className = 'taro-cl-veil';
+    veil.addEventListener('click', close);
+    document.body.appendChild(veil);
+
+    panel = document.createElement('div');
+    panel.className = 'taro-cl-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-label', ch.year ? `The Croze Line, ${ch.year}` : 'The Croze Line');
+
+    const close$ = document.createElement('button');
+    close$.type = 'button';
+    close$.className = 'taro-cl-close';
+    close$.setAttribute('aria-label', 'Close');
+    close$.textContent = '×';
+    close$.addEventListener('click', close);
+
+    const year = document.createElement('span');
+    year.className = 'taro-cl-panel__year';
+    year.textContent = ch.year || '';
+
+    const nav = document.createElement('div');
+    nav.className = 'taro-cl-nav';
+    const prev = document.createElement('button');
+    prev.type = 'button'; prev.textContent = '← Earlier';
+    prev.disabled = i === 0;
+    prev.addEventListener('click', () => open(i - 1));
+    const next = document.createElement('button');
+    next.type = 'button'; next.textContent = 'Later →';
+    next.disabled = i === panels.length - 1;
+    next.addEventListener('click', () => open(i + 1));
+    nav.append(prev, next);
+
+    panel.append(close$, year, body, nav);
+    document.body.appendChild(panel);
+
+    // Lock the page without letting the layout jump by the scrollbar's width.
+    const bar = window.innerWidth - document.documentElement.clientWidth;
+    document.documentElement.style.overflow = 'hidden';
+    if (bar > 0) document.documentElement.style.paddingRight = `${bar}px`;
+
+    requestAnimationFrame(() => {
+      if (veil) veil.classList.add('taro-cl-veil--on');
+      if (panel) panel.classList.add('taro-cl-panel--on');
+      close$.focus({ preventScroll: true });
+    });
+  };
+
+  panels.forEach(({ btn }, i) => btn.addEventListener('click', () => open(i)));
+
+  document.addEventListener('keydown', (e) => {
+    if (openIdx < 0) return;
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key === 'ArrowLeft' && openIdx > 0) open(openIdx - 1);
+    if (e.key === 'ArrowRight' && openIdx < panels.length - 1) open(openIdx + 1);
+  });
 });
