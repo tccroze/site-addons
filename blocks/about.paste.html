@@ -1,0 +1,548 @@
+<!-- About - paste-ready. Documented version: blocks/about.html in the site-addons repo. -->
+<style>
+.tc-about {
+  --tc-cream: #f6eed5;
+  --tc-ink: #243230;
+  --tc-teal: #85b7b2;
+  --tc-red: #e23318;
+  --tc-orange: #e8934a;
+  --tc-ink-soft: #4c554e;              --tc-hair: rgba(36, 50, 48, 0.22);   --tc-hair-dark: rgba(246, 238, 213, 0.28);
+
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vw, 5.5rem) clamp(1.25rem, 5vw, 4rem);
+  background: var(--tc-cream);
+  color: var(--tc-ink);
+  text-align: left;
+  overflow-wrap: break-word;
+}
+
+.tc-about *,
+.tc-about *::before,
+.tc-about *::after { box-sizing: border-box; }
+
+.tc-about p,
+.tc-about h1,
+.tc-about h2,
+.tc-about h3,
+.tc-about ol,
+.tc-about li,
+.tc-about figure,
+.tc-about figcaption { margin: 0; padding: 0; }
+
+.tc-about ol { list-style: none; }
+
+.tc-about h1,
+.tc-about h2,
+.tc-about h3 {
+  font-weight: 400;
+  color: var(--tc-ink);
+  line-height: 1.05;
+  text-align: left;
+}
+
+.tc-about h1,
+.tc-about h2,
+.tc-about h3,
+.tc-about .tc-line__name {
+  font-family: 'tan---nimbus-regular-webfont-tn3woj', 'Times New Roman', Georgia, serif;
+  font-weight: 400;
+}
+
+.tc-about p.tc-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  text-align: left;
+  margin: 0 0 0.9rem;
+}
+
+.tc-about .tc-line,
+.tc-about .tc-field,
+.tc-about .tc-promise { margin-top: clamp(3.25rem, 8vw, 6rem); }
+
+.tc-about .tc-hero { display: grid; gap: clamp(2rem, 5vw, 3rem); }
+
+.tc-about .tc-hero .tc-hero__title {
+  font-size: clamp(2.4rem, 8vw, 4.1rem);
+  letter-spacing: 0.005em;
+  margin-bottom: 1.5rem;
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-hero .tc-hero__title::after {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: 2px;
+  margin-top: 1.4rem;
+  background: var(--tc-red);
+}
+
+.tc-about .tc-hero .tc-hero__lede {
+  max-width: 55ch;
+  font-size: clamp(1.02rem, 1.5vw, 1.2rem);
+  line-height: 1.65;
+  color: var(--tc-ink);
+  text-align: left;
+}
+.tc-about .tc-hero .tc-hero__lede + .tc-hero__lede { margin-top: 1.1rem; }
+
+.tc-about .tc-hero__portrait { margin: 0; }
+
+.tc-about .tc-hero__portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: rgba(36, 50, 48, 0.08);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 700' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0,0 L600,0 L600,650.2 L591.7,652.1 L583.5,653.4 L566.8,656.5 L558.5,658.4 L542.6,647.9 L521.4,649.6 L508.7,649.4 L494.7,653.9 L481.6,655.6 L461,664.1 L441.7,665.1 L420,670.5 L407.4,674.8 L390.7,678.6 L377,681.7 L365.4,681.1 L357.7,681.2 L350.2,675.5 L342.6,671.1 L330.3,674.2 L321.6,678 L308.7,680.1 L291.1,673.7 L275.4,668.6 L258.9,663.4 L241.3,662.8 L227.3,670.6 L218.4,667.3 L201.8,675.4 L181.1,668.9 L163.9,672.8 L147.9,666.5 L127,673.7 L109.3,663.7 L96.6,661.1 L77.1,654.4 L69.4,652.9 L62,653.4 L48,647.6 L27.1,643.7 L13.1,640.9 L0,640 Z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 700' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0,0 L600,0 L600,650.2 L591.7,652.1 L583.5,653.4 L566.8,656.5 L558.5,658.4 L542.6,647.9 L521.4,649.6 L508.7,649.4 L494.7,653.9 L481.6,655.6 L461,664.1 L441.7,665.1 L420,670.5 L407.4,674.8 L390.7,678.6 L377,681.7 L365.4,681.1 L357.7,681.2 L350.2,675.5 L342.6,671.1 L330.3,674.2 L321.6,678 L308.7,680.1 L291.1,673.7 L275.4,668.6 L258.9,663.4 L241.3,662.8 L227.3,670.6 L218.4,667.3 L201.8,675.4 L181.1,668.9 L163.9,672.8 L147.9,666.5 L127,673.7 L109.3,663.7 L96.6,661.1 L77.1,654.4 L69.4,652.9 L62,653.4 L48,647.6 L27.1,643.7 L13.1,640.9 L0,640 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+          mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+}
+
+.tc-about .tc-line .tc-line__title {
+  font-size: clamp(1.7rem, 4.2vw, 2.5rem);
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-line .tc-line__origin {
+  margin-top: 1.25rem;
+  max-width: 46ch;
+  font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+  line-height: 1.55;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+.tc-about .tc-line__grid {
+  display: grid;
+  gap: clamp(2.25rem, 5vw, 3.5rem);
+  margin-top: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+.tc-about .tc-line__list { margin: 0; padding: 0; }
+
+.tc-about .tc-line__row {
+  position: relative;
+  border-left: 1px solid var(--tc-hair);
+  padding: 0 0 clamp(1.9rem, 4vw, 2.6rem) clamp(1.4rem, 3.5vw, 2.1rem);
+}
+
+.tc-about .tc-line__row::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 0.15rem;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tc-ink);
+}
+
+.tc-about .tc-line__row:last-child { border-left-color: transparent; padding-bottom: 0; }
+.tc-about .tc-line__row:last-child::before {
+  left: -8px;
+  top: 0.05rem;
+  width: 15px;
+  height: 15px;
+  background: var(--tc-red);   }
+
+.tc-about .tc-line__row .tc-line__rel {
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.tc-about .tc-line__row .tc-line__name {
+  font-size: clamp(1.45rem, 3.4vw, 2rem);
+  color: var(--tc-ink);
+  margin-bottom: 0.55rem;
+}
+
+.tc-about .tc-line__row .tc-line__work {
+  max-width: 52ch;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+.tc-about .tc-line__row--taro .tc-line__work {
+  max-width: 58ch;
+  font-size: clamp(1.02rem, 1.6vw, 1.16rem);
+  line-height: 1.62;
+}
+
+.tc-about .tc-archive__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: clamp(0.9rem, 2.5vw, 1.4rem);
+  align-items: start;
+}
+
+.tc-about .tc-archive__grid figure {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--tc-hair);
+  background: var(--tc-cream);
+}
+
+.tc-about .tc-archive__grid img {
+  display: block;
+  width: 100%;
+  height: auto;                 filter: grayscale(1) contrast(0.96);
+  background: rgba(36, 50, 48, 0.08);
+}
+
+.tc-about .tc-field .tc-field__title {
+  font-size: clamp(1.7rem, 4.2vw, 2.5rem);
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-field .tc-field__body {
+  margin-top: 1.25rem;
+  max-width: 65ch;              font-size: clamp(1.02rem, 1.5vw, 1.15rem);
+  line-height: 1.68;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+.tc-about .tc-field .tc-field__close {
+  margin-top: 1.1rem;
+  max-width: 44ch;
+  font-size: clamp(1.08rem, 2vw, 1.35rem);
+  line-height: 1.5;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+.tc-about .tc-field__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  align-items: start;
+  margin-top: clamp(2rem, 4.5vw, 3rem);
+}
+.tc-about .tc-field__grid figure { margin: 0; }
+.tc-about .tc-field__grid img {
+  display: block;
+  width: 100%;
+  height: auto;                 background: rgba(36, 50, 48, 0.08);
+}
+
+.tc-about .tc-promise {
+  border-top: 1px solid var(--tc-ink);
+  padding-top: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.tc-about .tc-promise .tc-promise__lead {
+  max-width: 40ch;
+  font-size: clamp(1.02rem, 1.6vw, 1.2rem);
+  line-height: 1.6;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+.tc-about .tc-promise .tc-promise__line {
+  max-width: 22ch;
+  margin-top: 1rem;
+  font-size: clamp(1.9rem, 5.6vw, 3.1rem);
+  line-height: 1.08;
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-promise .tc-btn { margin-top: clamp(1.75rem, 4vw, 2.5rem); }
+
+.tc-about .tc-btn {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--tc-ink);
+  background: transparent;
+  border: 1px solid var(--tc-red);
+  border-radius: 999px;
+  padding: 0.85em 1.7em;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 170ms ease, color 170ms ease, border-color 170ms ease;
+}
+
+.tc-about a:focus-visible,
+.tc-about .tc-btn:focus-visible {
+  outline: 2px solid var(--tc-ink);
+  outline-offset: 3px;
+}
+
+.tc-about .tc-croze {
+  position: relative;
+  margin-top: clamp(3.5rem, 9vw, 6.5rem);
+  background: var(--tc-ink);
+  color: var(--tc-cream);
+  padding: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+.tc-about .tc-croze::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: -15px;
+  height: 16px;
+  background-repeat: repeat-x;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 16' preserveAspectRatio='none'%3E%3Cpath fill='%23243230' d='M0,16 L0,10.3 L41.7,12.4 L78.5,11.4 L95.2,8.7 L133.9,9.3 L179.7,7 L216.8,7.2 L240.3,9.5 L273.4,6.4 L316.2,5.6 L339.8,4.2 L378.1,1.9 L410.4,2.5 L447.4,2.2 L489.2,6.5 L530.1,6.2 L553.6,4.8 L587.4,6.6 L614.1,4.9 L631.4,6.6 L669.9,10.7 L708.6,10.5 L738.1,11.2 L780.4,11.3 L807.6,9.2 L838.7,9.2 L875.2,6.4 L889.4,6.2 L917.9,5.9 L933.6,9.3 L959,7.1 L976.9,5.1 L1017.5,5.6 L1054.4,2.9 L1096.9,2 L1117.9,2.1 L1148.1,2 L1171.8,4.3 L1200,7 L1200,16 Z'/%3E%3C/svg%3E");
+}
+
+.tc-about .tc-croze p.tc-croze__eyebrow { color: var(--tc-teal); }  .tc-about .tc-croze .tc-croze__title {
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  color: var(--tc-cream);
+  margin-bottom: 1.25rem;
+}
+
+.tc-about .tc-croze .tc-croze__body {
+  max-width: 58ch;
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  line-height: 1.65;
+  color: var(--tc-cream);
+  text-align: left;
+}
+
+.tc-about .tc-croze .tc-btn {
+  margin-top: clamp(1.5rem, 3.5vw, 2rem);
+  color: var(--tc-cream);
+  border-color: var(--tc-teal);   }
+.tc-about .tc-croze a:focus-visible { outline-color: var(--tc-cream); }
+
+@media (min-width: 820px) {
+  .tc-about .tc-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.75fr);
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+}
+
+@media (min-width: 1040px) {
+  .tc-about .tc-line__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    align-items: start;
+  }
+}
+
+@media (hover: hover) {
+  .tc-about .tc-btn:hover {
+    background: var(--tc-ink);
+    color: var(--tc-cream);
+  }
+  .tc-about .tc-croze .tc-btn:hover {
+    background: var(--tc-cream);
+    color: var(--tc-ink);
+    border-color: var(--tc-cream);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-about *,
+  .tc-about *::before,
+  .tc-about *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+</style>
+
+<section class="tc-about" aria-labelledby="tc-about-heading">
+
+  <div class="tc-hero">
+
+    <div class="tc-hero__text">
+      <p class="tc-eyebrow">About</p>
+      <h1 class="tc-hero__title" id="tc-about-heading">meet taro.</h1>
+
+      <p class="tc-hero__lede">
+        Whether it&rsquo;s photography for your brand, visuals that energise your
+        business, or bespoke art for your home &mdash; everything is crafted to
+        make people feel something.
+      </p>
+      <p class="tc-hero__lede">
+        If you want pieces that add depth, personality and purpose, not just
+        decoration, you&rsquo;re in the right place.
+      </p>
+    </div>
+
+    <figure class="tc-hero__portrait">
+      <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/59da90d4-595c-406f-959d-095743b7e816/A704137-R1-09-26.jpg?format=1000w"
+           alt="Portrait of Taro."
+           loading="lazy" decoding="async" width="656" height="777">
+    </figure>
+
+  </div>
+
+  <section class="tc-line" aria-labelledby="tc-about-line">
+    <p class="tc-eyebrow">Lineage</p>
+    <h2 class="tc-line__title" id="tc-about-line">Where it comes from</h2>
+    <p class="tc-line__origin">
+      Born and raised in Kenya, surrounded by wildlife, colour, and a family that
+      never stopped creating.
+    </p>
+
+    <div class="tc-line__grid">
+
+      <ol class="tc-line__list" role="list">
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Great-grandfather</p>
+          <h3 class="tc-line__name">HAP Grieshaber</h3>
+          <p class="tc-line__work">
+            One of the most significant German artists of the 20th century.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Great-grandfather</p>
+          <h3 class="tc-line__name">Harvey Snr</h3>
+          <p class="tc-line__work">
+            An American photographer associated with the Cranbrook Foundation in
+            Michigan, recognised for architectural and documentary photography.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Grandfather</p>
+          <h3 class="tc-line__name">Harvey</h3>
+          <p class="tc-line__work">
+            A third-generation photographer, known for his African wildlife,
+            conservation, landscape and fine-art photography.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Grandmother</p>
+          <h3 class="tc-line__name">Nani</h3>
+          <p class="tc-line__work">
+            Nurtured artistry in everything she touched.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Father</p>
+          <h3 class="tc-line__name">Anselm</h3>
+          <p class="tc-line__work">
+            Founded Kitengela Glass.
+          </p>
+        </li>
+
+        <li class="tc-line__row tc-line__row--taro">
+          <p class="tc-line__rel">And me</p>
+          <h3 class="tc-line__name">Taro</h3>
+          <p class="tc-line__work">
+            Creativity was never a choice, it was just the house I grew up in.
+            That depth runs through everything I make, and it&rsquo;s why your
+            work will feel like it was made with intention, not just skill.
+          </p>
+        </li>
+
+      </ol>
+
+      <aside class="tc-archive" aria-labelledby="tc-about-archive">
+        <p class="tc-eyebrow" id="tc-about-archive">From the family archive</p>
+        <div class="tc-archive__grid">
+
+          <figure>
+            <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/17a7430d-80e0-4dd8-b369-892a8f9e953c/1d0c8bf1-1196-485d-8bf8-51405b470b69.jpg?format=750w"
+                 alt="Family archive photograph of adults and a small child outdoors."
+                 loading="lazy" decoding="async" width="434" height="309">
+          </figure>
+
+          <figure>
+            <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/f4c83169-14bd-4d51-baf9-9e84feb4aae8/PHOTO-2026-05-15-09-16-56.jpg?format=750w"
+                 alt="Black and white archive photograph of a man standing outdoors."
+                 loading="lazy" decoding="async" width="434" height="500">
+          </figure>
+
+          <figure>
+            <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/3fac8612-a241-49e9-8eaf-1a8b6ea210ad/SIL-39088009277897_Page60_crop.jpg?format=750w"
+                 alt="Archive photograph of a group of nine people, children and adults."
+                 loading="lazy" decoding="async" width="374" height="394">
+          </figure>
+
+        </div>
+      </aside>
+
+    </div>
+  </section>
+
+  <section class="tc-field" aria-labelledby="tc-about-field">
+    <p class="tc-eyebrow">Guiding</p>
+    <h2 class="tc-field__title" id="tc-about-field">In the field</h2>
+
+    <p class="tc-field__body">
+      Five years guiding safaris and managing luxury lodges taught me patience,
+      timing, and how to catch the moment before it&rsquo;s gone. I learned to
+      notice the things most people walk past: light, colour, movement, the small
+      details that tell the bigger story.
+    </p>
+    <p class="tc-field__close">
+      That&rsquo;s what I bring to your project. Nothing rushed, nothing missed.
+    </p>
+
+    <div class="tc-field__grid">
+
+      <figure>
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/bc6513cb-994b-4996-a42a-b0a55819e0e9/Meru+Walking-8929.jpg?format=750w"
+             alt="Men standing in a dry grass field, one of them pointing out across it."
+             loading="lazy" decoding="async" width="434" height="347">
+      </figure>
+
+      <figure>
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/8f1a0efa-dfe2-4224-8085-b5c8856bdcf9/IMG_4548.jpg?format=750w"
+             alt="A person photographing with a long lens from an open vehicle."
+             loading="lazy" decoding="async" width="434" height="418">
+      </figure>
+
+      <figure>
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/0cb6055d-7e4b-4d69-b21d-662c3d9a6cdf/53cf7ef2-0c33-40d2-b561-e5a65d54a329.jpg?format=750w"
+             alt="A man reaching out to touch a large antelope, with a second antelope nearby."
+             loading="lazy" decoding="async" width="434" height="474">
+      </figure>
+
+    </div>
+  </section>
+
+  <section class="tc-promise" aria-labelledby="tc-about-promise">
+    <p class="tc-eyebrow">The promise</p>
+    <p class="tc-promise__lead">
+      Now I photograph, film and paint. Three different crafts, same promise:
+    </p>
+    <h2 class="tc-promise__line" id="tc-about-promise">
+      Your story, told properly, and made to last.
+    </h2>
+    <a class="tc-btn" href="/contact">Let&rsquo;s talk</a>
+  </section>
+
+  <section class="tc-croze" aria-labelledby="tc-about-croze">
+    <p class="tc-eyebrow tc-croze__eyebrow">Further reading</p>
+    <h2 class="tc-croze__title" id="tc-about-croze">The Croze Line</h2>
+    <p class="tc-croze__body">
+      My family has an incredibly interesting and deeply rooted history in
+      creativity. I have written a story about my history, find the link below to
+      have a read.
+    </p>
+    <a class="tc-btn" href="/thecrozeline">The Croze Line</a>
+  </section>
+
+</section>

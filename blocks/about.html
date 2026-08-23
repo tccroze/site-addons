@@ -1,0 +1,838 @@
+<!-- =============================================================================
+     ABOUT  ·  MEET TARO  ·  a single self-contained block for a Squarespace Code Block
+     =============================================================================
+
+     HOW TO USE
+       Squarespace editor → the About page → delete the sections this replaces,
+       add one Code Block, paste this whole file into it. Code Blocks accept
+       HTML, and this is only HTML plus one style block. No script, no
+       stylesheet, no build. Everything is scoped under the single class
+       .tc-about, so it cannot reach the page's own header, footer or sections.
+
+     =============================================================================
+     ⚠  WHAT IS THE OWNER'S OWN COPY, AND WHAT NEEDS HIS APPROVAL  ⚠
+     =============================================================================
+     VERBATIM — his words, unedited. Do not reword these:
+       · "Born and raised in Kenya, surrounded by wildlife, colour, and a family
+          that never stopped creating."
+       · Every line in the lineage. The long original sentence has been broken
+          into one row per person and nothing else was changed: Anselm founded
+          Kitengela Glass; Nani nurtured artistry in everything she touched;
+          Harvey is a third-generation photographer; Harvey Snr was an American
+          photographer associated with the Cranbrook Foundation in Michigan;
+          HAP Grieshaber, one of the most significant German artists of the
+          20th century. Only sentence punctuation and a leading "A/An" were
+          added so each row reads as a sentence.
+       · "Creativity was never a choice, it was just the house I grew up in.
+          That depth runs through everything I make…"
+       · The whole safari paragraph. It is set as two paragraphs rather than
+          one; not a word is changed.
+       · "Now I photograph, film and paint. Three different crafts, same
+          promise: / Your story, told properly, and made to last."
+       · The Croze Line paragraph.
+
+     REDRAFTED — READ THIS ONE. Search for PLACEHOLDER-APPROVAL:
+       1. THE OPENING SENTENCE. The original never finished: it ran to a
+          semicolon and stopped, and its payoff — "you're in the right place" —
+          had been stranded as the heading of the next section. The redraft
+          below keeps his words and lets them resolve, in two sentences:
+            "Whether it's photography for your brand, visuals that energise your
+             business, or bespoke art for your home — everything is crafted to
+             make people feel something. If you want pieces that add depth,
+             personality and purpose, not just decoration, you're in the right
+             place."
+          Nothing was invented, but the joins are mine. Approve or correct it
+          before this goes live.
+
+     INFERRED — the one relationship on the page that he did not state.
+     Search for INFERRED-RELATIONSHIP:
+       The source says Harvey Snr was Harvey's father, and separately names HAP
+       Grieshaber as a great-grandfather. Both therefore sit in the
+       great-grandfather generation, but on different sides of the family, which
+       the source does not spell out. The block shows them as two rows in the
+       same generation and says nothing about how they connect. If that is
+       wrong, it is the one thing here that could be.
+
+     WRITTEN HERE, and only as furniture — small connective labels, no facts:
+       "About" · "Lineage" · "Where it comes from" · "From the family archive" ·
+       "Guiding" · "In the field" · "The promise" · "Further reading" ·
+       the relation labels
+       (Father, Grandmother, Grandfather, Great-grandfather) · "And me".
+       Change any of them freely; none carries information.
+
+     PHOTOGRAPHS: the six family and field pictures are the owner's own uploads,
+     already on the Squarespace CDN. The alt text was written here from written
+     descriptions of each frame, NOT from looking at the pictures, so it says
+     only what is in the frame and never who anybody is. Read each one once
+     against the actual photograph before publishing, and if a frame is ever
+     swapped, rewrite its alt text — a description that no longer matches its
+     picture is worse than a plain one.
+
+     THINGS DECIDED HERE, and why (each is also commented at the spot):
+       · Body copy is left aligned at about 55–65 characters a line. The live
+         page ran it centred at 1325px — 96 to 107 characters — which is the
+         single biggest thing wrong with it. Nothing long is centred anywhere in
+         this block. If you change one rule, do not change that one.
+       · The lineage runs OLDEST AT THE TOP, ending on Taro. See the comment on
+         .tc-line for the reasoning.
+       · The heading here is an h1. See the comment above .tc-about h1.
+       · Contrast, measured, on the two surfaces this block uses:
+             ink #243230 on cream #f6eed5 .... 11.5:1   body and headings
+             ink-soft #4c554e on cream ....... 6.7:1    eyebrows, captions
+             cream on ink #243230 ............ 11.5:1   the dark closing panel
+             teal #85b7b2 on ink ............. 6.0:1    eyebrow on dark only
+             orange #e8934a on ink ........... 5.5:1    available on dark only
+             red #e23318 on cream ............ 3.8:1    NON-TEXT ONLY — the
+                 button outlines, the rule under the heading, the marker at the
+                 end of the family line. It clears the 3:1 that borders and
+                 markers must meet and fails the 4.5:1 that body text must, so
+                 no word on this page is set in red.
+             teal on cream ................... 1.9:1    never used on cream.
+     ============================================================================= -->
+
+<style>
+/* Everything is scoped under .tc-about. There is not one global selector in
+   this block, so nothing can leak into the rest of the page, and Squarespace
+   cannot reach in either: these rules land after its stylesheets and win ties. */
+
+.tc-about {
+  /* The five brand colours, plus a softened ink and two hairline tints. Same
+     names and values as camera-classes.html, so the two blocks stay in step. */
+  --tc-cream: #f6eed5;
+  --tc-ink: #243230;
+  --tc-teal: #85b7b2;
+  --tc-red: #e23318;
+  --tc-orange: #e8934a;
+  --tc-ink-soft: #4c554e;              /* ink lightened toward cream; 6.7:1 on cream */
+  --tc-hair: rgba(36, 50, 48, 0.22);   /* the standard hairline */
+  --tc-hair-dark: rgba(246, 238, 213, 0.28);
+
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vw, 5.5rem) clamp(1.25rem, 5vw, 4rem);
+  background: var(--tc-cream);
+  color: var(--tc-ink);
+  text-align: left;
+  /* A long unbroken word (a pasted URL, say) must not push the page sideways. */
+  overflow-wrap: break-word;
+}
+
+.tc-about *,
+.tc-about *::before,
+.tc-about *::after { box-sizing: border-box; }
+
+.tc-about p,
+.tc-about h1,
+.tc-about h2,
+.tc-about h3,
+.tc-about ol,
+.tc-about li,
+.tc-about figure,
+.tc-about figcaption { margin: 0; padding: 0; }
+
+.tc-about ol { list-style: none; }
+
+/* Colour AND alignment are declared on each text element rather than inherited
+   from the box around it, and the selectors chain two of this block's own
+   classes. Both are deliberate. Squarespace paints headings and body copy with
+   rules on the elements themselves, scoped by the section's colour theme, and
+   inheritance can never beat a direct rule — drop a class from these selectors
+   and a dark themed section repaints this block's text white on cream.
+   Alignment is the same story and it matters more here than on any other page:
+   the live About page centres its body copy, and a centred rule inherited from
+   the section would undo the main repair this block exists to make. Every
+   colour and alignment rule below follows the pattern.
+
+   Headings are also pinned to weight 400 throughout: TAN Nimbus is uploaded at
+   that single weight, and a browser asked for a bold it does not have paints a
+   smeared synthetic one. */
+.tc-about h1,
+.tc-about h2,
+.tc-about h3 {
+  font-weight: 400;
+  color: var(--tc-ink);
+  line-height: 1.05;
+  text-align: left;
+}
+
+/* ── The display face ─────────────────────────────────────────────────────────
+   TAN Nimbus, the site's own uploaded face. Squarespace rewrites an uploaded
+   family name into a hashed slug, and the slug below is the one live today. It
+   is copied verbatim from camera-classes.html — the two blocks must name the
+   same face, so if one is ever updated, update both.
+
+   IF THE HEADINGS EVER COME OUT IN THE WRONG FACE, the font was re-uploaded and
+   the hash changed. Get the new one from the browser console on any page:
+     getComputedStyle(document.querySelector('h1')).fontFamily
+   and replace the first name in the stack below. The fallbacks are ordinary
+   serifs, so a stale slug degrades to a reasonable face rather than to nothing.
+   TAN Nimbus ships at weight 400 only: asking for bold synthesises a smear. */
+.tc-about h1,
+.tc-about h2,
+.tc-about h3,
+.tc-about .tc-line__name {
+  font-family: 'tan---nimbus-regular-webfont-tn3woj', 'Times New Roman', Georgia, serif;
+  font-weight: 400;
+}
+
+/* ── The small tracked caps used for eyebrows and labels ──────────────────── */
+.tc-about p.tc-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  text-align: left;
+  margin: 0 0 0.9rem;
+}
+
+/* ── Section rhythm ───────────────────────────────────────────────────────── */
+.tc-about .tc-line,
+.tc-about .tc-field,
+.tc-about .tc-promise { margin-top: clamp(3.25rem, 8vw, 6rem); }
+
+/* =============================================================================
+   1 · HERO
+   The heading is an h1. camera-classes.html starts at h2 because it is dropped
+   into pages that already carry a page-title h1; this page has no other h1, and
+   "meet taro." is unambiguously the title of it. Everything below is h2, and the
+   people in the family line are h3.
+   IF a page title is ever switched on above this block, demote in one pass:
+   h1 → h2 and every h2 → h3. Do not leave two h1s on the page.
+   ========================================================================== */
+.tc-about .tc-hero { display: grid; gap: clamp(2rem, 5vw, 3rem); }
+
+.tc-about .tc-hero .tc-hero__title {
+  font-size: clamp(2.4rem, 8vw, 4.1rem);
+  letter-spacing: 0.005em;
+  margin-bottom: 1.5rem;
+  color: var(--tc-ink);
+}
+
+/* The one place red touches the cream in this half of the page: a rule, not
+   text. 3.8:1 is short of the 4.5:1 a word would need and clear of the 3:1 a
+   2px bar needs. */
+.tc-about .tc-hero .tc-hero__title::after {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: 2px;
+  margin-top: 1.4rem;
+  background: var(--tc-red);
+}
+
+/* 55ch, left. This is the measurement the whole redesign turns on: the live
+   page sets this copy centred across 1325px, at 96 to 107 characters a line,
+   with no left edge for the eye to return to. */
+.tc-about .tc-hero .tc-hero__lede {
+  max-width: 55ch;
+  font-size: clamp(1.02rem, 1.5vw, 1.2rem);
+  line-height: 1.65;
+  color: var(--tc-ink);
+  text-align: left;
+}
+.tc-about .tc-hero .tc-hero__lede + .tc-hero__lede { margin-top: 1.1rem; }
+
+.tc-about .tc-hero__portrait { margin: 0; }
+
+/* The torn bottom edge ──────────────────────────────────────────────────────
+   The portrait is masked, not framed, so it reads as a print laid on the page
+   rather than a photograph in a box. The mask is an inline SVG data URI — the
+   same technique as the deckled edge on camera-classes' quotes panel, turned
+   into a mask so it removes image instead of painting cream over it.
+
+   The path is a static string, generated once and pasted here; there is no
+   script on this page and there never should be. Its baseline is four sine
+   octaves plus a deterministic fibre jitter, sampled at uneven intervals, which
+   is what keeps it from reading as a cut: a single smooth wobble looks like
+   scissors, and the sharp short facets are what say paper. The tear eats
+   between 1% and 9% of the image height, so no face is ever in danger.
+
+   preserveAspectRatio='none' plus mask-size 100% 100% means the tear stretches
+   with the image and stays the same proportion of it at every width.
+   IF A BROWSER DOES NOT SUPPORT MASKS it simply ignores these four properties
+   and the portrait renders as an ordinary rectangle. Nothing breaks. */
+.tc-about .tc-hero__portrait img {
+  display: block;
+  width: 100%;
+  /* height: auto is load-bearing. The width/height ATTRIBUTES on the <img> are
+     there so the browser reserves the right space before the file arrives (no
+     jump as it loads) — but without this the attribute height wins and the
+     picture renders at its attribute size regardless of the column it is in.
+     This exact bug bit us in camera-classes.html. */
+  height: auto;
+  background: rgba(36, 50, 48, 0.08);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 700' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0,0 L600,0 L600,650.2 L591.7,652.1 L583.5,653.4 L566.8,656.5 L558.5,658.4 L542.6,647.9 L521.4,649.6 L508.7,649.4 L494.7,653.9 L481.6,655.6 L461,664.1 L441.7,665.1 L420,670.5 L407.4,674.8 L390.7,678.6 L377,681.7 L365.4,681.1 L357.7,681.2 L350.2,675.5 L342.6,671.1 L330.3,674.2 L321.6,678 L308.7,680.1 L291.1,673.7 L275.4,668.6 L258.9,663.4 L241.3,662.8 L227.3,670.6 L218.4,667.3 L201.8,675.4 L181.1,668.9 L163.9,672.8 L147.9,666.5 L127,673.7 L109.3,663.7 L96.6,661.1 L77.1,654.4 L69.4,652.9 L62,653.4 L48,647.6 L27.1,643.7 L13.1,640.9 L0,640 Z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 700' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0,0 L600,0 L600,650.2 L591.7,652.1 L583.5,653.4 L566.8,656.5 L558.5,658.4 L542.6,647.9 L521.4,649.6 L508.7,649.4 L494.7,653.9 L481.6,655.6 L461,664.1 L441.7,665.1 L420,670.5 L407.4,674.8 L390.7,678.6 L377,681.7 L365.4,681.1 L357.7,681.2 L350.2,675.5 L342.6,671.1 L330.3,674.2 L321.6,678 L308.7,680.1 L291.1,673.7 L275.4,668.6 L258.9,663.4 L241.3,662.8 L227.3,670.6 L218.4,667.3 L201.8,675.4 L181.1,668.9 L163.9,672.8 L147.9,666.5 L127,673.7 L109.3,663.7 L96.6,661.1 L77.1,654.4 L69.4,652.9 L62,653.4 L48,647.6 L27.1,643.7 L13.1,640.9 L0,640 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+          mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+}
+
+/* =============================================================================
+   2 · THE LINE
+   ========================================================================== */
+.tc-about .tc-line .tc-line__title {
+  font-size: clamp(1.7rem, 4.2vw, 2.5rem);
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-line .tc-line__origin {
+  margin-top: 1.25rem;
+  max-width: 46ch;
+  font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+  line-height: 1.55;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+/* At 1040 and up the family line takes the page and the archive prints run down
+   a narrow column beside it. Below that they fall underneath. The archive
+   column is capped at 300px on purpose — see .tc-archive. */
+.tc-about .tc-line__grid {
+  display: grid;
+  gap: clamp(2.25rem, 5vw, 3.5rem);
+  margin-top: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+/* THE ORDER: OLDEST AT THE TOP, ending on Taro. ─────────────────────────────
+   Two reasons. A line of descent drawn down a page is read as time running
+   downward — reversing it would mean drawing a family tree upside down. And
+   the last row has to be Taro: the whole point of the section is where the work
+   comes from, so the line has to arrive somewhere, and the rule stops at his
+   marker rather than running past it.
+   NOTE: the source sentence names them in the opposite order, nearest first
+   (dad, grandmother, grandfather, his father, great-grandfather). Nothing was
+   added or dropped in turning that around; if you would rather read it in his
+   original order, reverse the six <li> below and move Taro to the top — but
+   then the rule points at nobody.
+
+   The rule itself is a border on each row, not on the list, so the last row can
+   switch its border to transparent and the line ends exactly at Taro's marker
+   while the layout stays identical. */
+.tc-about .tc-line__list { margin: 0; padding: 0; }
+
+.tc-about .tc-line__row {
+  position: relative;
+  border-left: 1px solid var(--tc-hair);
+  padding: 0 0 clamp(1.9rem, 4vw, 2.6rem) clamp(1.4rem, 3.5vw, 2.1rem);
+}
+
+/* The marker on the line. Decorative: every relationship is stated in words
+   directly beside it, so nothing here rests on a dot being seen. */
+.tc-about .tc-line__row::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 0.15rem;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tc-ink);
+}
+
+.tc-about .tc-line__row:last-child { border-left-color: transparent; padding-bottom: 0; }
+.tc-about .tc-line__row:last-child::before {
+  left: -8px;
+  top: 0.05rem;
+  width: 15px;
+  height: 15px;
+  background: var(--tc-red);   /* non-text, 3.8:1 on cream, clears the 3:1 it must */
+}
+
+.tc-about .tc-line__row .tc-line__rel {
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-ink-soft);
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.tc-about .tc-line__row .tc-line__name {
+  font-size: clamp(1.45rem, 3.4vw, 2rem);
+  color: var(--tc-ink);
+  margin-bottom: 0.55rem;
+}
+
+.tc-about .tc-line__row .tc-line__work {
+  max-width: 52ch;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+/* Taro's row is the arrival, so it is allowed to be bigger than the rows above
+   it. It is his own sentence about himself, not a quotation of anyone, which is
+   why it is set as plain copy and not as a blockquote. */
+.tc-about .tc-line__row--taro .tc-line__work {
+  max-width: 58ch;
+  font-size: clamp(1.02rem, 1.6vw, 1.16rem);
+  line-height: 1.62;
+}
+
+/* The archive prints ────────────────────────────────────────────────────────
+   Deliberately NOT the same treatment as the field photographs further down.
+   On the live page the two rows were styled identically, so a hundred years of
+   family history and five years of work read as equal weight. These are small,
+   matted like prints, and grey; the field set is large and in full colour.
+   One of the three is genuinely black and white, so grey is not a costume here
+   — it is what the oldest picture in the set already looks like, and the other
+   two are brought to meet it. */
+.tc-about .tc-archive__grid {
+  display: grid;
+  /* min() keeps the track from demanding 160px inside a box narrower than that,
+     which is what would put a sideways scrollbar on a 320px phone. In the
+     narrow desktop column the same rule resolves to a single stacked file. */
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: clamp(0.9rem, 2.5vw, 1.4rem);
+  align-items: start;
+}
+
+.tc-about .tc-archive__grid figure {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--tc-hair);
+  background: var(--tc-cream);
+}
+
+.tc-about .tc-archive__grid img {
+  display: block;
+  width: 100%;
+  height: auto;                 /* load-bearing — see the note in the hero */
+  filter: grayscale(1) contrast(0.96);
+  background: rgba(36, 50, 48, 0.08);
+}
+
+/* =============================================================================
+   3 · THE FIELD  ·  present tense, full colour, and larger
+   ========================================================================== */
+.tc-about .tc-field .tc-field__title {
+  font-size: clamp(1.7rem, 4.2vw, 2.5rem);
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-field .tc-field__body {
+  margin-top: 1.25rem;
+  max-width: 65ch;              /* the comfortable measure; the live page ran 96–107 */
+  font-size: clamp(1.02rem, 1.5vw, 1.15rem);
+  line-height: 1.68;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+.tc-about .tc-field .tc-field__close {
+  margin-top: 1.1rem;
+  max-width: 44ch;
+  font-size: clamp(1.08rem, 2vw, 1.35rem);
+  line-height: 1.5;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+/* Three across, full block width, no matting and no filter: this is the work
+   he does now, so it gets the room the archive does not. */
+.tc-about .tc-field__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  align-items: start;
+  margin-top: clamp(2rem, 4.5vw, 3rem);
+}
+.tc-about .tc-field__grid figure { margin: 0; }
+.tc-about .tc-field__grid img {
+  display: block;
+  width: 100%;
+  height: auto;                 /* load-bearing — see the note in the hero */
+  background: rgba(36, 50, 48, 0.08);
+}
+
+/* =============================================================================
+   4 · THE PROMISE
+   ========================================================================== */
+.tc-about .tc-promise {
+  border-top: 1px solid var(--tc-ink);
+  padding-top: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.tc-about .tc-promise .tc-promise__lead {
+  max-width: 40ch;
+  font-size: clamp(1.02rem, 1.6vw, 1.2rem);
+  line-height: 1.6;
+  color: var(--tc-ink);
+  text-align: left;
+}
+
+/* Set large, and still left, and still short of 30 characters a line. Large
+   display type is the one place a centred line would have been defensible; it
+   is left anyway, so that every line on the page starts at the same edge. */
+.tc-about .tc-promise .tc-promise__line {
+  max-width: 22ch;
+  margin-top: 1rem;
+  font-size: clamp(1.9rem, 5.6vw, 3.1rem);
+  line-height: 1.08;
+  color: var(--tc-ink);
+}
+
+.tc-about .tc-promise .tc-btn { margin-top: clamp(1.75rem, 4vw, 2.5rem); }
+
+/* ── The button: pill outline, as everywhere else on the site ─────────────── */
+/* The outline is red and the label is ink. A red label would only measure
+   3.8:1 on cream, which fails for text this size; a red 1px border is a
+   non-text element and 3.8:1 clears the 3:1 it has to meet. */
+.tc-about .tc-btn {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--tc-ink);
+  background: transparent;
+  border: 1px solid var(--tc-red);
+  border-radius: 999px;
+  padding: 0.85em 1.7em;
+  /* A 44px high target, without letting the label sit off centre. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 170ms ease, color 170ms ease, border-color 170ms ease;
+}
+
+.tc-about a:focus-visible,
+.tc-about .tc-btn:focus-visible {
+  outline: 2px solid var(--tc-ink);
+  outline-offset: 3px;
+}
+
+/* =============================================================================
+   5 · THE CROZE LINE  ·  the ink green surface, with a torn top edge
+   ========================================================================== */
+.tc-about .tc-croze {
+  position: relative;
+  margin-top: clamp(3.5rem, 9vw, 6.5rem);
+  background: var(--tc-ink);
+  color: var(--tc-cream);
+  padding: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+/* The same gesture, and the same technique, as camera-classes' quotes panel: a
+   torn top edge drawn as an inline SVG so there is no file to fetch. Painted in
+   ink over the cream above it, so it adds to the panel rather than cutting it.
+   If a browser ever refuses the data URI it simply does not paint, and the
+   panel is a clean rectangle. Decorative, so it stays out of the document. */
+.tc-about .tc-croze::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: -15px;
+  height: 16px;
+  background-repeat: repeat-x;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 16' preserveAspectRatio='none'%3E%3Cpath fill='%23243230' d='M0,16 L0,10.3 L41.7,12.4 L78.5,11.4 L95.2,8.7 L133.9,9.3 L179.7,7 L216.8,7.2 L240.3,9.5 L273.4,6.4 L316.2,5.6 L339.8,4.2 L378.1,1.9 L410.4,2.5 L447.4,2.2 L489.2,6.5 L530.1,6.2 L553.6,4.8 L587.4,6.6 L614.1,4.9 L631.4,6.6 L669.9,10.7 L708.6,10.5 L738.1,11.2 L780.4,11.3 L807.6,9.2 L838.7,9.2 L875.2,6.4 L889.4,6.2 L917.9,5.9 L933.6,9.3 L959,7.1 L976.9,5.1 L1017.5,5.6 L1054.4,2.9 L1096.9,2 L1117.9,2.1 L1148.1,2 L1171.8,4.3 L1200,7 L1200,16 Z'/%3E%3C/svg%3E");
+}
+
+.tc-about .tc-croze p.tc-croze__eyebrow { color: var(--tc-teal); }  /* 6.0:1 on ink */
+
+.tc-about .tc-croze .tc-croze__title {
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  color: var(--tc-cream);
+  margin-bottom: 1.25rem;
+}
+
+.tc-about .tc-croze .tc-croze__body {
+  max-width: 58ch;
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  line-height: 1.65;
+  color: var(--tc-cream);
+  text-align: left;
+}
+
+.tc-about .tc-croze .tc-btn {
+  margin-top: clamp(1.5rem, 3.5vw, 2rem);
+  color: var(--tc-cream);
+  border-color: var(--tc-teal);   /* red would only measure 3.0:1 on ink; teal is 6.0:1 */
+}
+.tc-about .tc-croze a:focus-visible { outline-color: var(--tc-cream); }
+
+/* ── Tablet and up: the portrait comes alongside the opening ──────────────── */
+/* Below this the hero is one column in document order — heading, opening,
+   portrait — which is also the order it is read aloud, at every width. */
+@media (min-width: 820px) {
+  .tc-about .tc-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.75fr);
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+}
+
+/* ── Desktop: the archive prints move into a column beside the family line ── */
+/* 300px is the cap on purpose. Wider and the prints start to compete with the
+   names; narrower and the group of nine becomes unreadable. */
+@media (min-width: 1040px) {
+  .tc-about .tc-line__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    align-items: start;
+  }
+}
+
+/* ── Hover, only where hovering is a real thing ───────────────────────────── */
+@media (hover: hover) {
+  .tc-about .tc-btn:hover {
+    background: var(--tc-ink);
+    color: var(--tc-cream);
+  }
+  .tc-about .tc-croze .tc-btn:hover {
+    background: var(--tc-cream);
+    color: var(--tc-ink);
+    border-color: var(--tc-cream);
+  }
+}
+
+/* ── Nothing moves for anyone who has asked for less movement ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tc-about *,
+  .tc-about *::before,
+  .tc-about *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+</style>
+
+<section class="tc-about" aria-labelledby="tc-about-heading">
+
+  <!-- ===========================================================================
+       1 · HERO
+       =========================================================================== -->
+  <div class="tc-hero">
+
+    <div class="tc-hero__text">
+      <p class="tc-eyebrow">About</p>
+      <h1 class="tc-hero__title" id="tc-about-heading">meet taro.</h1>
+
+      <!-- PLACEHOLDER-APPROVAL · the two paragraphs below are the ONLY redrafted
+           copy on this page. The original stopped at a semicolon and its ending,
+           "you're in the right place", had been left stranded as the heading of
+           the next section. His words, joined so they finish. Approve or
+           correct before publishing. -->
+      <p class="tc-hero__lede">
+        Whether it&rsquo;s photography for your brand, visuals that energise your
+        business, or bespoke art for your home &mdash; everything is crafted to
+        make people feel something.
+      </p>
+      <p class="tc-hero__lede">
+        If you want pieces that add depth, personality and purpose, not just
+        decoration, you&rsquo;re in the right place.
+      </p>
+    </div>
+
+    <!-- Alt text written from a description, not from the picture. Check it. -->
+    <figure class="tc-hero__portrait">
+      <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/59da90d4-595c-406f-959d-095743b7e816/A704137-R1-09-26.jpg?format=1000w"
+           alt="Portrait of Taro."
+           loading="lazy" decoding="async" width="656" height="777">
+    </figure>
+
+  </div>
+
+  <!-- ===========================================================================
+       2 · THE LINE
+       Five people, oldest first, and then him. One row each; the rule down the
+       left is the line of descent and it stops at his marker.
+       =========================================================================== -->
+  <section class="tc-line" aria-labelledby="tc-about-line">
+    <p class="tc-eyebrow">Lineage</p>
+    <h2 class="tc-line__title" id="tc-about-line">Where it comes from</h2>
+    <p class="tc-line__origin">
+      Born and raised in Kenya, surrounded by wildlife, colour, and a family that
+      never stopped creating.
+    </p>
+
+    <div class="tc-line__grid">
+
+      <!-- role="list" is here because list-style:none strips list semantics in
+           Safari, and this list is the structure of the section. -->
+      <ol class="tc-line__list" role="list">
+
+        <!-- INFERRED-RELATIONSHIP · the one thing on this page the owner did not
+             state. His sentence says Harvey Snr was Harvey's father, and names
+             HAP Grieshaber separately as a great-grandfather. Both therefore
+             belong to the great-grandfather generation, but on different sides
+             of the family — which the source never spells out. The two rows
+             below sit in the same generation and claim no connection between
+             them. OWNER: confirm, or tell us how the two sides join. -->
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Great-grandfather</p>
+          <h3 class="tc-line__name">HAP Grieshaber</h3>
+          <p class="tc-line__work">
+            One of the most significant German artists of the 20th century.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Great-grandfather</p>
+          <h3 class="tc-line__name">Harvey Snr</h3>
+          <p class="tc-line__work">
+            An American photographer associated with the Cranbrook Foundation in
+            Michigan, recognised for architectural and documentary photography.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Grandfather</p>
+          <h3 class="tc-line__name">Harvey</h3>
+          <p class="tc-line__work">
+            A third-generation photographer, known for his African wildlife,
+            conservation, landscape and fine-art photography.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Grandmother</p>
+          <h3 class="tc-line__name">Nani</h3>
+          <p class="tc-line__work">
+            Nurtured artistry in everything she touched.
+          </p>
+        </li>
+
+        <li class="tc-line__row">
+          <p class="tc-line__rel">Father</p>
+          <h3 class="tc-line__name">Anselm</h3>
+          <p class="tc-line__work">
+            Founded Kitengela Glass.
+          </p>
+        </li>
+
+        <!-- The line arrives. His own words, so no quotation marks. -->
+        <li class="tc-line__row tc-line__row--taro">
+          <p class="tc-line__rel">And me</p>
+          <h3 class="tc-line__name">Taro</h3>
+          <p class="tc-line__work">
+            Creativity was never a choice, it was just the house I grew up in.
+            That depth runs through everything I make, and it&rsquo;s why your
+            work will feel like it was made with intention, not just skill.
+          </p>
+        </li>
+
+      </ol>
+
+      <!-- Three pictures out of the family album. Matted, small and grey — the
+           opposite of the field set below, on purpose. Alt text written from
+           descriptions of each frame, and it names nobody: who is in these
+           photographs was not stated, and guessing at a family is not a thing to
+           do in an alt attribute. Read them against the pictures before this
+           goes live. -->
+      <aside class="tc-archive" aria-labelledby="tc-about-archive">
+        <p class="tc-eyebrow" id="tc-about-archive">From the family archive</p>
+        <div class="tc-archive__grid">
+
+          <figure>
+            <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/17a7430d-80e0-4dd8-b369-892a8f9e953c/1d0c8bf1-1196-485d-8bf8-51405b470b69.jpg?format=750w"
+                 alt="Family archive photograph of adults and a small child outdoors."
+                 loading="lazy" decoding="async" width="434" height="309">
+          </figure>
+
+          <figure>
+            <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/f4c83169-14bd-4d51-baf9-9e84feb4aae8/PHOTO-2026-05-15-09-16-56.jpg?format=750w"
+                 alt="Black and white archive photograph of a man standing outdoors."
+                 loading="lazy" decoding="async" width="434" height="500">
+          </figure>
+
+          <figure>
+            <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/3fac8612-a241-49e9-8eaf-1a8b6ea210ad/SIL-39088009277897_Page60_crop.jpg?format=750w"
+                 alt="Archive photograph of a group of nine people, children and adults."
+                 loading="lazy" decoding="async" width="374" height="394">
+          </figure>
+
+        </div>
+      </aside>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================================
+       3 · THE FIELD
+       The safari paragraph, unchanged, set as two paragraphs so the last two
+       sentences land. Full colour, full width: this is current work.
+       =========================================================================== -->
+  <section class="tc-field" aria-labelledby="tc-about-field">
+    <p class="tc-eyebrow">Guiding</p>
+    <h2 class="tc-field__title" id="tc-about-field">In the field</h2>
+
+    <p class="tc-field__body">
+      Five years guiding safaris and managing luxury lodges taught me patience,
+      timing, and how to catch the moment before it&rsquo;s gone. I learned to
+      notice the things most people walk past: light, colour, movement, the small
+      details that tell the bigger story.
+    </p>
+    <p class="tc-field__close">
+      That&rsquo;s what I bring to your project. Nothing rushed, nothing missed.
+    </p>
+
+    <!-- Alt text written from descriptions, not from the pictures, and it names
+         nobody. Check each one against its frame before publishing. -->
+    <div class="tc-field__grid">
+
+      <figure>
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/bc6513cb-994b-4996-a42a-b0a55819e0e9/Meru+Walking-8929.jpg?format=750w"
+             alt="Men standing in a dry grass field, one of them pointing out across it."
+             loading="lazy" decoding="async" width="434" height="347">
+      </figure>
+
+      <figure>
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/8f1a0efa-dfe2-4224-8085-b5c8856bdcf9/IMG_4548.jpg?format=750w"
+             alt="A person photographing with a long lens from an open vehicle."
+             loading="lazy" decoding="async" width="434" height="418">
+      </figure>
+
+      <figure>
+        <img src="https://images.squarespace-cdn.com/content/v1/6923f2156e59f05fd5bf40f3/0cb6055d-7e4b-4d69-b21d-662c3d9a6cdf/53cf7ef2-0c33-40d2-b561-e5a65d54a329.jpg?format=750w"
+             alt="A man reaching out to touch a large antelope, with a second antelope nearby."
+             loading="lazy" decoding="async" width="434" height="474">
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================================
+       4 · THE PROMISE
+       Two lines, his, set as a statement. The second is the h2 for this section
+       because it IS the heading of it — the sentence the page has been walking
+       toward.
+       =========================================================================== -->
+  <section class="tc-promise" aria-labelledby="tc-about-promise">
+    <p class="tc-eyebrow">The promise</p>
+    <p class="tc-promise__lead">
+      Now I photograph, film and paint. Three different crafts, same promise:
+    </p>
+    <h2 class="tc-promise__line" id="tc-about-promise">
+      Your story, told properly, and made to last.
+    </h2>
+    <a class="tc-btn" href="/contact">Let&rsquo;s talk</a>
+  </section>
+
+  <!-- ===========================================================================
+       5 · THE CROZE LINE
+       The closing block, on ink, with the torn top edge. Lift this whole
+       <section> out in one piece if the story page is ever taken down — the
+       link is the only thing on the page pointing at /thecrozeline.
+       =========================================================================== -->
+  <section class="tc-croze" aria-labelledby="tc-about-croze">
+    <p class="tc-eyebrow tc-croze__eyebrow">Further reading</p>
+    <h2 class="tc-croze__title" id="tc-about-croze">The Croze Line</h2>
+    <p class="tc-croze__body">
+      My family has an incredibly interesting and deeply rooted history in
+      creativity. I have written a story about my history, find the link below to
+      have a read.
+    </p>
+    <a class="tc-btn" href="/thecrozeline">The Croze Line</a>
+  </section>
+
+</section>
