@@ -33,7 +33,7 @@
 import { defineAddon, css } from '../lib/util.js';
 
 const MIN_YEAR = 1800;
-const TEASER_MAX = 96;          // characters of the opening line kept as the teaser
+const TEASER_MAX = 58;          // characters — a title, not a sentence
 
 defineAddon('croze-timeline', () => {
   if (!/^\/thecrozeline\/?$/i.test(location.pathname)) return;
@@ -102,19 +102,40 @@ defineAddon('croze-timeline', () => {
   });
   if (chapters.length < 4) return;
 
-  /** The opening line of a chapter, cut at a word boundary. */
+  /** A title for a chapter, taken from the opening of its first paragraph.
+   *
+   *  The first CLAUSE, not the first sentence. Whole sentences made a ragged
+   *  list — "He started in the dark, literally." next to ninety characters of
+   *  run-on — and the shape of a list is most of what makes it feel worth
+   *  clicking. Cutting at the first comma or full stop lands on phrases that
+   *  read like chapter titles by themselves: "He started in the dark",
+   *  "Cranbrook was not just a school", "He documented everything".
+   *
+   *  A clause shorter than four words is usually a fragment ("Meanwhile"), so
+   *  the next one is taken with it. Still the owner's words, in his order —
+   *  this only decides where to stop. */
   const teaserOf = (ch) => {
     const text = ch.paras[0].textContent.replace(/\s+/g, ' ').trim();
-    const stop = text.search(/[.!?]\s/);
-    let s = stop > 30 ? text.slice(0, stop + 1) : text;
+    const cuts = [];
+    for (const m of text.matchAll(/[,.;:—]/g)) cuts.push(m.index);
+    let end = cuts.find((i) => text.slice(0, i).split(' ').length >= 4);
+    if (end === undefined || end > TEASER_MAX) end = -1;
+    let s = end > 0 ? text.slice(0, end) : text;
     if (s.length > TEASER_MAX) {
       s = s.slice(0, TEASER_MAX).replace(/\s+\S*$/, '') + '…';
     }
-    return s;
+    return s.replace(/[\s,;:]+$/, '');
   };
 
   css('croze-timeline', `
     /* The original column, while the timeline stands in for it. */
+    /* [hidden] is a browser rule at the lowest specificity there is, and
+       Squarespace sets display on the elements inside its own text blocks, so
+       it wins and a "hidden" chapter still occupies its full height. Measured:
+       4,678px of blank page between the end of the list and the section below
+       it. This is the rule that actually collapses them. */
+    .taro-cl-body[hidden] { display: none !important; }
+
     .taro-cl-list { list-style: none; margin: 2rem 0 0; padding: 0; }
     .taro-cl-item { border-top: 1px solid rgba(36, 50, 48, 0.18); }
     .taro-cl-item:last-child { border-bottom: 1px solid rgba(36, 50, 48, 0.18); }
@@ -151,10 +172,28 @@ defineAddon('croze-timeline', () => {
       text-transform: uppercase;
       color: #4c554e;
       white-space: nowrap;
+      transition: color 180ms ease, transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    /* The row answers the pointer as one object: the year warms, the title
+       steps toward the reader, and the cue slides. A list of eighteen rows
+       needs to feel like eighteen doors, not eighteen lines of text. */
+    .taro-cl-btn .taro-cl-year,
+    .taro-cl-btn .taro-cl-teaser {
+      transition: color 180ms ease, transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
     }
     @media (hover: hover) {
-      .taro-cl-btn:hover .taro-cl-teaser { color: #000; }
-      .taro-cl-btn:hover .taro-cl-more { color: #e23318; }
+      .taro-cl-item:hover { background: rgba(226, 51, 24, 0.04); }
+      .taro-cl-btn:hover .taro-cl-teaser { color: #000; transform: translateX(4px); }
+      .taro-cl-btn:hover .taro-cl-year { transform: translateX(2px); }
+      .taro-cl-btn:hover .taro-cl-more { color: #e23318; transform: translateX(4px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-cl-btn .taro-cl-year,
+      .taro-cl-btn .taro-cl-teaser,
+      .taro-cl-more { transition: none; }
+      .taro-cl-btn:hover .taro-cl-teaser,
+      .taro-cl-btn:hover .taro-cl-year,
+      .taro-cl-btn:hover .taro-cl-more { transform: none; }
     }
     .taro-cl-btn:focus-visible { outline: 2px solid #243230; outline-offset: 2px; }
 
@@ -264,7 +303,7 @@ defineAddon('croze-timeline', () => {
     btn.innerHTML =
       `<span class="taro-cl-year">${ch.year || '&mdash;'}</span>` +
       `<span class="taro-cl-teaser"></span>` +
-      `<span class="taro-cl-more">Read</span>`;
+      `<span class="taro-cl-more">Read &rarr;</span>`;
     btn.querySelector('.taro-cl-teaser').textContent = teaserOf(ch);
 
     // The chapter's own paragraphs, moved (not copied) into a hidden panel, so
