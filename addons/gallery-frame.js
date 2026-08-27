@@ -156,7 +156,15 @@ defineAddon('gallery-frame', () => {
        own box, where nothing can collapse or override it. The border is drawn
        by a child rather than by border-top for the same reason: it has to sit
        BELOW that space, not above it. */
-    .taro-gf-end {
+    /* Doubled class, and for a specific reason. The site's Custom CSS carries
+           section:first-of-type { padding-top: 0 !important; }
+       — the same rule that put the About heading under the nav — and this panel
+       is the only <section> inside its parent, so :first-of-type matches it.
+       Two !important declarations then go to specificity, and (0,1,1) for
+       section:first-of-type beats (0,1,0) for a single class. Measured: padding
+       computed to 0px and the rule stayed flat against the last photograph.
+       (0,2,0) wins it back. */
+    .taro-gf-end.taro-gf-end {
       margin: 0 auto !important;
       max-width: 46rem;
       padding: clamp(3.5rem, 9vw, 6rem) clamp(1.25rem, 5vw, 2rem) clamp(3rem, 8vw, 4.5rem) !important;
