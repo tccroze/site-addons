@@ -113,14 +113,29 @@ defineAddon('gallery-filter', () => {
   };
 
   css('gallery-filter', `
+    /* Sticky, because these galleries are ten thousand pixels long — /35film
+       is 9,904px of frames — and a filter that scrolls away at the top is a
+       filter nobody uses twice. --taro-hdr is the live header height, published
+       by header-clearance; the fallback covers the case where that add-on is
+       removed. Backed by the site's paper so tiles passing underneath do not
+       read through the labels. */
     .taro-filter {
+      position: sticky;
+      top: calc(var(--taro-hdr, 88px) - 1px);
+      z-index: 5;
       display: flex;
       flex-wrap: wrap;
       gap: 0.4rem 1.6rem;
       justify-content: center;
       margin: 0 auto 2.75rem;
-      padding: 0 1rem;
+      padding: 0.85rem 1rem;
+      background: #f6eed5;
+      box-shadow: 0 1px 0 rgba(36, 50, 48, 0.12);
     }
+    /* A sticky element only sticks inside its own scroll container, and it is
+       clipped by any ancestor with overflow other than visible — which the
+       gallery wrappers set. Cheaper to guarantee here than to hunt for. */
+    .taro-filter-host, .taro-filter-host * { overflow: visible !important; }
     .taro-filter__btn {
       font: inherit;
       font-size: 0.68rem;
@@ -208,6 +223,10 @@ defineAddon('gallery-filter', () => {
 
   const bar = document.createElement('div');
   bar.className = 'taro-filter';
+  // Marked so the overflow guard above can reach the chain this bar sticks in.
+  for (let a = gallery.parentElement; a && a !== document.body; a = a.parentElement) {
+    a.classList.add('taro-filter-host');
+  }
   bar.setAttribute('role', 'group');
   bar.setAttribute('aria-label', 'Filter images by subject');
 
