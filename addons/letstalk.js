@@ -203,6 +203,48 @@ defineAddon('letstalk', () => {
        you need, the details — so they are divided, numbered, and each reports
        when it is satisfied. Nothing is hidden or gated: every field is on the
        page at all times, exactly as before. */
+    /* ---- the hero, and the sign-off ------------------------------------ */
+    /* The copy is moved by transform only, so nothing it sits inside relayouts
+       while the page scrolls. */
+    .taro-lt-sink {
+      will-change: transform, opacity;
+      transform: translate3d(0, var(--taro-sink, 0px), 0) scale(var(--taro-sink-s, 1));
+      opacity: var(--taro-sink-o, 1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-lt-sink { transform: none !important; opacity: 1 !important; }
+    }
+
+    /* A sign-off in the owner's own hand, written on as it arrives — the same
+       gesture the footer signature makes, and the same mask that draws it. */
+    .taro-lt-signoff {
+      margin: clamp(2.5rem, 6vw, 3.5rem) auto 0;
+      text-align: center;
+    }
+    .taro-lt-signoff__line {
+      font-size: 0.72rem !important;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(36, 50, 48, 0.6);
+      margin: 0 0 1.1rem !important;
+    }
+    .taro-lt-signoff img {
+      display: block;
+      width: clamp(9rem, 22vw, 13rem);
+      height: auto;
+      margin: 0 auto;
+      -webkit-mask-image: var(--taro-so-mask, none);
+              mask-image: var(--taro-so-mask, none);
+      -webkit-mask-repeat: no-repeat;
+              mask-repeat: no-repeat;
+      -webkit-mask-size: 100% 100%;
+              mask-size: 100% 100%;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-lt-signoff img { -webkit-mask-image: none; mask-image: none; }
+    }
+
     .taro-lt .taro-lt-step {
       display: grid;
       grid-template-columns: auto auto 1fr;
@@ -294,6 +336,115 @@ defineAddon('letstalk', () => {
    * the order is what carries the meaning, and if a field is ever added the
    * worst case is a heading in a slightly odd place, not a broken form.
    */
+  /* ---- the hero sinks as the form arrives ------------------------------
+   * The same language the homepage and the dune section speak: the copy is
+   * held where it can be read, then travels down and dissolves as the
+   * photograph leaves. It is NOT masked to the light trail, and that is a
+   * decision rather than a shortcut — the trail is a thin bright line crossing
+   * the whole frame, and cutting type to it would strand fragments of letters
+   * along it, which is exactly the failure the dune scene was rebuilt to
+   * avoid. A sink reads as the landscape taking the words and cannot fragment.
+   *
+   * Geometry is cached and re-read only on resize/load. Everything per frame is
+   * a custom property on an element that is already promoted, so no layout is
+   * forced while scrolling.
+   */
+  const HOLD = 0.24;    // read it first: no fade before this
+  const GONE = 0.92;    // fully dissolved by here
+  const TRAVEL = 120;   // px the copy descends across the whole gesture
+  const GROW = 0.05;    // how much it scales on the way down
+
+  const sinkers = (() => {
+    const hero = document.querySelector('section[data-section-id]');
+    if (!hero) return [];
+    return [...hero.querySelectorAll('.fe-block')]
+      .filter((b) => b.textContent.trim().length > 2);
+  })();
+
+  if (sinkers.length) {
+    sinkers.forEach((b) => b.classList.add('taro-lt-sink'));
+    let span = 1;
+    const smooth = (t) => t * t * (3 - 2 * t);
+    const measure = () => {
+      const hero = document.querySelector('section[data-section-id]');
+      span = Math.max(1, (hero ? hero.getBoundingClientRect().height : 600) * 0.85);
+    };
+    let queued = false;
+    const frame = () => {
+      queued = false;
+      const p = Math.max(0, Math.min(1, window.scrollY / span));
+      const fade = p <= HOLD ? 0
+        : smooth(Math.min(1, (p - HOLD) / Math.max(0.01, GONE - HOLD)));
+      sinkers.forEach((b) => {
+        b.style.setProperty('--taro-sink', `${(p * TRAVEL).toFixed(1)}px`);
+        b.style.setProperty('--taro-sink-s', (1 + p * GROW).toFixed(3));
+        b.style.setProperty('--taro-sink-o', (1 - fade).toFixed(3));
+      });
+    };
+    const request = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
+    measure();
+    request();
+    addEventListener('scroll', request, { passive: true });
+    addEventListener('resize', () => { measure(); request(); });
+    addEventListener('load', () => { measure(); request(); }, { once: true });
+  }
+
+  /* ---- the sign-off ----------------------------------------------------
+   * The owner's signature already lives in the footer; this borrows the same
+   * image and the same left-to-right mask that writes it on, so the form ends
+   * in his hand rather than in a submit button. Driven by its own position in
+   * the window, not by the page bottom the footer one uses.
+   */
+  const buildSignoff = () => {
+    const block = document.querySelector('.sqs-block-form');
+    const footerSig = document.querySelector('footer img');
+    if (!block || !footerSig || !footerSig.getAttribute('src')) return false;
+    if (block.querySelector('.taro-lt-signoff')) return true;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'taro-lt-signoff';
+    const line = document.createElement('p');
+    line.className = 'taro-lt-signoff__line';
+    line.textContent = 'Speak soon';
+    const img = document.createElement('img');
+    img.src = footerSig.getAttribute('src');
+    img.alt = '';                     // decorative here; the footer one names him
+    img.setAttribute('aria-hidden', 'true');
+    img.loading = 'lazy';
+    wrap.append(line, img);
+    block.appendChild(wrap);
+
+    const masks = CSS.supports('mask-image', 'linear-gradient(#000, #000)')
+      || CSS.supports('-webkit-mask-image', 'linear-gradient(#000, #000)');
+    if (!masks) return true;          // shown in full rather than risked
+
+    const SOFT = 14;
+    let queued = false;
+    const paint = () => {
+      queued = false;
+      const r = img.getBoundingClientRect();
+      if (!r.height) return;
+      // Writes across as it travels the last third of the window.
+      const start = window.innerHeight * 0.95;
+      const end = window.innerHeight * 0.45;
+      const t = Math.max(0, Math.min(1, (start - r.top) / Math.max(1, start - end)));
+      const p = -SOFT + t * (100 + SOFT);
+      img.style.setProperty('--taro-so-mask',
+        'linear-gradient(to right, #000 ' + p.toFixed(1) + '%, transparent '
+        + (p + SOFT).toFixed(1) + '%)');
+    };
+    const ask = () => { if (!queued) { queued = true; requestAnimationFrame(paint); } };
+    ask();
+    addEventListener('scroll', ask, { passive: true });
+    addEventListener('resize', ask);
+    return true;
+  };
+  if (!buildSignoff()) {
+    const soMo = new MutationObserver(() => { if (buildSignoff()) soMo.disconnect(); });
+    soMo.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => soMo.disconnect(), 15000);
+  }
+
   const STEPS = [[0, '01', 'Who you are'], [3, '02', 'What you need'], [6, '03', 'The details']];
 
   const buildSteps = () => {
