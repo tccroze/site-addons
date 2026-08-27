@@ -63,6 +63,17 @@ const num = (v, fallback) => (typeof v === 'number' && isFinite(v) ? v : fallbac
 defineAddon('motion-reel', () => {
   if (location.pathname.replace(/\/+$/, '').toLowerCase() !== '/motion') return;
 
+  // NOT ON A PHONE. This is a 16.5MB .MOV pouring through the word PROJECTS —
+  // a texture, not content — and on a mobile connection that is the single
+  // most expensive decoration on the site. Measured on /motion: the reel is
+  // autoplaying and buffering the moment the heading is on screen.
+  //
+  // The fallback is good, which is what makes this an easy cut: the mask
+  // paints var(--taro-reel-ink, currentColor) when the reel is not live, so
+  // the heading simply renders as itself in solid ink. Nobody arriving on a
+  // phone sees a hole where something should be.
+  if (window.matchMedia('(max-width: 799px)').matches) return;
+
   // No mask support, no effect. An unmasked video slab sitting over the
   // heading is not a fallback anyone wants. Same call as signature.js.
   if (!(CSS.supports('mask-image', 'linear-gradient(#000,#000)')

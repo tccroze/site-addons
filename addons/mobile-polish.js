@@ -122,27 +122,14 @@ defineAddon('mobile-polish', () => {
    * reported instead.
    */
   /* ---- the decorative reel --------------------------------------------
-   * The PROJECTS tile plays a 16.5MB .MOV, and it autoplays at load whether or
-   * not the visitor ever scrolls to it. It is ours, so it can wait: preload
-   * nothing, and start only once the tile is actually near the screen. A
-   * visitor who reads the homepage and leaves pays nothing for it.
+   * Handled at the source now: motion-reel.js does not build the reel at all
+   * below 800px, so there is no video here to defer. Deferring it was the
+   * right first step and the wrong final one — a 16.5MB texture that waits
+   * until it is on screen still costs 16.5MB the moment someone scrolls to it,
+   * and it is decoration either way. The heading falls back to solid ink,
+   * which is what it looks like everywhere else on the site.
    */
-  /* Size each overlay so it never crosses into a neighbouring control. */
-  const CONTROLS = '.header-title-logo a, .header-actions .cart-style-icon, ' +
-                   '.header-burger-btn, .sqs-svg-icon--wrapper, .taro-cl-all, .plyr__control';
-  const sizeTaps = () => {
-    const els = [...document.querySelectorAll(CONTROLS)]
-      .map((el) => ({ el, r: el.getBoundingClientRect() }))
-      .filter(({ r }) => r.width > 0 && r.height > 0);
-    els.forEach(({ el, r }) => {
-      let widest = TAP;
-      els.forEach(({ r: q }) => {
-        if (q === r) return;
-        if (q.bottom <= r.top || q.top >= r.bottom) return;      // not on this row
-        const gap = q.left >= r.right ? q.left - r.right
-                  : r.left >= q.right ? r.left - q.right : 0;
-        if (gap > 0) widest = Math.min(widest, r.width + gap * 1.6);
-      });
+});
       el.style.setProperty('--taro-tap', `${Math.round(Math.max(r.width, widest))}px`);
     });
   };
