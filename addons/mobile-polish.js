@@ -4,13 +4,25 @@
 // Everything here was measured on a 390x844 viewport against the live site
 // rather than assumed, and every number in the comments is from that pass.
 //
-// WHAT THIS DOES NOT DO. /motion streams ~240MB of HLS on load — eight players,
-// only two of them on screen, 349 seconds of 1080p buffered between them before
-// a single tap. That is Squarespace's own video block: the players expose no
-// engine handle to throttle, and starving the blocks of their config was tested
-// and does not stop it. It needs a change to how that page is built, not a
-// patch from out here, so it is reported rather than papered over. The one
-// video this file does touch is the decorative reel, which is ours.
+// WHAT THIS DOES NOT DO, AND WHY IT IS WORTH DOING. /motion streams ~269MB on
+// load — eight players, only two of them on screen, 349 seconds of 1080p
+// buffered between them before a single tap. The players expose no engine
+// handle to throttle.
+//
+// They can, however, be stopped from being built at all: removing
+// data-config-video from the blocks before Squarespace initialises them takes
+// the page from 269MB to 43MB, one player instead of eight. (An earlier run of
+// that experiment appeared to show it made no difference — it had thrown on a
+// null document.documentElement at document-start and stripped nothing, so it
+// measured an untouched page and I read it as a negative result. It is a
+// positive one.)
+//
+// Building it out means restoring the config and calling
+// Squarespace.initializeVideoBlock(Y, block) when a film is actually wanted,
+// which is a real change to how the showreel behaves — posters that load on
+// tap, rather than players standing ready. That is the owner's call, so it is
+// reported with the numbers rather than done unasked. The one video this file
+// does touch is the decorative reel, which is ours.
 //
 // Nothing here changes how anything looks. Hit areas grow through pseudo-
 // elements so no layout moves, and the type floor only lifts the handful of
