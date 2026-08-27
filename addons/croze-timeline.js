@@ -33,7 +33,7 @@
 import { defineAddon, css } from '../lib/util.js';
 
 const MIN_YEAR = 1800;
-const TEASER_MAX = 58;          // characters — a title, not a sentence
+const TEASER_MAX = 68;          // characters — a title, not a sentence
 
 defineAddon('croze-timeline', () => {
   if (!/^\/thecrozeline\/?$/i.test(location.pathname)) return;
@@ -115,7 +115,19 @@ defineAddon('croze-timeline', () => {
    *  the next one is taken with it. Still the owner's words, in his order —
    *  this only decides where to stop. */
   const teaserOf = (ch) => {
-    const text = ch.paras[0].textContent.replace(/\s+/g, ' ').trim();
+    let text = ch.paras[0].textContent.replace(/\s+/g, ' ').trim();
+
+    // "In 1972, Harvey co-founded the Amboseli Elephant Research Project" sits
+    // in a row whose left-hand column already says 1972. The preamble is the
+    // one thing on the line the reader does not need, and it was costing the
+    // title its ending. Dropped only when the year it names is the year the row
+    // is already showing, and only for a short lead-in — "In the summer of
+    // 1965" is a title in its own right and keeps its place.
+    const lead = text.match(/^(?:In|By|Then in|Around|That)\s+(\d{4}),\s*/);
+    if (lead && Number(lead[1]) === ch.year) {
+      text = text.slice(lead[0].length);
+      text = text.charAt(0).toUpperCase() + text.slice(1);
+    }
     const cuts = [];
     for (const m of text.matchAll(/[,.;:—]/g)) cuts.push(m.index);
     // Three words, or twelve characters. A four-word floor read as safe and
