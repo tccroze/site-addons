@@ -38,16 +38,26 @@ const pct = (n, of) => `${((n / of) * 100).toFixed(3)}%`;
 defineAddon('wall-view', () => {
   if (!/^\/shop\/p\//.test(location.pathname)) return;
 
-  const select = document.querySelector('select.variant-select, .ProductItem-details select');
-  const cart = document.querySelector('.sqs-add-to-cart-button-wrapper');
-  if (!select || !cart) return;
+  /* Squarespace renders the commerce block after this add-on runs, so the first
+   * attempt finds no size control, no cart button and no loaded photograph and
+   * quietly does nothing — which is exactly what the first version of this did.
+   * It waits for the three pieces instead. */
+  const build = () => {
+    if (document.querySelector('.taro-wv')) return true;
+    const select = document.querySelector('select.variant-select, .ProductItem-details select');
+    const cart = document.querySelector('.sqs-add-to-cart-button-wrapper');
+    if (!select || !cart || !select.options.length) return false;
+    return mount(select, cart);
+  };
+
+  const mount = (select, cart) => {
 
   // The product photograph: the largest one the page has, which is the one the
   // gallery is showing.
   const photo = [...document.querySelectorAll('img')]
     .filter((i) => (i.currentSrc || i.src) && i.naturalWidth > 400)
     .sort((a, b) => b.naturalWidth - a.naturalWidth)[0];
-  if (!photo) return;
+  if (!photo) return false;
 
   /** "16x24in" -> {short: 16, long: 24}. Anything unparseable is skipped. */
   const sizes = [...select.options]
@@ -58,7 +68,7 @@ defineAddon('wall-view', () => {
       return { label: o.text.trim(), value: o.value, short: Math.min(a, b), long: Math.max(a, b) };
     })
     .filter(Boolean);
-  if (!sizes.length) return;
+  if (!sizes.length) return false;
 
   css('wall-view', `
     .taro-wv { margin: 2rem 0 0; }
@@ -186,6 +196,14 @@ defineAddon('wall-view', () => {
   new MutationObserver(update).observe(select, { attributes: true, childList: true, subtree: true });
 
   cart.parentElement.insertBefore(wrap, cart);
-  if (photo.complete) update(); else photo.addEventListener('load', update, { once: true });
+  if (!photo.complete) photo.addEventListener('load', update, { once: true });
   update();
+  return true;
+  };
+
+  if (!build()) {
+    const mo = new MutationObserver(() => { if (build()) mo.disconnect(); });
+    mo.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => mo.disconnect(), 20000);
+  }
 });
