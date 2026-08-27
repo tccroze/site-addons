@@ -200,9 +200,9 @@ defineAddon('letstalk', () => {
     /* ---- the three steps ------------------------------------------------
        Nine fields in one unbroken column is a wall, and a wall is what makes a
        long enquiry form feel like work. They divide cleanly — who you are, what
-       you need, the details — so they are divided, numbered, and each one
-       reports when it is satisfied. Nothing is hidden or gated: every field is
-       on the page at all times, exactly as before. */
+       you need, the details — so they are divided, numbered, and each reports
+       when it is satisfied. Nothing is hidden or gated: every field is on the
+       page at all times, exactly as before. */
     .taro-lt .taro-lt-step {
       display: grid;
       grid-template-columns: auto auto 1fr;
@@ -216,8 +216,8 @@ defineAddon('letstalk', () => {
       font-weight: 700;
       letter-spacing: 0.12em;
       font-variant-numeric: tabular-nums;
-      color: ${RED};
-      border: 1.5px solid ${RED};
+      color: #e23318;
+      border: 1.5px solid #e23318;
       border-radius: 50%;
       width: 2rem; height: 2rem;
       display: grid; place-items: center;
@@ -228,7 +228,7 @@ defineAddon('letstalk', () => {
       font-weight: 700;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: ${INK};
+      color: #243230;
       white-space: nowrap;
     }
     /* Draws itself in when the step arrives, and completes when the step does. */
@@ -240,106 +240,15 @@ defineAddon('letstalk', () => {
       transition: transform 700ms cubic-bezier(0.33, 1, 0.68, 1), background 300ms ease;
     }
     .taro-lt-step.is-in .taro-lt-step__rule { transform: scaleX(1); }
-    .taro-lt-step.is-done .taro-lt-step__no {
-      background: ${RED};
-      color: ${CREAM};
-    }
-    .taro-lt-step.is-done .taro-lt-step__rule { background: ${RED}; }
+    .taro-lt-step.is-done .taro-lt-step__no { background: #e23318; color: #f6eed5; }
+    .taro-lt-step.is-done .taro-lt-step__rule { background: #e23318; }
     @media (prefers-reduced-motion: reduce) {
       .taro-lt-step__rule { transition: none; transform: scaleX(1); }
       .taro-lt-step__no { transition: none; }
     }
-    @media (max-width: 640px) {
-      .taro-lt-step__label { white-space: normal; }
-    }
+    @media (max-width: 640px) { .taro-lt-step__label { white-space: normal; } }
 
-    /* ---- the three steps -------------------------------------------------
-   * Headings are inserted before the field they open. Positions rather than
-   * labels, because the labels are the owner's to reword in the editor and the
-   * order is what actually carries the meaning; if a field is ever added the
-   * worst case is a heading in a slightly odd place, not a broken form.
-   */
-  const STEPS = [
-    [0, '01', 'Who you are'],
-    [3, '02', 'What you need'],
-    [6, '03', 'The details'],
-  ];
-
-  const buildSteps = () => {
-    const list = document.querySelector('.form-wrapper .field-list');
-    if (!list || list.querySelector('.taro-lt-step')) return !!list;
-    const items = [...list.children].filter((el) => el.classList.contains('form-item'));
-    if (items.length < 7) return false;          // not the enquiry form
-
-    const made = [];
-    STEPS.forEach(([at, no, label]) => {
-      const anchor = items[at];
-      if (!anchor) return;
-      const head = document.createElement('div');
-      head.className = 'taro-lt-step';
-      head.innerHTML = `<span class="taro-lt-step__no"></span>` +
-                       `<span class="taro-lt-step__label"></span>` +
-                       `<span class="taro-lt-step__rule"></span>`;
-      head.querySelector('.taro-lt-step__no').textContent = no;
-      head.querySelector('.taro-lt-step__label').textContent = label;
-      list.insertBefore(head, anchor);
-      made.push(head);
-    });
-
-    // Which fields belong to which step: everything between this heading and
-    // the next one.
-    const groups = made.map((head) => {
-      const fields = [];
-      for (let n = head.nextElementSibling; n; n = n.nextElementSibling) {
-        if (n.classList.contains('taro-lt-step')) break;
-        if (n.classList.contains('form-item')) fields.push(n);
-      }
-      return { head, fields };
-    });
-
-    /* A step is satisfied when its required fields have values. A step with
-     * nothing required would otherwise be born complete, which says nothing —
-     * so in that case every field in it has to be answered. Either way this
-     * only ever reports; it never blocks. */
-    const check = () => {
-      groups.forEach(({ head, fields }) => {
-        const inputs = fields.flatMap((f) =>
-          [...f.querySelectorAll('input, select, textarea')]
-            .filter((el) => el.type !== 'hidden' && el.offsetParent !== null));
-        if (!inputs.length) return;
-        const required = inputs.filter((el) => el.required || el.getAttribute('aria-required') === 'true');
-        const needed = required.length ? required : inputs;
-        const done = needed.length > 0 && needed.every((el) => String(el.value || '').trim() !== '');
-        head.classList.toggle('is-done', done);
-      });
-    };
-    list.addEventListener('input', check);
-    list.addEventListener('change', check);
-    check();
-
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          e.target.classList.add('is-in');
-          io.unobserve(e.target);
-        });
-      }, { rootMargin: '0px 0px -15% 0px' });
-      made.forEach((h) => io.observe(h));
-    } else {
-      made.forEach((h) => h.classList.add('is-in'));
-    }
-    return true;
-  };
-
-  if (!buildSteps()) {
-    // The form is a website component, rendered after this add-on runs.
-    const mo = new MutationObserver(() => { if (buildSteps()) mo.disconnect(); });
-    mo.observe(document.body, { childList: true, subtree: true });
-    setTimeout(() => mo.disconnect(), 15000);
-  }
-
-  /* ---- arriving from a photograph ------------------------------------ */
+    /* ---- arriving from a photograph ------------------------------------ */
     .taro-lt .taro-lt-ref {
       margin: 0 0 1.6rem !important;
       padding: 0.85rem 1.1rem;
@@ -364,92 +273,6 @@ defineAddon('letstalk', () => {
     }
   `);
 
-  /* ---- the three steps -------------------------------------------------
-   * Headings are inserted before the field they open. Positions rather than
-   * labels, because the labels are the owner's to reword in the editor and the
-   * order is what actually carries the meaning; if a field is ever added the
-   * worst case is a heading in a slightly odd place, not a broken form.
-   */
-  const STEPS = [
-    [0, '01', 'Who you are'],
-    [3, '02', 'What you need'],
-    [6, '03', 'The details'],
-  ];
-
-  const buildSteps = () => {
-    const list = document.querySelector('.form-wrapper .field-list');
-    if (!list || list.querySelector('.taro-lt-step')) return !!list;
-    const items = [...list.children].filter((el) => el.classList.contains('form-item'));
-    if (items.length < 7) return false;          // not the enquiry form
-
-    const made = [];
-    STEPS.forEach(([at, no, label]) => {
-      const anchor = items[at];
-      if (!anchor) return;
-      const head = document.createElement('div');
-      head.className = 'taro-lt-step';
-      head.innerHTML = `<span class="taro-lt-step__no"></span>` +
-                       `<span class="taro-lt-step__label"></span>` +
-                       `<span class="taro-lt-step__rule"></span>`;
-      head.querySelector('.taro-lt-step__no').textContent = no;
-      head.querySelector('.taro-lt-step__label').textContent = label;
-      list.insertBefore(head, anchor);
-      made.push(head);
-    });
-
-    // Which fields belong to which step: everything between this heading and
-    // the next one.
-    const groups = made.map((head) => {
-      const fields = [];
-      for (let n = head.nextElementSibling; n; n = n.nextElementSibling) {
-        if (n.classList.contains('taro-lt-step')) break;
-        if (n.classList.contains('form-item')) fields.push(n);
-      }
-      return { head, fields };
-    });
-
-    /* A step is satisfied when its required fields have values. A step with
-     * nothing required would otherwise be born complete, which says nothing —
-     * so in that case every field in it has to be answered. Either way this
-     * only ever reports; it never blocks. */
-    const check = () => {
-      groups.forEach(({ head, fields }) => {
-        const inputs = fields.flatMap((f) =>
-          [...f.querySelectorAll('input, select, textarea')]
-            .filter((el) => el.type !== 'hidden' && el.offsetParent !== null));
-        if (!inputs.length) return;
-        const required = inputs.filter((el) => el.required || el.getAttribute('aria-required') === 'true');
-        const needed = required.length ? required : inputs;
-        const done = needed.length > 0 && needed.every((el) => String(el.value || '').trim() !== '');
-        head.classList.toggle('is-done', done);
-      });
-    };
-    list.addEventListener('input', check);
-    list.addEventListener('change', check);
-    check();
-
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          e.target.classList.add('is-in');
-          io.unobserve(e.target);
-        });
-      }, { rootMargin: '0px 0px -15% 0px' });
-      made.forEach((h) => io.observe(h));
-    } else {
-      made.forEach((h) => h.classList.add('is-in'));
-    }
-    return true;
-  };
-
-  if (!buildSteps()) {
-    // The form is a website component, rendered after this add-on runs.
-    const mo = new MutationObserver(() => { if (buildSteps()) mo.disconnect(); });
-    mo.observe(document.body, { childList: true, subtree: true });
-    setTimeout(() => mo.disconnect(), 15000);
-  }
-
   /* ---- arriving from a photograph -------------------------------------
    * The lightbox links here as /letstalk?ref=Film%20%E2%80%94%20frame%2024A,
    * so the form should already know what the enquiry is about instead of
@@ -465,6 +288,99 @@ defineAddon('letstalk', () => {
    * so it is stripped of control characters, capped, and only ever inserted as
    * text — never markup. Anything already typed is left alone.
    */
+  /* ---- the three steps -------------------------------------------------
+   * Headings are inserted before the field they open, by POSITION rather than
+   * by matching label text: the labels are the owner's to reword in the editor,
+   * the order is what carries the meaning, and if a field is ever added the
+   * worst case is a heading in a slightly odd place, not a broken form.
+   */
+  const STEPS = [[0, '01', 'Who you are'], [3, '02', 'What you need'], [6, '03', 'The details']];
+
+  const buildSteps = () => {
+    const list = document.querySelector('.form-wrapper .field-list');
+    if (!list) return false;
+    if (list.querySelector('.taro-lt-step')) return true;
+    const items = [...list.children].filter((el) => el.classList.contains('form-item'));
+    if (items.length < 7) return false;              // not the enquiry form
+
+    const made = [];
+    STEPS.forEach(([at, no, label]) => {
+      const anchor = items[at];
+      if (!anchor) return;
+      const head = document.createElement('div');
+      head.className = 'taro-lt-step';
+      const n = document.createElement('span');
+      n.className = 'taro-lt-step__no';
+      n.textContent = no;
+      const l = document.createElement('span');
+      l.className = 'taro-lt-step__label';
+      l.textContent = label;
+      const r = document.createElement('span');
+      r.className = 'taro-lt-step__rule';
+      head.append(n, l, r);
+      list.insertBefore(head, anchor);
+      made.push(head);
+    });
+    if (!made.length) return false;
+
+    // Which fields belong to a step: everything up to the next heading.
+    const groups = made.map((head) => {
+      const fields = [];
+      for (let el = head.nextElementSibling; el; el = el.nextElementSibling) {
+        if (el.classList.contains('taro-lt-step')) break;
+        if (el.classList.contains('form-item')) fields.push(el);
+      }
+      return { head, fields };
+    });
+
+    /* Satisfied means the step's required fields have values. Squarespace does
+     * not put the required attribute on these inputs — it marks the form-item
+     * with a .required class and says so in the label — so that is what is
+     * read. A step with nothing required would otherwise be born complete,
+     * which says nothing, so there every field has to be answered. This only
+     * ever reports: it never blocks, hides or gates anything. */
+    const check = () => {
+      groups.forEach(({ head, fields }) => {
+        const inputs = fields.flatMap((f) =>
+          [...f.querySelectorAll('input, select, textarea')]
+            .filter((el) => el.type !== 'hidden' && el.offsetParent !== null));
+        if (!inputs.length) return;
+        const req = fields.filter((f) => f.classList.contains('required'));
+        const needed = req.length
+          ? req.flatMap((f) => [...f.querySelectorAll('input, select, textarea')]
+              .filter((el) => el.type !== 'hidden' && el.offsetParent !== null))
+          : inputs;
+        const done = needed.length > 0
+          && needed.every((el) => String(el.value || '').trim() !== '');
+        head.classList.toggle('is-done', done);
+      });
+    };
+    list.addEventListener('input', check);
+    list.addEventListener('change', check);
+    check();
+
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+        });
+      }, { rootMargin: '0px 0px -12% 0px' });
+      made.forEach((h) => io.observe(h));
+    } else {
+      made.forEach((h) => h.classList.add('is-in'));
+    }
+    return true;
+  };
+
+  if (!buildSteps()) {
+    // The form is a website component, rendered after this add-on runs.
+    const stepsMo = new MutationObserver(() => { if (buildSteps()) stepsMo.disconnect(); });
+    stepsMo.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => stepsMo.disconnect(), 15000);
+  }
+
   const raw = new URLSearchParams(location.search).get('ref');
   const ref = raw ? raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) : '';
   if (ref) {
