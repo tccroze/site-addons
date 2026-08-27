@@ -109,6 +109,23 @@ defineAddon('letstalk', () => {
       color: ${INK} !important;
       letter-spacing: 0.18em !important;
     }
+    /* The label's text is not always the label's own text node: some of these
+       wrap it in a div or a span that carries its own size, which beats
+       inheritance and left "Country", "Number" and every "(required)" at the
+       old 18px next to letterspaced 12.6px labels. Everything inside a label
+       speaks with the label's voice. */
+    .taro-lt .field-list .title *,
+    .taro-lt .field-list .caption * {
+      font-size: inherit !important;
+      font-weight: inherit !important;
+      letter-spacing: inherit !important;
+      text-transform: inherit !important;
+      line-height: inherit !important;
+    }
+    /* Stubborn 15px under the phone group — it is the fieldset's own padding,
+       not a child's margin, which is why two passes at the children missed it. */
+    .taro-lt .field-list fieldset.form-item { padding-bottom: 0 !important; }
+
     .taro-lt .field-list .required-note,
     .taro-lt .field-list .title .required,
     .taro-lt .field-list .caption .required {
