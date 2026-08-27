@@ -132,10 +132,15 @@ defineAddon('gallery-filter', () => {
       background: #f6eed5;
       box-shadow: 0 1px 0 rgba(36, 50, 48, 0.12);
     }
-    /* A sticky element only sticks inside its own scroll container, and it is
-       clipped by any ancestor with overflow other than visible — which the
-       gallery wrappers set. Cheaper to guarantee here than to hunt for. */
-    .taro-filter-host, .taro-filter-host * { overflow: visible !important; }
+    /* A sticky element is clipped by any ANCESTOR whose overflow is not
+       visible, so the ancestor chain is what has to be cleared — and only the
+       ancestor chain. The first version of this rule said
+           .taro-filter-host, .taro-filter-host * { overflow: visible }
+       and that trailing * reached every tile in the gallery, undoing the
+       overflow:hidden that edge-print.js relies on to keep its film rebate
+       tucked out of sight until hover. Measured: a 26px black strip hanging
+       below all thirty-two tiles, on every gallery, at rest. */
+    .taro-filter-host { overflow: visible !important; }
     .taro-filter__btn {
       font: inherit;
       font-size: 0.68rem;
