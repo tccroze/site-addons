@@ -209,7 +209,9 @@ defineAddon('letstalk', () => {
        bold "Thank you!" adrift in a screen of empty paper — the last thing
        someone sees after taking the trouble to write to you. The message is
        still the owner's, set in the editor; this gives it somewhere to sit. */
-    .taro-lt .sqs-form-block-submission-html { width: 100%; }
+    /* React's own confirmation line, kept in the DOM and taken off the
+       page — its words are now the panel's heading. */
+    .taro-lt .form-wrapper.taro-lt-sent { display: none; }
     .taro-lt-thanks {
       max-width: 40rem;
       margin: 0 auto;
@@ -449,21 +451,46 @@ defineAddon('letstalk', () => {
   const THANKS_NOTE = 'I’ll get back to you within 48 hours.';
   const THANKS_LINKS = [['See the work', '/stills'], ['Prints & originals', '/shop']];
 
+  /* WHERE THE MESSAGE ACTUALLY APPEARS.
+   *
+   * Not in .sqs-form-block-submission-html, which is what the first version of
+   * this watched and why it never once fired. Reading the form bundle settles
+   * it: that element is a data carrier, read a single time at start-up so its
+   * data-submission-html attribute can be passed to React as a prop —
+   *
+   *   const e = this.root.querySelector(".sqs-form-block-submission-html"),
+   *         n = e?.getAttribute("data-submission-html") || undefined;
+   *   return { formSubmissionHTML: n, ...JSON.parse(context) }
+   *
+   * — and nothing ever writes to it. React renders the confirmation INSIDE
+   * .form-wrapper, in place of the form.
+   *
+   * So success is: a form was here, the form is gone, and there are words in
+   * its place. The "a form was here" half matters — .form-wrapper is empty
+   * before React mounts, and briefly empty after an unmount, and neither is
+   * somebody thanking anyone.
+   *
+   * The panel is appended to the BLOCK rather than into .form-wrapper, which
+   * is React's to own and re-render. React's own message is hidden rather than
+   * removed, so nothing is taken away from a component that may look for it.
+   */
+  let sawForm = false;
   const dressThanks = () => {
-    const host = document.querySelector('.sqs-form-block-submission-html');
-    if (!host) return false;
-    const text = host.textContent.trim();
-    if (!text) return false;                       // nothing submitted yet
-    if (host.querySelector('.taro-lt-thanks')) return true;
+    const block = document.querySelector('.sqs-block-form');
+    const wrap = block && block.querySelector('.form-wrapper');
+    if (!block || !wrap) return false;
+    if (block.querySelector('.taro-lt-thanks')) return true;
+    if (wrap.querySelector('form')) { sawForm = true; return false; }
+    if (!sawForm) return false;
+    const text = wrap.textContent.trim();
+    if (!text || text.length > 400) return false;
 
     const panel = document.createElement('div');
     panel.className = 'taro-lt-thanks';
 
     const title = document.createElement('h2');
     title.className = 'taro-lt-thanks__title';
-    // The owner's own words, kept exactly, and inserted as text so nothing in
-    // the message can bring markup with it.
-    title.textContent = text;
+    title.textContent = text;                    // the owner's words, as text
     const rule = document.createElement('div');
     rule.className = 'taro-lt-thanks__rule';
     const note = document.createElement('p');
@@ -489,23 +516,20 @@ defineAddon('letstalk', () => {
       panel.appendChild(sig);
     }
 
-    // Replace the bare message with the panel, keeping the message's words.
-    host.textContent = '';
-    host.appendChild(panel);
-    // Announce it: the form vanishing and being replaced is a change a screen
-    // reader would otherwise pass over in silence.
-    host.setAttribute('role', 'status');
-    host.setAttribute('aria-live', 'polite');
+    wrap.classList.add('taro-lt-sent');          // hide React's bare line
+    block.appendChild(panel);
+    panel.setAttribute('role', 'status');
+    panel.setAttribute('aria-live', 'polite');
     requestAnimationFrame(() => panel.classList.add('is-in'));
     panel.scrollIntoView({ block: 'center',
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     return true;
   };
 
-  if (!dressThanks()) {
-    const thanksMo = new MutationObserver(() => { dressThanks(); });
-    thanksMo.observe(document.body, { childList: true, subtree: true, characterData: true });
-  }
+  dressThanks();
+  // Never disconnected: submission can happen at any point in the visit.
+  const thanksMo = new MutationObserver(() => { dressThanks(); });
+  thanksMo.observe(document.body, { childList: true, subtree: true, characterData: true });
 
   const HOLD = 0.24;    // read it first: no fade before this
   const GONE = 0.92;    // fully dissolved by here
