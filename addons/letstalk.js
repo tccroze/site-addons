@@ -1,0 +1,181 @@
+// The Let's Talk page: the headline, the form's manners, and the button.
+//
+// Measured against the live page rather than guessed at, because almost
+// nothing here is where you would expect it to be:
+//
+//   THE HEADLINE reads as two separate lines rather than one sentence. Both
+//   <h1>s live in the same block, so ordinary margins do control them — 63px
+//   type on a 94.5px line (1.5, a body-copy ratio applied to display type),
+//   with 36px of margin between the two. That is about 67px of air between
+//   "LET'S WORK" and "TOGETHER", which is why they read as two thoughts.
+//
+//   THE FIELDS are transparent, with transparent borders. What you can see is
+//   a span — .form-input-effects-border — lying behind each input at inset 0,
+//   painting rgba(255,240,179,0.8) inside a 2px rule. So restyling "the input"
+//   does nothing at all; the span is the field, visually.
+//
+//   THE SUBMIT BUTTON is set in Cousine, a monospace, at 18px — the only place
+//   on the site where that face appears, and it reads as a placeholder. It is
+//   also 1325px wide and 99px tall: a full-bleed outline with a small word
+//   floating in the middle of it.
+//
+//   THE MEASURE. Every field runs the full width of the block — 1325px on a
+//   desktop. An email address in a 1325px box is a hard thing to look at, and
+//   the labels above them end up marooned at the far left of the screen.
+//
+// !important is used throughout, which is not a preference. Squarespace's form
+// styles arrive under hashed class names (.vj3vrvqNhcUOo_Bm) generated per
+// build, so they cannot be out-specified by name — only by weight.
+
+import { defineAddon, css } from '../lib/util.js';
+
+const CREAM = '#f6eed5';
+const INK = '#243230';
+const RED = '#e23318';
+
+defineAddon('letstalk', () => {
+  if (!/^\/letstalk\/?$/i.test(location.pathname)) return;
+  document.documentElement.classList.add('taro-lt');
+
+  css('letstalk', `
+    /* ---- the headline ------------------------------------------------- */
+    /* One sentence over two lines. 1.02 leaves the descenders room without
+       opening a gap the eye reads as a paragraph break. */
+    .taro-lt h1 {
+      line-height: 1.02 !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    /* ---- the measure --------------------------------------------------- */
+    /* A form is read one line at a time; it does not want the full width of a
+       desktop. 46rem keeps the longest label and its field in one comfortable
+       column, and centres the whole thing under a centred headline. */
+    .taro-lt .form-wrapper .field-list {
+      max-width: 46rem;
+      margin-inline: auto;
+    }
+
+    /* ---- the fields ---------------------------------------------------- */
+    /* The visible box is the effects span, not the input. Paper rather than
+       the acid yellow, and a rule dark enough to read as an edge without
+       shouting over the labels. */
+    .taro-lt .form-input-effects-border {
+      background: rgba(251, 246, 230, 0.92) !important;
+      border-color: rgba(36, 50, 48, 0.30) !important;
+      border-width: 1.5px !important;
+      border-radius: 6px !important;
+      transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+    /* The span follows its input, so a sibling combinator reaches it on focus
+       — the field itself can carry no visible focus state, having no paint. */
+    .taro-lt input:focus ~ .form-input-effects .form-input-effects-border,
+    .taro-lt textarea:focus ~ .form-input-effects .form-input-effects-border,
+    .taro-lt select:focus ~ .form-input-effects .form-input-effects-border {
+      border-color: ${RED} !important;
+      background: #fffdf6 !important;
+      box-shadow: 0 0 0 3px rgba(226, 51, 24, 0.14) !important;
+    }
+    .taro-lt input, .taro-lt textarea, .taro-lt select {
+      /* Focus is drawn on the span above; a second ring on top of it reads as
+         a mistake. Removed only because a visible replacement exists. */
+      outline: none !important;
+    }
+
+    /* ---- the labels ---------------------------------------------------- */
+    /* Small, letterspaced, uppercase — the same voice the eyebrows use
+       everywhere else on the site, so the form stops looking like a different
+       website's furniture. */
+    .taro-lt .field-list .title,
+    .taro-lt .field-list .caption {
+      font-size: 0.7rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.15em !important;
+      text-transform: uppercase !important;
+      color: rgba(36, 50, 48, 0.72) !important;
+      line-height: 1.4 !important;
+    }
+    /* A fieldset's own legend is the group's name — Name, Phone — and should
+       sit a step above the captions inside it. */
+    .taro-lt .field-list legend .title {
+      font-size: 0.78rem !important;
+      color: ${INK} !important;
+      letter-spacing: 0.18em !important;
+    }
+    .taro-lt .field-list .required-note,
+    .taro-lt .field-list .title .required,
+    .taro-lt .field-list .caption .required {
+      letter-spacing: 0.1em !important;
+      opacity: 0.62;
+    }
+
+    /* ---- rhythm --------------------------------------------------------- */
+    .taro-lt .form-wrapper .field-list > .form-item { margin-bottom: 1.6rem !important; }
+    .taro-lt .form-wrapper .field-list > .form-item:last-of-type { margin-bottom: 2.4rem !important; }
+
+    /* ---- the button ----------------------------------------------------- */
+    /* A button the size of a doorway, in a typeface used nowhere else, is what
+       made this page feel unfinished. Solid red, the site's own face, and only
+       as wide as the word needs. */
+    .taro-lt .form-button-wrapper,
+    .taro-lt .form-wrapper .form-button-wrapper { text-align: center !important; }
+    .taro-lt .form-submit-button {
+      display: inline-block !important;
+      width: auto !important;
+      min-width: 16rem;
+      height: auto !important;
+      padding: 1.05rem 2.75rem !important;
+      font-family: inherit !important;
+      font-size: 0.8rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.18em !important;
+      text-transform: uppercase !important;
+      color: ${CREAM} !important;
+      background: ${RED} !important;
+      border: 2px solid ${RED} !important;
+      border-radius: 300px !important;
+      cursor: pointer;
+      transition: background 200ms ease, border-color 200ms ease,
+                  color 200ms ease, transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    @media (hover: hover) {
+      .taro-lt .form-submit-button:hover {
+        background: ${INK} !important;
+        border-color: ${INK} !important;
+        transform: translateY(-2px);
+      }
+    }
+    .taro-lt .form-submit-button:focus-visible {
+      outline: 2px solid ${INK} !important;
+      outline-offset: 3px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-lt .form-submit-button { transition: none; }
+      .taro-lt .form-submit-button:hover { transform: none; }
+    }
+
+    /* ---- the file drop -------------------------------------------------- */
+    .taro-lt .field-list [class*="upload"],
+    .taro-lt .field-list .form-item.field.upload .field-element {
+      border-radius: 6px !important;
+    }
+
+    @media (max-width: 799px) {
+      .taro-lt .form-wrapper .field-list > .form-item { margin-bottom: 1.25rem !important; }
+      .taro-lt .form-submit-button { width: 100% !important; min-width: 0; }
+    }
+  `);
+
+  /* ---- the dead space at the foot of the form -------------------------
+   * Same Fluid Engine behaviour as everywhere else on this site: the section
+   * writes an explicit row track list and reserves that height whatever is in
+   * it. Here it holds one block and still runs 1,355px against 1,126px of
+   * content. Dropping the track list lets the rows size to what is actually
+   * there; the column tracks are untouched, so nothing moves sideways.
+   */
+  const fe = document.querySelector('form')?.closest('.fluid-engine');
+  if (fe && fe.children.length === 1) {
+    fe.style.setProperty('grid-template-rows', 'none', 'important');
+    fe.children[0].style.setProperty('grid-row', '1 / 2', 'important');
+  }
+});
