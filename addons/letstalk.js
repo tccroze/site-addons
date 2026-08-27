@@ -211,7 +211,11 @@ defineAddon('letstalk', () => {
        still the owner's, set in the editor; this gives it somewhere to sit. */
     /* React's own confirmation line, kept in the DOM and taken off the
        page — its words are now the panel's heading. */
-    .taro-lt .form-wrapper.taro-lt-sent { display: none; }
+    /* !important because the wrapper's own display:grid outranked this in
+       practice — measured with the class applied and display still grid,
+       which would have shown React's bare line above the panel repeating
+       the same words. */
+    .taro-lt .form-wrapper.taro-lt-sent { display: none !important; }
     .taro-lt-thanks {
       max-width: 40rem;
       margin: 0 auto;
