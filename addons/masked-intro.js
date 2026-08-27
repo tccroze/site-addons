@@ -29,7 +29,7 @@ import { defineAddon, css } from '../lib/util.js';
 // ?v= because the assets otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale image — the half-deploy class
 // main.js documents. Stamped by scripts/release.sh along with everything else.
-const V = '2.52.0';
+const V = '2.53.0';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 const PHOTO = ASSET('spitzkoppe-2600.jpg');
 const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
@@ -446,7 +446,7 @@ defineAddon('masked-intro', () => {
         </div>
         <div class="taro-intro__sheet taro-intro__sheet--type">
           <div class="taro-intro__type">
-            <h1 class="taro-intro__word">${WORDMARK}</h1>
+            <div class="taro-intro__word">${WORDMARK}</div>
             <p class="taro-intro__sub">${SUBLINE}</p>
           </div>
         </div>
@@ -467,6 +467,13 @@ defineAddon('masked-intro', () => {
   const back = wrap.querySelector('.taro-intro__back');
   const fore = wrap.querySelector('.taro-intro__fore');
   const type = wrap.querySelector('.taro-intro__type');
+  // NOT an <h1>. It was one, and that put a fourth competing top-level heading
+  // on the homepage — "TARO CROZE" alongside the two the owner actually wrote
+  // ("Art that feels loved.", "visuals that feel lived.") and the shop's. This
+  // is a piece of display lettering laid over a photograph, and the site's name
+  // is already announced by the logo in the header; it does not need to claim
+  // the page's heading as well. The text still reads normally to a screen
+  // reader — only the heading semantics are gone.
   const word = wrap.querySelector('.taro-intro__word');
   const sub = wrap.querySelector('.taro-intro__sub');
   const sheets = [...wrap.querySelectorAll('.taro-intro__sheet')];

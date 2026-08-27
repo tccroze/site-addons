@@ -17,9 +17,38 @@
 
 import { defineAddon, log } from '../lib/util.js';
 
+// Image cards that link somewhere but say nothing.
+//
+// /venues is five photographs linking to five venue pages, and not one of them
+// carries a single character a screen reader can announce — no link text, no
+// aria-label, and no alt on the image. /stills is the same shape; where its
+// cards do have alt text it is the machine-written description the owner has
+// said is inaccurate, so "Wildlife" is announced as "A jaguar perched on a tree
+// branch in a jungle setting". Either way, the two pages that route to
+// everything else on the site are unnavigable without sight of them.
+//
+// Each name below was read from that page's own heading rather than invented,
+// then set in title case: an aria-label is spoken, and screen readers spell out
+// strings that arrive in capitals.
+
 // dead path -> where it should have gone
 const REDIRECTS = {
   '/contact': '/letstalk',
+};
+
+const CARD_NAMES = {
+  '/la-stradina': 'La Stradina',
+  '/lecafegourmand': 'Le Cafe Gourmand',
+  '/cafechoubidou': 'Cafe Choubidou',
+  '/themilkmansdaughter': "The Milkman's Daughter",
+  '/yellowandbutter': 'Yellow and Butter',
+  '/wildlife': 'Wildlife',
+  '/35film': 'Film',
+  '/vroom': 'Automotive',
+  '/panoramas': 'Panoramas',
+  '/portraits': 'People',
+  '/astro': 'Astro',
+  '/spaces': 'Spaces',
 };
 
 defineAddon('link-repair', () => {
@@ -40,11 +69,32 @@ defineAddon('link-repair', () => {
     return n;
   };
 
+  /* An aria-label wins over the image's alt for a link's accessible name, so
+   * this both names the unnamed cards and replaces the inaccurate descriptions
+   * on the ones that have them. The alt attribute is left alone: it describes
+   * the picture, which is a different job. */
+  const nameCards = () => {
+    let n = 0;
+    document.querySelectorAll('a.sqs-block-image-link[href]').forEach((a) => {
+      const key = (a.getAttribute('href') || '').replace(/\/$/, '');
+      const name = CARD_NAMES[key];
+      if (!name) return;
+      if (a.getAttribute('aria-label') === name) return;
+      if ((a.textContent || '').trim()) return;    // it speaks for itself
+      a.setAttribute('aria-label', name);
+      n += 1;
+    });
+    return n;
+  };
+
+  const named = nameCards();
+  if (named) log(`link-repair: ${named} card${named === 1 ? '' : 's'} named`);
+
   const first = fix();
   if (first) log(`link-repair: ${first} dead link${first === 1 ? '' : 's'} rerouted`);
 
   // Buttons can arrive late — Squarespace renders several block types after
   // this runs — so the page is watched rather than swept once.
-  const mo = new MutationObserver(() => fix());
+  const mo = new MutationObserver(() => { fix(); nameCards(); });
   mo.observe(document.body, { childList: true, subtree: true });
 });
