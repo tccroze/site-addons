@@ -136,7 +136,44 @@ defineAddon('croze-timeline', () => {
        it. This is the rule that actually collapses them. */
     .taro-cl-body[hidden] { display: none !important; }
 
-    .taro-cl-list { list-style: none; margin: 2rem 0 0; padding: 0; }
+    /* The line above the list: what the piece covers on the left, and the way
+       out of the chapter format on the right. Chapters are the better way in
+       — eighteen doors beat three thousand unbroken words — but someone who
+       wants to read it as it was written should not have to open eighteen
+       things to do it. */
+    .taro-cl-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 2.2rem 0 0;
+      padding-bottom: 0.7rem;
+    }
+    .taro-cl-dateline {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #4c554e;
+    }
+    .taro-cl-all {
+      -webkit-appearance: none; appearance: none;
+      background: none; border: 0; padding: 0.2rem 0;
+      font: inherit;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #243230;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(226, 51, 24, 0.45);
+      transition: color 180ms ease, border-color 180ms ease;
+    }
+    @media (hover: hover) {
+      .taro-cl-all:hover { color: #e23318; border-bottom-color: #e23318; }
+    }
+    .taro-cl-all:focus-visible { outline: 2px solid #243230; outline-offset: 3px; }
+
+    .taro-cl-list { list-style: none; margin: 0; padding: 0; }
     .taro-cl-item { border-top: 1px solid rgba(36, 50, 48, 0.18); }
     .taro-cl-item:last-child { border-bottom: 1px solid rgba(36, 50, 48, 0.18); }
 
@@ -196,6 +233,28 @@ defineAddon('croze-timeline', () => {
       .taro-cl-btn:hover .taro-cl-more { transform: none; }
     }
     .taro-cl-btn:focus-visible { outline: 2px solid #243230; outline-offset: 2px; }
+
+    /* WHOLE-STORY MODE. The rows stop being doors and become the year markers
+       of a continuous read: the title and the cue go (the title is the opening
+       clause of the paragraph directly beneath it, so leaving it in would print
+       the same words twice), the year stays as a marker, and each chapter's own
+       paragraphs sit under it at the same measure the panel gives them.
+       Doubled class on the paragraph rule for the same reason as the panel:
+       Squarespace's own p rules land in <head> after ours and win a tie. */
+    .taro-cl-list--all .taro-cl-item { border-top-color: rgba(36, 50, 48, 0.10); }
+    .taro-cl-list--all .taro-cl-btn { cursor: default; padding: 1.5rem 0.25rem 0.1rem; }
+    .taro-cl-list--all .taro-cl-teaser,
+    .taro-cl-list--all .taro-cl-more { display: none; }
+    .taro-cl-list--all .taro-cl-item:hover { background: none; }
+    .taro-cl-list--all .taro-cl-body {
+      padding: 0 0.25rem 1.9rem;
+      max-width: 40rem;
+    }
+    .taro-cl-list--all .taro-cl-body.taro-cl-body p {
+      margin: 0 0 1.5em;
+      line-height: 1.75;
+    }
+    .taro-cl-list--all .taro-cl-body.taro-cl-body p:last-of-type { margin-bottom: 0; }
 
     @media (max-width: 640px) {
       .taro-cl-btn { grid-template-columns: 4.5rem 1fr; row-gap: 0.4rem; }
@@ -292,6 +351,22 @@ defineAddon('croze-timeline', () => {
   const list = document.createElement('ol');
   list.className = 'taro-cl-list';
 
+  // The header: a dateline, and the way out of the chapter format.
+  const years = chapters.map((c) => c.year).filter(Boolean);
+  const head = document.createElement('div');
+  head.className = 'taro-cl-head';
+  const dateline = document.createElement('span');
+  dateline.className = 'taro-cl-dateline';
+  dateline.textContent = years.length
+    ? `${chapters.length} chapters \u00b7 ${Math.min(...years)}\u2013${Math.max(...years)}`
+    : `${chapters.length} chapters`;
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button';
+  allBtn.className = 'taro-cl-all';
+  allBtn.setAttribute('aria-expanded', 'false');
+  allBtn.textContent = 'Read the whole story';
+  head.append(dateline, allBtn);
+
   const panels = chapters.map((ch, i) => {
     const item = document.createElement('li');
     item.className = 'taro-cl-item';
@@ -322,10 +397,14 @@ defineAddon('croze-timeline', () => {
     return { ch, btn, body, i };
   });
 
-  host.appendChild(list);
+  host.append(head, list);
 
   // ---- the overlay --------------------------------------------------------
   let veil = null, panel = null, openIdx = -1, lastFocus = null;
+  // Whole-story mode. Held here because close() has to know it: a chapter
+  // returning home from the panel must not re-hide itself into a page that is
+  // currently showing everything.
+  let readingAll = false;
 
   const close = () => {
     if (openIdx < 0) return;
@@ -340,7 +419,7 @@ defineAddon('croze-timeline', () => {
     setTimeout(() => {
       // Home again, and hidden — never detached. See the note where it is built.
       const { body, btn: home } = panels[idx];
-      body.hidden = true;
+      body.hidden = !readingAll;
       home.parentElement.appendChild(body);
       if (p) p.remove();
       if (v) v.remove();
@@ -349,6 +428,7 @@ defineAddon('croze-timeline', () => {
   };
 
   const open = (i) => {
+    if (readingAll) return;      // the row is a year marker, not a door
     if (openIdx === i) return;
     if (openIdx >= 0) close();
     const { ch, btn, body } = panels[i];
@@ -405,6 +485,39 @@ defineAddon('croze-timeline', () => {
       close$.focus({ preventScroll: true });
     });
   };
+
+  /** Show the piece whole, or go back to the chapters.
+   *
+   *  Nothing is copied and nothing is rebuilt: the same paragraph elements the
+   *  chapters already own are simply unhidden in place. So the story exists
+   *  exactly once in the document in both modes, and switching cannot make the
+   *  two disagree.
+   *
+   *  A chapter open in the panel has lent its paragraphs to it, and close()
+   *  only returns them after the fade. They are reseated here so the whole
+   *  story is complete the instant it appears rather than a beat later. */
+  const setAll = (on) => {
+    readingAll = on;
+    close();
+    panels.forEach(({ btn, body }) => {
+      const item = btn.parentElement;
+      if (body.parentElement !== item) item.appendChild(body);
+      body.hidden = !on;
+      btn.setAttribute('aria-expanded', String(on));
+      // Out of the tab order while it is a heading rather than a control.
+      btn.tabIndex = on ? -1 : 0;
+    });
+    list.classList.toggle('taro-cl-list--all', on);
+    allBtn.setAttribute('aria-expanded', String(on));
+    allBtn.textContent = on ? 'Back to the chapters' : 'Read the whole story';
+    // Collapsing removes thousands of pixels from under the reader, which
+    // otherwise leaves them standing in the footer wondering what happened.
+    if (!on) {
+      head.scrollIntoView({ block: 'start',
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+  };
+  allBtn.addEventListener('click', () => setAll(!readingAll));
 
   panels.forEach(({ btn }, i) => btn.addEventListener('click', () => open(i)));
 
