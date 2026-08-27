@@ -42,7 +42,10 @@ defineAddon('letstalk', () => {
     /* One sentence over two lines. 1.02 leaves the descenders room without
        opening a gap the eye reads as a paragraph break. */
     .taro-lt h1 {
-      line-height: 1.02 !important;
+      /* 1.02 closed the gap but shut it too hard — this face has tall caps and
+         the two lines sat almost touching. 1.06 keeps them one headline with
+         enough air to breathe. */
+      line-height: 1.06 !important;
       margin-top: 0 !important;
       margin-bottom: 0 !important;
     }
@@ -111,6 +114,13 @@ defineAddon('letstalk', () => {
 
     /* ---- rhythm --------------------------------------------------------- */
     .taro-lt .form-wrapper .field-list > .form-item { margin-bottom: 1.6rem !important; }
+    /* The phone group sat 43px from the next field where every other gap was
+       29 — a stray bottom margin on the last field inside a fieldset. Measured
+       gaps before: 28, 30, 43, 29, 29, 28, 29, 29. */
+    .taro-lt .field-list fieldset.form-item > div,
+    .taro-lt .field-list fieldset.form-item > div > .field:last-child {
+      margin-bottom: 0 !important;
+    }
     .taro-lt .form-wrapper .field-list > .form-item:last-of-type { margin-bottom: 2.4rem !important; }
 
     /* ---- the button ----------------------------------------------------- */
@@ -155,8 +165,8 @@ defineAddon('letstalk', () => {
     }
 
     /* ---- the file drop -------------------------------------------------- */
-    .taro-lt .field-list [class*="upload"],
-    .taro-lt .field-list .form-item.field.upload .field-element {
+    .taro-lt .field-list .file-upload,
+    .taro-lt .field-list .file-upload > * {
       border-radius: 6px !important;
     }
 
@@ -169,13 +179,21 @@ defineAddon('letstalk', () => {
   /* ---- the dead space at the foot of the form -------------------------
    * Same Fluid Engine behaviour as everywhere else on this site: the section
    * writes an explicit row track list and reserves that height whatever is in
-   * it. Here it holds one block and still runs 1,355px against 1,126px of
-   * content. Dropping the track list lets the rows size to what is actually
-   * there; the column tracks are untouched, so nothing moves sideways.
+   * it — 1,409px of grid around 1,180px of content. Dropping the track list
+   * lets the rows size to what is there; the column tracks are untouched, so
+   * nothing moves sideways.
+   *
+   * Anchored on the BLOCK, not on the <form>. The form is a website component
+   * rendered after DOMContentLoaded, so querySelector('form') is null when this
+   * runs and the first attempt at this quietly did nothing. The block is in the
+   * served HTML, and it is re-run on load in case the section is rebuilt.
    */
-  const fe = document.querySelector('form')?.closest('.fluid-engine');
-  if (fe && fe.children.length === 1) {
+  const collapse = () => {
+    const fe = document.querySelector('.sqs-block-form')?.closest('.fluid-engine');
+    if (!fe || fe.children.length !== 1) return;
     fe.style.setProperty('grid-template-rows', 'none', 'important');
     fe.children[0].style.setProperty('grid-row', '1 / 2', 'important');
-  }
+  };
+  collapse();
+  window.addEventListener('load', collapse, { once: true });
 });
