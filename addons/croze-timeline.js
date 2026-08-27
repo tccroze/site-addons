@@ -118,7 +118,15 @@ defineAddon('croze-timeline', () => {
     const text = ch.paras[0].textContent.replace(/\s+/g, ' ').trim();
     const cuts = [];
     for (const m of text.matchAll(/[,.;:—]/g)) cuts.push(m.index);
-    let end = cuts.find((i) => text.slice(0, i).split(' ').length >= 4);
+    // Three words, or twelve characters. A four-word floor read as safe and
+    // was not: it threw away "He documented everything." — a better title than
+    // anything downstream of it — and fell back to a 58-character truncation
+    // of the run-on behind it. Twelve characters is what keeps a bare date
+    // fragment ("In 1942") from standing in as a title.
+    let end = cuts.find((i) => {
+      const head = text.slice(0, i);
+      return head.trim().split(/\s+/).length >= 3 && head.length >= 12;
+    });
     if (end === undefined || end > TEASER_MAX) end = -1;
     let s = end > 0 ? text.slice(0, end) : text;
     if (s.length > TEASER_MAX) {
@@ -135,6 +143,20 @@ defineAddon('croze-timeline', () => {
        4,678px of blank page between the end of the list and the section below
        it. This is the rule that actually collapses them. */
     .taro-cl-body[hidden] { display: none !important; }
+
+    /* THE DEAD SPACE UNDER THE LIST, and why hiding the paragraphs did not
+       touch it. This section is a Fluid Engine grid, and Fluid Engine does not
+       size rows to content: it writes an explicit track list — measured here
+       as 157 rows of 28.47px — and assigns each block a fixed row span. The
+       story block owns rows 4 to 157, so it reserves ~4,470px whether it holds
+       three thousand words or thirty. Collapsing its contents changed the
+       block's height and left the grid's height exactly where it was: 4,630px
+       of blank page between the end of the list and the section below.
+
+       Dropping the track list lets every row size to its content instead. The
+       column tracks are untouched, so the blocks keep their horizontal
+       placement to the pixel — only the vertical reservation goes. */
+    .fluid-engine.taro-cl-fe { grid-template-rows: none !important; }
 
     /* The line above the list: what the piece covers on the left, and the way
        out of the chapter format on the right. Chapters are the better way in
@@ -398,6 +420,38 @@ defineAddon('croze-timeline', () => {
   });
 
   host.append(head, list);
+
+  /* Let the section's Fluid Engine grid size itself to what is actually in it.
+   *
+   * Dropping the track list alone is not enough: the blocks' assigned row
+   * spans OVERLAP by design — the story owns lines 4 to 157 and the block
+   * below it starts at line 156 — which is harmless while the rows are
+   * oversized and becomes a collision the moment they are not. So each block
+   * is re-assigned one row of its own, in the order the grid already had them.
+   *
+   * The order is read from the live grid rather than from the DOM, because the
+   * two disagree here: the story is first in the document and third down the
+   * page. And it is re-read on resize, because Fluid Engine ships a different
+   * track list per breakpoint — the inline override is lifted for the
+   * measurement so what is read is the stylesheet's placement, not ours.
+   */
+  const fe = host.closest('.fluid-engine');
+  const seatGrid = () => {
+    if (!fe) return;
+    const kids = [...fe.children];
+    kids.forEach((b) => b.style.removeProperty('grid-row'));
+    fe.classList.remove('taro-cl-fe');
+    const start = new Map(kids.map((b) => [b, parseInt(getComputedStyle(b).gridRowStart, 10) || 0]));
+    fe.classList.add('taro-cl-fe');
+    kids.sort((a, b) => start.get(a) - start.get(b))
+        .forEach((b, i) => b.style.setProperty('grid-row', `${i + 1} / ${i + 2}`, 'important'));
+  };
+  seatGrid();
+  let reseatTimer = 0;
+  addEventListener('resize', () => {
+    clearTimeout(reseatTimer);
+    reseatTimer = setTimeout(seatGrid, 180);
+  });
 
   // ---- the overlay --------------------------------------------------------
   let veil = null, panel = null, openIdx = -1, lastFocus = null;
