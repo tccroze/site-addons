@@ -333,36 +333,46 @@ defineAddon('letstalk', () => {
       return { head, fields };
     });
 
-    /* Satisfied means the step's required fields have values. Squarespace does
-     * not put the required attribute on these inputs — it marks the form-item
-     * with a .required class and says so in the label — so that is what is
-     * read. A step with nothing required would otherwise be born complete,
-     * which says nothing, so there every field has to be answered. This only
-     * ever reports: it never blocks, hides or gates anything. */
+    /* WHAT "DONE" IS ALLOWED TO MEAN.
+     *
+     * Only that every required field in the step has been answered. Steps with
+     * nothing required never light up, and that is deliberate: this reports,
+     * and a report that might be wrong is worse than no report at all on the
+     * page the owner's work comes through.
+     *
+     * Two attempts came before that rule. Marking a step done when all its
+     * fields had values made step 02 — three selects, nothing required —
+     * arrive already complete, because a <select> nobody has touched still
+     * reports a value. Switching to "anything past the first option" was worse
+     * and quieter: these selects have no placeholder option at all. The first
+     * option of "What are you looking for?" is Photography, while the control
+     * displays "Select an option" — so choosing the very first item would have
+     * been read as choosing nothing.
+     *
+     * Squarespace marks a required field with a .required class on the
+     * form-item; the required attribute is not on the inputs.
+     */
+    const answered = (el) => (el.tagName === 'SELECT'
+      // For a select, the only honest signal available is that it moved from
+      // where it started, since its resting value is already a real option.
+      ? el.value !== el.dataset.taroInitial
+      : String(el.value || '').trim() !== '');
+
     const check = () => {
       groups.forEach(({ head, fields }) => {
-        const inputs = fields.flatMap((f) =>
+        const req = fields.filter((f) => f.classList.contains('required'));
+        if (!req.length) return;                    // nothing to be sure about
+        const needed = req.flatMap((f) =>
           [...f.querySelectorAll('input, select, textarea')]
             .filter((el) => el.type !== 'hidden' && el.offsetParent !== null));
-        if (!inputs.length) return;
-        const req = fields.filter((f) => f.classList.contains('required'));
-        const needed = req.length
-          ? req.flatMap((f) => [...f.querySelectorAll('input, select, textarea')]
-              .filter((el) => el.type !== 'hidden' && el.offsetParent !== null))
-          : inputs;
-        /* A <select> that nobody has touched still reports a value — its
-         * placeholder option is a real option with real text — so asking
-         * whether the value is empty says yes before anyone has chosen
-         * anything. Measured: step 02 is three selects and no required
-         * fields, and it was born complete. The first option IS the
-         * placeholder here, so anything past it counts as an answer. */
-        const answered = (el) => (el.tagName === 'SELECT'
-          ? el.selectedIndex > 0
-          : String(el.value || '').trim() !== '');
-        const done = needed.length > 0 && needed.every(answered);
-        head.classList.toggle('is-done', done);
+        if (!needed.length) return;
+        head.classList.toggle('is-done', needed.every(answered));
       });
     };
+    // Where each select started, so a change to it can be recognised later.
+    [...list.querySelectorAll('select')].forEach((el) => {
+      if (el.dataset.taroInitial === undefined) el.dataset.taroInitial = el.value;
+    });
     list.addEventListener('input', check);
     list.addEventListener('change', check);
     check();
