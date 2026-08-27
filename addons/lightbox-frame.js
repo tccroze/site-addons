@@ -65,9 +65,18 @@ defineAddon('lightbox-frame', () => {
       background: linear-gradient(to top, rgba(18, 16, 12, 0.82), rgba(18, 16, 12, 0));
       pointer-events: none;      /* only the link takes the pointer */
       opacity: 0;
-      transition: opacity 240ms ease;
+      /* visibility, not opacity alone: at opacity 0 the enquiry link was still
+         a focusable, unnamed 4px link in the tab order of every gallery page,
+         which is how the audit found it. visibility:hidden takes it out of both
+         the tab order and the accessibility tree while still allowing the fade. */
+      visibility: hidden;
+      transition: opacity 240ms ease, visibility 0s linear 240ms;
     }
-    .taro-lf.is-on { opacity: 1; }
+    .taro-lf.is-on {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 240ms ease, visibility 0s;
+    }
     .taro-lf__ref {
       font-family: 'Arial Narrow', 'Roboto Condensed', 'Liberation Sans Narrow',
                    'Helvetica Neue', Helvetica, Arial, sans-serif;

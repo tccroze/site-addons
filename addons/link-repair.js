@@ -36,6 +36,21 @@ const REDIRECTS = {
   '/contact': '/letstalk',
 };
 
+// Links that go nowhere and should not pretend to.
+//
+// Three photographs on /thecrozeline — HC Snr.jpg, a scanned page, IMG_6810.jpg
+// — are wired to /shop/arrangement, /shop/bouquet and /get-in-touch. All three
+// return 404. They are the demo links that came with the image blocks from a
+// Squarespace template, never changed after the owner's own family pictures
+// were dropped in, so clicking a family photograph on the family history page
+// lands on an error.
+//
+// There is no correct destination to guess at here: they are illustrations in a
+// story, not navigation. So the link is removed and the photograph stays a
+// photograph. If any of them should lead somewhere, that is a decision for the
+// editor, and one line below stops overriding it once the href changes.
+const DEAD = ['/shop/arrangement', '/shop/bouquet', '/get-in-touch'];
+
 const CARD_NAMES = {
   '/la-stradina': 'La Stradina',
   '/lecafegourmand': 'Le Cafe Gourmand',
@@ -87,6 +102,24 @@ defineAddon('link-repair', () => {
     return n;
   };
 
+  /* A photograph that goes nowhere is better than one that goes to a 404. */
+  const defuse = () => {
+    let n = 0;
+    DEAD.forEach((path) => {
+      document.querySelectorAll(`a[href="${path}"], a[href="${path}/"]`).forEach((a) => {
+        a.removeAttribute('href');
+        a.removeAttribute('target');
+        a.setAttribute('tabindex', '-1');
+        a.dataset.taroDead = path;
+        a.style.cursor = 'default';
+        n += 1;
+      });
+    });
+    return n;
+  };
+  const dead = defuse();
+  if (dead) log(`link-repair: ${dead} dead link${dead === 1 ? '' : 's'} defused`);
+
   const named = nameCards();
   if (named) log(`link-repair: ${named} card${named === 1 ? '' : 's'} named`);
 
@@ -95,6 +128,6 @@ defineAddon('link-repair', () => {
 
   // Buttons can arrive late — Squarespace renders several block types after
   // this runs — so the page is watched rather than swept once.
-  const mo = new MutationObserver(() => { fix(); nameCards(); });
+  const mo = new MutationObserver(() => { fix(); nameCards(); defuse(); });
   mo.observe(document.body, { childList: true, subtree: true });
 });
