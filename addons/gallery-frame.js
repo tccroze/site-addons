@@ -207,7 +207,12 @@ defineAddon('gallery-frame', () => {
 
   if (gallery) {
     const anchor = anchorFor(gallery);
-    anchor.parentElement.insertBefore(head, anchor);
+    // Above the filter, not merely above the grid. gallery-filter.js is
+    // imported earlier and has already put its bar in, so inserting against the
+    // gallery alone produced filter-then-title — the page naming itself after
+    // it had already offered to sort itself.
+    const first = document.querySelector('.taro-filter') || anchor;
+    first.parentElement.insertBefore(head, first);
     anchor.parentElement.insertBefore(end, anchor.nextSibling);
   } else {
     // /panoramas is not a masonry gallery — it is a stack of sections. The
