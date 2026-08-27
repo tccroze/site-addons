@@ -78,13 +78,18 @@ defineAddon('mobile-polish', () => {
     /* Doubled class throughout. The blocks declare these at the same
        specificity as the obvious selector would, and their <style> sits in the
        body — later in the document than ours in <head> — so an equal-specificity
-       rule loses the tie. Measured: .tc-btn stayed at 12.48px until this.
+       rule loses the tie — and a doubled class only TIES the ones written as
+       three-class paths (.tc-classes .tc-card .tc-btn), which is why the first
+       attempt at this still measured 12.48px. Each selector below is matched
+       to the rule it has to beat, one step above it.
        .tc-vh is deliberately absent: it is the screen-reader-only half of the
        Enquire labels, so its size is nobody's business but the reader's. */
-    .tc-about.tc-about .tc-btn,
-    .tc-classes.tc-classes .tc-btn { font-size: 13px; }
+    .tc-about.tc-about .tc-btn { font-size: 13px; }
+    .tc-classes.tc-classes .tc-card .tc-btn,
+    .tc-classes.tc-classes .tc-card--dark .tc-btn { font-size: 13px; }
     .tc-classes.tc-classes .tc-card .tc-card__fee-note { font-size: 13.5px; }
-    .tc-classes.tc-classes figcaption { font-size: 13px; }
+    .tc-classes.tc-classes .tc-quotes .tc-quote figcaption,
+    .tc-classes.tc-classes .tc-gallery figcaption { font-size: 13px; }
   }
   `);
 
