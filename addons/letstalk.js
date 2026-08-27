@@ -266,11 +266,18 @@ defineAddon('letstalk', () => {
       }
     }
     .taro-lt-thanks__link:focus-visible { outline: 2px solid #e23318; outline-offset: 3px; }
+    /* The signature file is cream, because it lives on the dark footer. On
+       paper it is very nearly invisible — measured against this panel, cream
+       on cream. brightness(0) renders any source pure black regardless of its
+       colour, and the opacity brings it back to the weight of the ink used
+       everywhere else, without needing a second version of the asset. */
     .taro-lt-thanks img {
       display: block;
       width: clamp(9rem, 22vw, 13rem);
       height: auto;
       margin: 0 auto;
+      filter: brightness(0);
+      opacity: 0.82;
     }
     @media (prefers-reduced-motion: reduce) {
       .taro-lt-thanks, .taro-lt-thanks__rule { transition: none; }
@@ -309,6 +316,9 @@ defineAddon('letstalk', () => {
       width: clamp(9rem, 22vw, 13rem);
       height: auto;
       margin: 0 auto;
+      /* Same reason as the panel above: a cream signature on cream paper. */
+      filter: brightness(0);
+      opacity: 0.82;
       -webkit-mask-image: var(--taro-so-mask, none);
               mask-image: var(--taro-so-mask, none);
       -webkit-mask-repeat: no-repeat;
