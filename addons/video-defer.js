@@ -154,19 +154,44 @@ defineAddon('video-defer', () => {
     node.setAttribute('data-config-video', cfg);
     deferred.delete(node);
 
-    // Only YUI itself is checked here. NativeVideoLoader is precisely what
-    // Y.use() is being asked to fetch, so testing for it first would fail on
-    // every cold page and send everyone down the reload path.
+    // HOW THE PLAYER IS ACTUALLY BUILT, which took three attempts to get right.
+    //
+    // Y.use('squarespace-native-video-loader', ...) is not enough on its own:
+    // the module is delivered in webpack chunks that nothing has fetched yet,
+    // so the callback runs with Y.Squarespace.NativeVideoLoader still
+    // undefined and nothing is built. Measured — the loader stayed false
+    // thirteen seconds after the tap.
+    //
+    // Squarespace.initializeNativeVideo() fetches those chunks AND plugs every
+    // .sqs-native-video beneath the element it is given, which is the whole job
+    // in one call. It is handed the node's PARENT, because its selector matches
+    // descendants and would not find the node by looking inside it.
+    //
+    // (It looked like this call did nothing when it was first tried. That test
+    // restored the config from an attribute this file does not use — the config
+    // lives in a Map here — so it handed the loader an empty string and the
+    // loader quite correctly built nothing.)
     const Y = window.Y;
-    if (!Y || typeof Y.use !== 'function') { bail(); return; }
-
+    const S = window.Squarespace;
+    if (!Y || typeof Y.one !== 'function' || !S || typeof S.initializeNativeVideo !== 'function') {
+      bail(); return;
+    }
     try {
-      Y.use('squarespace-native-video-loader', () => {
-        try {
-          Y.one(node).plug(Y.Squarespace.NativeVideoLoader, { isVisitorWebsite: true });
-        } catch (e) { warn('video-defer: plug failed', e); }
+      S.initializeNativeVideo(Y, {
+        parentElement: Y.one(node.parentElement),
+        isVisitorWebsite: true,
       });
-    } catch (e) { warn('video-defer: use failed', e); bail(); return; }
+    } catch (e) { warn('video-defer: init failed', e); bail(); return; }
+
+    // Belt and braces: once the chunks have landed, a direct plug will work
+    // even if the call above declined to for a reason of its own.
+    setTimeout(() => {
+      if (node.querySelector('video')) return;
+      try {
+        const loader = Y.Squarespace && Y.Squarespace.NativeVideoLoader;
+        if (loader) Y.one(node).plug(loader, { isVisitorWebsite: true });
+      } catch (e) { warn('video-defer: second attempt failed', e); }
+    }, 4000);
 
     // Whatever happens, the visitor gets to watch the film.
     const started = Date.now();
