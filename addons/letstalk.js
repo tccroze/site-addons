@@ -521,6 +521,11 @@ defineAddon('letstalk', () => {
     }
 
     wrap.classList.add('taro-lt-sent');          // hide React's bare line
+    // The sign-off under the form stands down: it is a closing gesture for a
+    // form that is no longer there, and the panel carries the same signature.
+    // Left in the DOM rather than removed, so a resubmission still has it.
+    const signoff = block.querySelector('.taro-lt-signoff');
+    if (signoff) signoff.style.display = 'none';
     block.appendChild(panel);
     panel.setAttribute('role', 'status');
     panel.setAttribute('aria-live', 'polite');
