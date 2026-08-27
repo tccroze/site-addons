@@ -8,44 +8,44 @@ import { log } from './lib/util.js';
 
 // Imported first on purpose: each module is a separate network fetch, so the
 // hero's starting state lands sooner the earlier this appears.
-import './addons/hero-reveal.js?v=2.47.5';
+import './addons/hero-reveal.js?v=2.47.6';
 
-import './addons/gallery-hover.js?v=2.47.5';
-import './addons/gallery-filter.js?v=2.47.5';
-import './addons/cursor.js?v=2.47.5';
-import './addons/page-transition.js?v=2.47.5';
-import './addons/signature.js?v=2.47.5';
-import './addons/nav-ink.js?v=2.47.5';
-import './addons/cursor-view.js?v=2.47.5';
-import './addons/edge-print.js?v=2.47.5';
-import './addons/menu-paper.js?v=2.47.5';
+import './addons/gallery-hover.js?v=2.47.6';
+import './addons/gallery-filter.js?v=2.47.6';
+import './addons/cursor.js?v=2.47.6';
+import './addons/page-transition.js?v=2.47.6';
+import './addons/signature.js?v=2.47.6';
+import './addons/nav-ink.js?v=2.47.6';
+import './addons/cursor-view.js?v=2.47.6';
+import './addons/edge-print.js?v=2.47.6';
+import './addons/menu-paper.js?v=2.47.6';
 
 // Homepage only
-import './addons/masked-intro.js?v=2.47.5';
-import './addons/dune-reveal.js?v=2.47.5';
-import './addons/scroll-reveal.js?v=2.47.5';
-import './addons/testimonial-rotator.js?v=2.47.5';
-import './addons/parallax.js?v=2.47.5';
-import './addons/film-strip.js?v=2.47.5';
-import './addons/grain.js?v=2.47.5';
-import './addons/dividers.js?v=2.47.5';
-import './addons/edge-mark.js?v=2.47.5';
+import './addons/masked-intro.js?v=2.47.6';
+import './addons/dune-reveal.js?v=2.47.6';
+import './addons/scroll-reveal.js?v=2.47.6';
+import './addons/testimonial-rotator.js?v=2.47.6';
+import './addons/parallax.js?v=2.47.6';
+import './addons/film-strip.js?v=2.47.6';
+import './addons/grain.js?v=2.47.6';
+import './addons/dividers.js?v=2.47.6';
+import './addons/edge-mark.js?v=2.47.6';
 
 // Motion page
-import './addons/video-focus.js?v=2.47.5';
-import './addons/motion-reel.js?v=2.47.5';
+import './addons/video-focus.js?v=2.47.6';
+import './addons/motion-reel.js?v=2.47.6';
 
 // Venues page
-import './addons/venue-hero.js?v=2.47.5';
+import './addons/venue-hero.js?v=2.47.6';
 
 // The Croze Line
-import './addons/croze-timeline.js?v=2.47.5';
-import './addons/header-clearance.js?v=2.47.5';
-import './addons/mobile-polish.js?v=2.47.5';
-import './addons/video-defer.js?v=2.47.5';
-import './addons/letstalk.js?v=2.47.5';
-import './addons/gallery-frame.js?v=2.47.5';
-import './addons/lightbox-frame.js?v=2.47.5';
+import './addons/croze-timeline.js?v=2.47.6';
+import './addons/header-clearance.js?v=2.47.6';
+import './addons/mobile-polish.js?v=2.47.6';
+import './addons/video-defer.js?v=2.47.6';
+import './addons/letstalk.js?v=2.47.6';
+import './addons/gallery-frame.js?v=2.47.6';
+import './addons/lightbox-frame.js?v=2.47.6';
 
 // Cache busting: GitHub Pages caches every file for ten minutes independently,
 // so a visitor can pair a fresh main.js with an add-on from before the deploy.
@@ -55,6 +55,6 @@ import './addons/lightbox-frame.js?v=2.47.5';
 //
 // Bump this on every deploy. Check the browser console on the live site to
 // confirm which version is actually being served (see README: "Did it deploy?").
-export const VERSION = '2.47.5';
+export const VERSION = '2.47.6';
 
 log(`ready — v${VERSION}`);

@@ -59,6 +59,19 @@ const GALLERIES = {
     title: 'Panoramas',
     intro: 'Frames built wide, made to be printed long.',
   },
+  // Both of these were missed on the first pass. They are in the filter's
+  // taxonomy in gallery-filter.js, which is where their existence is recorded —
+  // I built this list from the links on /stills and neither is on it.
+  '/spaces': {
+    eyebrow: 'Stills',
+    title: 'Spaces',
+    intro: 'Interiors, photographed in the light they already have.',
+  },
+  '/astro': {
+    eyebrow: 'Stills',
+    title: 'Astro',
+    intro: 'Long exposures, made after dark.',
+  },
 };
 
 // The closing panel, identical everywhere: the same question, asked once, at
@@ -80,11 +93,25 @@ defineAddon('gallery-frame', () => {
   const frames = gallery ? gallery.querySelectorAll('.gallery-masonry-item').length : 0;
 
   css('gallery-frame', `
+    /* Across the page, not down it. As a single 46rem column this stacked
+       eyebrow, title, rule, line and count into 349px of vertical space before
+       a visitor saw one photograph. The gallery itself is full-bleed — tiles
+       start 7px from the edge — so the heading spans the same width and reads
+       as its masthead rather than as a paragraph sitting on top of it. */
     .taro-gf {
-      max-width: 46rem;
-      margin: 0 auto;
-      padding: clamp(2rem, 6vw, 3.5rem) clamp(1.25rem, 5vw, 2rem) clamp(1.5rem, 4vw, 2.25rem);
+      max-width: none;
+      margin: 0;
+      padding: clamp(1.75rem, 5vw, 3rem) clamp(1rem, 4vw, 3rem) clamp(1.25rem, 3.5vw, 2rem);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: end;
+      gap: 1rem clamp(2rem, 6vw, 5rem);
       text-align: left;
+    }
+    .taro-gf__aside { padding-bottom: 0.35rem; }
+    @media (max-width: 799px) {
+      .taro-gf { grid-template-columns: 1fr; gap: 0.75rem; }
+      .taro-gf__aside { padding-bottom: 0; }
     }
     .taro-gf__eyebrow {
       font-size: 0.7rem;
@@ -97,18 +124,18 @@ defineAddon('gallery-frame', () => {
     .taro-gf__title {
       font-size: clamp(2.1rem, 6vw, 3.4rem);
       line-height: 1.02;
-      margin: 0 0 0.9rem;
+      margin: 0 0 0.75rem;
       color: ${INK};
     }
     .taro-gf__rule {
       width: 4.5rem; height: 3px;
       background: ${RED};
-      margin: 0 0 1.15rem;
+      margin: 0;
     }
     .taro-gf__intro {
       font-size: clamp(1rem, 1.6vw, 1.15rem);
       line-height: 1.6;
-      margin: 0 0 0.6rem;
+      margin: 0 0 0.5rem;
       color: ${INK};
       max-width: 34rem;
     }
@@ -122,12 +149,23 @@ defineAddon('gallery-frame', () => {
     }
 
     /* ---- the closing panel ---------------------------------------------- */
+    /* The space above this is PADDING, not margin. Measured on the live page:
+       margin-top computed to 0px and the rule sat flat against the bottom edge
+       of the last photograph. This panel is a <section>, and section margins
+       are reset out from under it — so the room it needs is taken inside its
+       own box, where nothing can collapse or override it. The border is drawn
+       by a child rather than by border-top for the same reason: it has to sit
+       BELOW that space, not above it. */
     .taro-gf-end {
-      margin: clamp(2.5rem, 7vw, 4.5rem) auto 0;
+      margin: 0 auto !important;
       max-width: 46rem;
-      padding: clamp(2rem, 6vw, 3rem) clamp(1.25rem, 5vw, 2rem) clamp(3rem, 8vw, 4.5rem);
+      padding: clamp(3.5rem, 9vw, 6rem) clamp(1.25rem, 5vw, 2rem) clamp(3rem, 8vw, 4.5rem) !important;
       text-align: center;
-      border-top: 1px solid rgba(36, 50, 48, 0.18);
+    }
+    .taro-gf-end__rule {
+      height: 1px;
+      background: rgba(36, 50, 48, 0.18);
+      margin: 0 auto clamp(2rem, 5vw, 3rem);
     }
     .taro-gf-end__line {
       font-size: clamp(1.35rem, 3.4vw, 2rem);
@@ -183,11 +221,15 @@ defineAddon('gallery-frame', () => {
   const head = document.createElement('header');
   head.className = 'taro-gf';
   head.innerHTML =
-    `<p class="taro-gf__eyebrow"></p>` +
-    `<h1 class="taro-gf__title"></h1>` +
-    `<div class="taro-gf__rule"></div>` +
-    `<p class="taro-gf__intro"></p>` +
-    `<p class="taro-gf__count"></p>`;
+    `<div class="taro-gf__lead">` +
+      `<p class="taro-gf__eyebrow"></p>` +
+      `<h1 class="taro-gf__title"></h1>` +
+      `<div class="taro-gf__rule"></div>` +
+    `</div>` +
+    `<div class="taro-gf__aside">` +
+      `<p class="taro-gf__intro"></p>` +
+      `<p class="taro-gf__count"></p>` +
+    `</div>`;
   head.querySelector('.taro-gf__eyebrow').textContent = copy.eyebrow;
   head.querySelector('.taro-gf__title').textContent = copy.title;
   head.querySelector('.taro-gf__intro').textContent = copy.intro;
@@ -198,6 +240,7 @@ defineAddon('gallery-frame', () => {
   const end = document.createElement('section');
   end.className = 'taro-gf-end';
   end.innerHTML =
+    `<div class="taro-gf-end__rule"></div>` +
     `<p class="taro-gf-end__line"></p>` +
     `<p class="taro-gf-end__note"></p>` +
     `<a class="taro-gf-end__cta" href="/letstalk"></a>`;
