@@ -112,17 +112,45 @@ defineAddon('lightbox-frame', () => {
 
   const lb = () => document.querySelector('.gallery-lightbox');
 
-  /** Which slide is on screen. Read from what is painted rather than from a
-   *  state class, because the class names here are Squarespace's to change. */
+  /** The asset a picture is, independent of the size it was served at. The
+   *  tiles load ?format=750w and the lightbox ?format=1500w, so the filename
+   *  before the query is what identifies a photograph across both. */
+  const assetOf = (img) => {
+    if (!img) return null;
+    const url = img.currentSrc || img.getAttribute('src') || img.getAttribute('data-src') || '';
+    return url.split('?')[0].split('/').pop() || null;
+  };
+
+  /* WHY THIS IS NOT AN INDEX INTO THE SLIDES.
+   *
+   * The obvious implementation — find the visible .gallery-lightbox-item and
+   * take its position among its siblings — is wrong here, and quietly so. The
+   * lightbox reorders its items as it moves: opening the FOURTH tile and
+   * measuring 2.6 seconds later found the visible item sitting at DOM index 31
+   * of 32, and clicking Next moved the visible item to DOM index 3. Frame
+   * numbers read straight off that are nonsense — the first test of this
+   * reported the fourth photograph as "FRAME 41A · 32/32".
+   *
+   * So the tiles are the order of record: they are laid out once, in the
+   * gallery's own sequence, and the photograph on screen is looked up by which
+   * asset it is. */
+  const tiles = [...document.querySelectorAll('.gallery-masonry-item')];
+  const order = new Map();
+  tiles.forEach((tile, i) => {
+    const k = assetOf(tile.querySelector('img'));
+    if (k && !order.has(k)) order.set(k, i);
+  });
+
   const current = () => {
     const box = lb();
-    if (!box) return { i: -1, total: 0 };
-    const items = [...box.querySelectorAll('.gallery-lightbox-item')];
-    const i = items.findIndex((el) => {
+    if (!box) return { i: -1, total: tiles.length };
+    const shown = [...box.querySelectorAll('.gallery-lightbox-item')].find((el) => {
       const r = el.getBoundingClientRect();
-      return r.width > 50 && getComputedStyle(el).opacity !== '0';
+      return r.width > 50 && getComputedStyle(el).opacity !== '0'
+             && getComputedStyle(el).display !== 'none';
     });
-    return { i, total: items.length };
+    const k = assetOf(shown?.querySelector('img'));
+    return { i: k && order.has(k) ? order.get(k) : -1, total: tiles.length };
   };
 
   const refresh = () => {
