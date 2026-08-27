@@ -137,6 +137,47 @@ defineAddon('mobile-polish', () => {
   sizeTaps();
   window.addEventListener('load', sizeTaps, { once: true });
 
+  /* And a layer that does not depend on CSS hit-testing at all.
+   *
+   * The overlay above works — the wordmark went from 41x36 to a full 44 by it —
+   * but it is not reliable for every control: probing the live header, taps
+   * 19px below the cart resolved to an ancestor rather than to the cart's own
+   * ::after. Whatever the cause, a tap that misses by four pixels is a tap the
+   * visitor believes they made, so near-misses are forwarded to what they were
+   * plainly aimed at.
+   *
+   * Deliberately narrow: only inside these containers, only when the tap landed
+   * on nothing interactive at all, and only within RADIUS of a small control's
+   * centre. A tap that hits something real is never touched, so this can not
+   * hijack a link.
+   */
+  const RADIUS = 24;
+  const forward = (container, selector) => {
+    if (!container) return;
+    container.addEventListener('click', (e) => {
+      if (!e.isTrusted) return;
+      if (e.target.closest('a[href], button, input, select, textarea, [role=button]')) return;
+      const targets = [...container.querySelectorAll(selector)]
+        .map((el) => ({ el, r: el.getBoundingClientRect() }))
+        .filter(({ r }) => r.width > 0 && r.height > 0 && (r.width < TAP || r.height < TAP));
+      let best = null;
+      targets.forEach(({ el, r }) => {
+        const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+        const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+        const d = Math.hypot(dx, dy);
+        if (d <= RADIUS && (!best || d < best.d)) best = { el, d };
+      });
+      if (!best) return;
+      e.preventDefault();
+      e.stopPropagation();
+      best.el.click();
+    }, true);
+  };
+  forward(document.querySelector('#header'),
+          '.header-title-logo a, .cart-style-icon, .header-burger-btn, .sqs-svg-icon--wrapper');
+  forward(document.querySelector('.taro-cl-head'), '.taro-cl-all');
+  document.querySelectorAll('.plyr__controls').forEach((c) => forward(c, '.plyr__control'));
+
   const reels = [...document.querySelectorAll('video')]
     .filter((v) => /IMG_1748/i.test(v.currentSrc || v.src || '')
                 || v.closest('.taro-reel, .taro-tile'));
