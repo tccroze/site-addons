@@ -63,6 +63,9 @@ defineAddon('header-clearance', () => {
         seen.set(host, parseFloat(getComputedStyle(host).paddingTop) || 0);
       }
       const base = seen.get(host);
+      // Recorded before the first correction: with the Custom CSS rule above in
+      // play this reads 0, which is exactly right — there is no padding of its
+      // own to preserve.
       // Back to the element's own padding before measuring, so a resize reads
       // the stylesheet's intent and not the last correction.
       host.style.removeProperty('padding-top');
@@ -78,7 +81,15 @@ defineAddon('header-clearance', () => {
 
       const top = line.getBoundingClientRect().top + window.scrollY;
       const short = (h + GAP) - top;
-      if (short > 1) host.style.setProperty('padding-top', `${Math.round(base + short)}px`);
+      // !important, and not by preference. The site's Custom CSS carries
+      //     section:first-of-type { padding-top: 0 !important; }
+      // which is what lets the homepage's torn print run up under the header —
+      // and both of these blocks are rooted on a <section>, so it matched them
+      // too and beat a plain inline style. Measured: inline padding-top 68px,
+      // computed 0px. Nothing short of !important gets past it.
+      if (short > 1) {
+        host.style.setProperty('padding-top', `${Math.round(base + short)}px`, 'important');
+      }
     });
   };
 
