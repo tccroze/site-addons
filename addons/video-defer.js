@@ -44,11 +44,22 @@
 import { defineAddon, css, warn } from '../lib/util.js';
 
 const EAGER_KEY = 'taro-video-eager';
-const REBUILD_GRACE = 6000;
+// Generous: plugging the loader took about seven seconds to produce a player
+// when it was timed against the live page, and a grace period shorter than the
+// real thing turns every successful rebuild into a reload.
+const REBUILD_GRACE = 14000;
 const POSTER_W = 1000;
 
 // Blocks that were stripped, and the config to give back.
 const deferred = new Map();   // .sqs-native-video -> config JSON string
+
+// Blocks the visitor has asked for. The observer below must leave these alone:
+// it is watching for data-config-video appearing on a .sqs-native-video, and
+// handing the config back is exactly that. Without this guard the observer
+// stripped the config again microseconds after the tap restored it, the loader
+// found nothing to build, and every tap ended in the reload fallback — which
+// is how this was found: the films played, but only ever after a page reload.
+const released = new WeakSet();
 
 const eager = (() => {
   try { return sessionStorage.getItem(EAGER_KEY) === '1'; } catch (e) { return false; }
@@ -57,6 +68,7 @@ const eager = (() => {
 /* ---- the strip, at module evaluation ---------------------------------- */
 if (!eager) {
   const strip = (node) => {
+    if (released.has(node)) return;
     const cfg = node.getAttribute('data-config-video');
     if (!cfg) return;
     deferred.set(node, cfg);
@@ -138,6 +150,7 @@ defineAddon('video-defer', () => {
   const rebuild = (node, cover) => {
     const cfg = deferred.get(node);
     if (!cfg) return;
+    released.add(node);            // before the attribute, or the observer wins
     node.setAttribute('data-config-video', cfg);
     deferred.delete(node);
 
