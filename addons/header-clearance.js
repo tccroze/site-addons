@@ -45,7 +45,10 @@ defineAddon('header-clearance', () => {
   // The roots that open a page with their own box rather than a Squarespace
   // section. Listed rather than inferred: "the first element on the page" is
   // true of the homepage's intro too, and that one is meant to be under there.
-  const HOSTS = '.tc-about, .tc-classes';
+  // .taro-gf joins them because on /panoramas the gallery heading is inserted
+  // above the first section, which starts at y=0 — measured there at exactly
+  // the same fault: the title sitting under the nav.
+  const HOSTS = '.tc-about, .tc-classes, .taro-gf';
 
   css('header-clearance', `
     /* Published for anything that needs the live header height. */
