@@ -54,7 +54,11 @@ defineAddon('letstalk', () => {
     /* A form is read one line at a time; it does not want the full width of a
        desktop. 46rem keeps the longest label and its field in one comfortable
        column, and centres the whole thing under a centred headline. */
-    .taro-lt .form-wrapper .field-list {
+    /* On .form-wrapper, not on .field-list. The wrapper is a grid whose item
+       is the <form>, and the submit button lives in that form OUTSIDE the
+       field list — so constraining the list left the button stretched to the
+       full 1325px while the fields sat in a narrow column above it. */
+    .taro-lt .form-wrapper {
       max-width: 46rem;
       margin-inline: auto;
     }
@@ -117,8 +121,11 @@ defineAddon('letstalk', () => {
     /* The phone group sat 43px from the next field where every other gap was
        29 — a stray bottom margin on the last field inside a fieldset. Measured
        gaps before: 28, 30, 43, 29, 29, 28, 29, 29. */
+       The first attempt used :last-child, which reaches only the second of the
+       two fields — and they sit side by side in a flex row, where margins do
+       not collapse, so the other one kept its 15px. Every field inside. */
     .taro-lt .field-list fieldset.form-item > div,
-    .taro-lt .field-list fieldset.form-item > div > .field:last-child {
+    .taro-lt .field-list fieldset.form-item .field {
       margin-bottom: 0 !important;
     }
     .taro-lt .form-wrapper .field-list > .form-item:last-of-type { margin-bottom: 2.4rem !important; }
@@ -130,9 +137,12 @@ defineAddon('letstalk', () => {
     .taro-lt .form-button-wrapper,
     .taro-lt .form-wrapper .form-button-wrapper { text-align: center !important; }
     .taro-lt .form-submit-button {
-      display: inline-block !important;
-      width: auto !important;
-      min-width: 16rem;
+      /* Full width of the column, now that the column is a sane width. Asking
+         for width:auto did nothing here — the button reports inline-block and
+         still measured 1325px — and a submit button spanning its own form is
+         the right shape anyway. */
+      display: block !important;
+      width: 100% !important;
       height: auto !important;
       padding: 1.05rem 2.75rem !important;
       font-family: inherit !important;
@@ -172,7 +182,7 @@ defineAddon('letstalk', () => {
 
     @media (max-width: 799px) {
       .taro-lt .form-wrapper .field-list > .form-item { margin-bottom: 1.25rem !important; }
-      .taro-lt .form-submit-button { width: 100% !important; min-width: 0; }
+      .taro-lt .form-submit-button { padding: 1rem 1.5rem !important; }
     }
   `);
 
