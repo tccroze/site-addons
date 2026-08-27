@@ -41,6 +41,11 @@ defineAddon('mobile-polish', () => {
     .plyr__control {
       position: relative;
     }
+    /* Width comes from JS (--taro-tap), because a flat 44px overlay on
+       controls that sit close together makes them overlap, and the later one
+       in the DOM then swallows taps meant for its neighbour — measured on the
+       header, where the burger's overlay reached across the cart. Height is
+       safe to take in full: the header is 88px tall. */
     .header-title-logo a::after,
     .header-actions .cart-style-icon::after,
     .header-burger-btn::after,
@@ -50,7 +55,8 @@ defineAddon('mobile-polish', () => {
       content: '';
       position: absolute;
       left: 50%; top: 50%;
-      width: ${TAP}px; height: ${TAP}px;
+      width: var(--taro-tap, ${TAP}px);
+      height: ${TAP}px;
       transform: translate(-50%, -50%);
       /* Sits over the control it belongs to, so the tap still lands on it. */
       z-index: 1;
@@ -69,41 +75,63 @@ defineAddon('mobile-polish', () => {
        decoration, not text. */
     .taro-cl-dateline,
     .taro-cl-all { font-size: 12px; }
-    .tc-about .tc-btn,
-    .tc-classes .tc-btn { font-size: 13px; }
-    .tc-classes .tc-vh { font-size: 13px; }
-    .tc-classes .tc-card__fee-note { font-size: 13.5px; }
+    /* Doubled class throughout. The blocks declare these at the same
+       specificity as the obvious selector would, and their <style> sits in the
+       body — later in the document than ours in <head> — so an equal-specificity
+       rule loses the tie. Measured: .tc-btn stayed at 12.48px until this.
+       .tc-vh is deliberately absent: it is the screen-reader-only half of the
+       Enquire labels, so its size is nobody's business but the reader's. */
+    .tc-about.tc-about .tc-btn,
+    .tc-classes.tc-classes .tc-btn { font-size: 13px; }
+    .tc-classes.tc-classes .tc-card .tc-card__fee-note { font-size: 13.5px; }
+    .tc-classes.tc-classes figcaption { font-size: 13px; }
   }
   `);
 
   if (!phone.matches) return;
 
-  /* ---- the bytes ------------------------------------------------------
-   * Squarespace ships its section backgrounds with
+  /* ---- the bytes -------------------------------------------------------
+   * NOT the section backgrounds, though that is where the weight is: the
+   * homepage pulls deadvlei.jpg at format=2500w (1,230KB) and dune.jpg at
+   * 2500w (549KB) for a 390px screen. Squarespace advertises those images with
    *     sizes="(max-width: 799px) 200vw, 100vw"
-   * — it asks for two screens' width on a phone, to leave room for the crop
-   * that object-fit does. The browser obeys: on the homepage it picked
-   * deadvlei.jpg at format=2500w (1,230KB) and dune.jpg at the same (549KB),
-   * 1.8MB of background photography for a 390px screen.
-   *
-   * One screen's width is what a cover background actually needs, and at a
-   * phone's device pixel ratio that is still 1,170 real pixels for a 390px
-   * frame — it selects the 1500w variant, not a soft one. These images are
-   * lazy (data-src), so rewriting `sizes` before the loader swaps src in means
-   * the browser makes a better choice the first time rather than fetching
-   * twice.
+   * so the obvious fix is to rewrite that to one screen's width. It was tried
+   * and measured: `sizes` became 100vw and the very same 2500w files were
+   * fetched, because these are data-src images and Squarespace's own loader
+   * writes src directly from its own idea of the required width. srcset is
+   * never consulted, so nothing served through it can help. Overriding that
+   * loader from out here would be a race against their code on every page,
+   * which is not a trade worth making for a background photograph — it is
+   * reported instead.
    */
-  document.querySelectorAll('.section-background img[sizes]').forEach((img) => {
-    if (!/200vw/.test(img.getAttribute('sizes') || '')) return;
-    img.setAttribute('sizes', '100vw');
-  });
-
   /* ---- the decorative reel --------------------------------------------
    * The PROJECTS tile plays a 16.5MB .MOV, and it autoplays at load whether or
    * not the visitor ever scrolls to it. It is ours, so it can wait: preload
    * nothing, and start only once the tile is actually near the screen. A
    * visitor who reads the homepage and leaves pays nothing for it.
    */
+  /* Size each overlay so it never crosses into a neighbouring control. */
+  const CONTROLS = '.header-title-logo a, .header-actions .cart-style-icon, ' +
+                   '.header-burger-btn, .sqs-svg-icon--wrapper, .taro-cl-all, .plyr__control';
+  const sizeTaps = () => {
+    const els = [...document.querySelectorAll(CONTROLS)]
+      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .filter(({ r }) => r.width > 0 && r.height > 0);
+    els.forEach(({ el, r }) => {
+      let widest = TAP;
+      els.forEach(({ r: q }) => {
+        if (q === r) return;
+        if (q.bottom <= r.top || q.top >= r.bottom) return;      // not on this row
+        const gap = q.left >= r.right ? q.left - r.right
+                  : r.left >= q.right ? r.left - q.right : 0;
+        if (gap > 0) widest = Math.min(widest, r.width + gap * 1.6);
+      });
+      el.style.setProperty('--taro-tap', `${Math.round(Math.max(r.width, widest))}px`);
+    });
+  };
+  sizeTaps();
+  window.addEventListener('load', sizeTaps, { once: true });
+
   const reels = [...document.querySelectorAll('video')]
     .filter((v) => /IMG_1748/i.test(v.currentSrc || v.src || '')
                 || v.closest('.taro-reel, .taro-tile'));
