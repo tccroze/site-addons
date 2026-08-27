@@ -121,7 +121,12 @@ defineAddon('gallery-filter', () => {
        read through the labels. */
     .taro-filter {
       position: sticky;
-      top: calc(var(--taro-hdr, 88px) - 1px);
+      /* --taro-stick follows the header, and has to: this site runs
+         tweak-fixed-header-style-scroll-back, so the header slides out of view
+         on the way down and returns on the way up. Pinning to its resting
+         height left the bar stranded 164px down the window with nothing above
+         it — the header at bottom:0 and the filter still at top:163. */
+      top: var(--taro-stick, 0px);
       z-index: 5;
       display: flex;
       flex-wrap: wrap;
@@ -225,6 +230,25 @@ defineAddon('gallery-filter', () => {
       .gallery-masonry.taro-collapsed .gallery-masonry-item { animation: none; }
     }
   `);
+
+  /* Keep the sticky offset level with whatever the header is currently doing.
+   * Read as a rect rather than computed from a constant, because the header
+   * moves by transform: at rest its bottom is 164, mid-scroll it is 0, and
+   * between the two it is animating. Clamped at 0 so the bar never tries to
+   * stick above the window. */
+  const header = document.querySelector('#header');
+  if (header) {
+    let pending = 0;
+    const track = () => {
+      pending = 0;
+      const bottom = Math.max(0, Math.round(header.getBoundingClientRect().bottom));
+      document.documentElement.style.setProperty('--taro-stick', `${bottom}px`);
+    };
+    const queue = () => { if (!pending) pending = requestAnimationFrame(track); };
+    addEventListener('scroll', queue, { passive: true });
+    addEventListener('resize', queue);
+    track();
+  }
 
   const bar = document.createElement('div');
   bar.className = 'taro-filter';
