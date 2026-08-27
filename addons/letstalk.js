@@ -145,7 +145,13 @@ defineAddon('letstalk', () => {
     .taro-lt .field-list fieldset.form-item .field {
       margin-bottom: 0 !important;
     }
-    .taro-lt .form-wrapper .field-list > .form-item:last-of-type { margin-bottom: 2.4rem !important; }
+    /* :last-child, not :last-of-type. Of-type matches the last element of EACH
+       tag among the siblings, and the field list mixes <fieldset> (Name, Phone)
+       with <div> (everything else) — so the extra bottom margin meant for the
+       final item was also landing on Phone, which is the last fieldset. That
+       was the stray 43px gap, and it was mine: two passes hunting for a child's
+       margin, when the margin was on the fieldset and I had put it there. */
+    .taro-lt .form-wrapper .field-list > .form-item:last-child { margin-bottom: 2.4rem !important; }
 
     /* ---- the button ----------------------------------------------------- */
     /* A button the size of a doorway, in a typeface used nowhere else, is what
