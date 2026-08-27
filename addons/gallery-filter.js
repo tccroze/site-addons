@@ -181,6 +181,19 @@ defineAddon('gallery-filter', () => {
     }
     .taro-filter__btn[aria-pressed="true"]::after { transform: scaleX(1); }
 
+    /* On a phone these are the gallery's primary navigation, and they were 29px
+       tall — measured on /wildlife, where seven of them share one row under the
+       thumb. The label keeps its size; the box grows around it to the 44px both
+       Apple and Google put the comfortable minimum at. */
+    @media (max-width: 799px) {
+      .taro-filter__btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .taro-filter { gap: 0 1.25rem; padding-top: 0.3rem; padding-bottom: 0.3rem; }
+    }
+
     .taro-filter__count {
       font-size: 0.62em;
       vertical-align: super;
