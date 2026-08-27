@@ -350,8 +350,16 @@ defineAddon('letstalk', () => {
           ? req.flatMap((f) => [...f.querySelectorAll('input, select, textarea')]
               .filter((el) => el.type !== 'hidden' && el.offsetParent !== null))
           : inputs;
-        const done = needed.length > 0
-          && needed.every((el) => String(el.value || '').trim() !== '');
+        /* A <select> that nobody has touched still reports a value — its
+         * placeholder option is a real option with real text — so asking
+         * whether the value is empty says yes before anyone has chosen
+         * anything. Measured: step 02 is three selects and no required
+         * fields, and it was born complete. The first option IS the
+         * placeholder here, so anything past it counts as an answer. */
+        const answered = (el) => (el.tagName === 'SELECT'
+          ? el.selectedIndex > 0
+          : String(el.value || '').trim() !== '');
+        const done = needed.length > 0 && needed.every(answered);
         head.classList.toggle('is-done', done);
       });
     };
