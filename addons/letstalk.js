@@ -203,6 +203,81 @@ defineAddon('letstalk', () => {
        you need, the details — so they are divided, numbered, and each reports
        when it is satisfied. Nothing is hidden or gated: every field is on the
        page at all times, exactly as before. */
+    /* ---- after it is sent ------------------------------------------------
+       Squarespace drops the configured message into
+       .sqs-form-block-submission-html and hides the form, which left a small
+       bold "Thank you!" adrift in a screen of empty paper — the last thing
+       someone sees after taking the trouble to write to you. The message is
+       still the owner's, set in the editor; this gives it somewhere to sit. */
+    .taro-lt .sqs-form-block-submission-html { width: 100%; }
+    .taro-lt-thanks {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: clamp(2.5rem, 8vw, 5rem) clamp(1.25rem, 5vw, 2rem) clamp(2rem, 6vw, 3rem);
+      text-align: center;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 700ms ease, transform 700ms cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    .taro-lt-thanks.is-in { opacity: 1; transform: none; }
+    .taro-lt-thanks__title {
+      font-size: clamp(2.2rem, 7vw, 4rem) !important;
+      line-height: 1.02;
+      margin: 0 0 1.1rem !important;
+      color: #243230;
+    }
+    .taro-lt-thanks__rule {
+      width: 4.5rem; height: 3px;
+      background: #e23318;
+      margin: 0 auto 1.4rem;
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 700ms cubic-bezier(0.33, 1, 0.68, 1) 220ms;
+    }
+    .taro-lt-thanks.is-in .taro-lt-thanks__rule { transform: scaleX(1); }
+    .taro-lt-thanks__note {
+      font-size: clamp(1rem, 1.6vw, 1.15rem) !important;
+      line-height: 1.6;
+      margin: 0 auto 2.2rem !important;
+      max-width: 26rem;
+      color: rgba(36, 50, 48, 0.8);
+    }
+    .taro-lt-thanks__links {
+      display: flex; flex-wrap: wrap; gap: 0.9rem 1.1rem;
+      justify-content: center;
+      margin-bottom: clamp(2rem, 5vw, 2.75rem);
+    }
+    .taro-lt-thanks__link {
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: #243230;
+      border: 1.5px solid rgba(36, 50, 48, 0.35);
+      border-radius: 300px;
+      transition: color 200ms ease, border-color 200ms ease, background 200ms ease;
+    }
+    @media (hover: hover) {
+      .taro-lt-thanks__link:hover {
+        color: #f6eed5; background: #243230; border-color: #243230;
+      }
+    }
+    .taro-lt-thanks__link:focus-visible { outline: 2px solid #e23318; outline-offset: 3px; }
+    .taro-lt-thanks img {
+      display: block;
+      width: clamp(9rem, 22vw, 13rem);
+      height: auto;
+      margin: 0 auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-lt-thanks, .taro-lt-thanks__rule { transition: none; }
+      .taro-lt-thanks { opacity: 1; transform: none; }
+      .taro-lt-thanks__rule { transform: scaleX(1); }
+    }
+
     /* ---- the hero, and the sign-off ------------------------------------ */
     /* The copy is moved by transform only, so nothing it sits inside relayouts
        while the page scrolls. */
@@ -349,6 +424,79 @@ defineAddon('letstalk', () => {
    * a custom property on an element that is already promoted, so no layout is
    * forced while scrolling.
    */
+  /* ---- after it is sent ------------------------------------------------
+   * Squarespace hides the form and drops the configured message into
+   * .sqs-form-block-submission-html. That message is the owner's, set in the
+   * editor — it is read from the page rather than written here, so changing it
+   * there still changes it — but on its own it was a small bold line adrift in
+   * a screen of empty paper, which is a poor last impression after someone has
+   * taken the trouble to write.
+   *
+   * The onward links matter more than they look: at this moment the visitor is
+   * interested and has nowhere to go, and the only navigation on screen is the
+   * header they have already ignored once.
+   */
+  const THANKS_NOTE = 'I’ll get back to you within 48 hours.';
+  const THANKS_LINKS = [['See the work', '/stills'], ['Prints & originals', '/shop']];
+
+  const dressThanks = () => {
+    const host = document.querySelector('.sqs-form-block-submission-html');
+    if (!host) return false;
+    const text = host.textContent.trim();
+    if (!text) return false;                       // nothing submitted yet
+    if (host.querySelector('.taro-lt-thanks')) return true;
+
+    const panel = document.createElement('div');
+    panel.className = 'taro-lt-thanks';
+
+    const title = document.createElement('h2');
+    title.className = 'taro-lt-thanks__title';
+    // The owner's own words, kept exactly, and inserted as text so nothing in
+    // the message can bring markup with it.
+    title.textContent = text;
+    const rule = document.createElement('div');
+    rule.className = 'taro-lt-thanks__rule';
+    const note = document.createElement('p');
+    note.className = 'taro-lt-thanks__note';
+    note.textContent = THANKS_NOTE;
+    const links = document.createElement('div');
+    links.className = 'taro-lt-thanks__links';
+    THANKS_LINKS.forEach(([label, href]) => {
+      const a = document.createElement('a');
+      a.className = 'taro-lt-thanks__link';
+      a.href = href;
+      a.textContent = label;
+      links.appendChild(a);
+    });
+    panel.append(title, rule, note, links);
+
+    const footerSig = document.querySelector('footer img');
+    if (footerSig && footerSig.getAttribute('src')) {
+      const sig = document.createElement('img');
+      sig.src = footerSig.getAttribute('src');
+      sig.alt = '';
+      sig.setAttribute('aria-hidden', 'true');
+      panel.appendChild(sig);
+    }
+
+    // Replace the bare message with the panel, keeping the message's words.
+    host.textContent = '';
+    host.appendChild(panel);
+    // Announce it: the form vanishing and being replaced is a change a screen
+    // reader would otherwise pass over in silence.
+    host.setAttribute('role', 'status');
+    host.setAttribute('aria-live', 'polite');
+    requestAnimationFrame(() => panel.classList.add('is-in'));
+    panel.scrollIntoView({ block: 'center',
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    return true;
+  };
+
+  if (!dressThanks()) {
+    const thanksMo = new MutationObserver(() => { dressThanks(); });
+    thanksMo.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+
   const HOLD = 0.24;    // read it first: no fade before this
   const GONE = 0.92;    // fully dissolved by here
   const TRAVEL = 120;   // px the copy descends across the whole gesture
