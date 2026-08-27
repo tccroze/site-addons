@@ -197,6 +197,19 @@ defineAddon('letstalk', () => {
       .taro-lt .form-submit-button:hover { transform: none; }
     }
 
+    /* ---- arriving from a photograph ------------------------------------ */
+    .taro-lt .taro-lt-ref {
+      margin: 0 0 1.6rem !important;
+      padding: 0.85rem 1.1rem;
+      border-left: 3px solid ${RED};
+      background: rgba(226, 51, 24, 0.06);
+      font-size: 0.72rem !important;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: ${INK};
+    }
+
     /* ---- the file drop -------------------------------------------------- */
     .taro-lt .field-list .file-upload,
     .taro-lt .field-list .file-upload > * {
@@ -208,6 +221,55 @@ defineAddon('letstalk', () => {
       .taro-lt .form-submit-button { padding: 1rem 1.5rem !important; }
     }
   `);
+
+  /* ---- arriving from a photograph -------------------------------------
+   * The lightbox links here as /letstalk?ref=Film%20%E2%80%94%20frame%2024A,
+   * so the form should already know what the enquiry is about instead of
+   * making someone describe the picture they were just looking at.
+   *
+   * The value is set through the native setter and followed by an input event,
+   * because this is a React-controlled textarea: assigning .value directly
+   * updates the DOM node and leaves React's state untouched, so the text
+   * appears, then vanishes the moment anything re-renders, and is not in the
+   * submission.
+   *
+   * The reference is treated as hostile. It arrives in a URL anyone can write,
+   * so it is stripped of control characters, capped, and only ever inserted as
+   * text — never markup. Anything already typed is left alone.
+   */
+  const raw = new URLSearchParams(location.search).get('ref');
+  const ref = raw ? raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) : '';
+  if (ref) {
+    const setNative = (el, value) => {
+      const proto = el.tagName === 'TEXTAREA'
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+      if (setter) setter.call(el, value); else el.value = value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const notice = document.createElement('p');
+    notice.className = 'taro-lt-ref';
+    notice.textContent = `Enquiring about ${ref}`;
+
+    const fill = () => {
+      const ta = document.querySelector('.field-list textarea');
+      if (!ta) return false;
+      if (!ta.value.trim()) setNative(ta, `Enquiring about ${ref}.\n\n`);
+      const list = document.querySelector('.form-wrapper .field-list');
+      if (list && !document.querySelector('.taro-lt-ref')) list.prepend(notice);
+      return true;
+    };
+
+    if (!fill()) {
+      // The form is rendered client-side, so it is routinely absent here.
+      const mo = new MutationObserver(() => { if (fill()) mo.disconnect(); });
+      mo.observe(document.body, { childList: true, subtree: true });
+      setTimeout(() => mo.disconnect(), 15000);
+    }
+  }
 
   /* ---- the dead space at the foot of the form -------------------------
    * Same Fluid Engine behaviour as everywhere else on this site: the section
