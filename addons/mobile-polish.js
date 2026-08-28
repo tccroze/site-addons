@@ -102,6 +102,12 @@ defineAddon('mobile-polish', () => {
     .tc-classes.tc-classes .tc-card .tc-card__fee-note { font-size: 13.5px; }
     .tc-classes.tc-classes .tc-quotes .tc-quote figcaption,
     .tc-classes.tc-classes .tc-gallery figcaption { font-size: 13px; }
+    /* In px, not rem. These were set in rem and the root font is 16px here
+       against 18px on a desktop, so they came back under 13.5px on exactly the
+       screens the rule exists to protect — the attribution at 11.2px. */
+    .tc-classes.tc-classes .tc-quotes figcaption,
+    .tc-classes.tc-classes figcaption { font-size: 13.5px !important; }
+    .tc-classes.tc-classes .tc-card .tc-card__fee-note { font-size: 14px !important; }
   }
   `);
 
