@@ -149,7 +149,10 @@ defineAddon('contact-sheet', () => {
       const x = Math.sin((seed + 1) * 97.13 + n * 31.77) * 10000;
       return x - Math.floor(x);
     };
-    const cx = 50, cy = 35, rx = 45, ry = 30, N = 12;
+    // Sized so the wobble still lands inside the frame: the shot clips its
+    // overflow, and a ring with its top arc sliced off reads as a mistake
+    // rather than as a mark someone made.
+    const cx = 50, cy = 35, rx = 42, ry = 27, N = 12;
     const from = rnd(0) * Math.PI * 2;
     const sweep = Math.PI * 2 * (1.03 + rnd(1) * 0.06);     // just past closing
     const pts = [];
