@@ -28,6 +28,7 @@
 // its full label, and is spared a decorative frame code it has no use for.
 
 import { defineAddon, css } from '../lib/util.js';
+import { PRINTS } from '../lib/prints.js';
 
 const STOCK = 'TARO CROZE 400TX';   // matches edge-print.js
 const FRAME_BASE = 10;              // first numbered frame on a fresh roll
@@ -40,28 +41,6 @@ const NAMES = {
   '/portraits': 'People',
   '/vroom': 'Automotive',
   '/panoramas': 'Panoramas',
-};
-
-// Gallery photographs that are also sold as prints.
-//
-// There is nothing in the markup that connects the two: the shop's files are
-// named for the work (warning.jpg, deadvlei.jpg) and the galleries' are named
-// by the camera (9S0A9692.jpg, IMG_6080.JPG), so no string comparison finds
-// them. These pairs were established by hashing every gallery frame against
-// every print and then confirming each one by eye — the prints are
-// black-and-white conversions of colour originals, which is why they look only
-// loosely similar to a machine and obviously identical to a person.
-//
-// Keyed on the gallery filename rather than the frame's position, so reordering
-// a gallery or adding to it cannot silently point a photograph at the wrong
-// print. A frame that is not listed simply has no buy link.
-const PRINTS = {
-  '9S0A9692.jpg':  { href: '/shop/p/warning',   title: 'The Warning' },
-  'IMG_6082.jpg':  { href: '/shop/p/cover',     title: 'Under Cover' },
-  'IMG_9412-2.jpg':{ href: '/shop/p/territory', title: 'Territory' },
-  'IMG_6088.JPG':  { href: '/shop/p/deadvlei',  title: 'Deadvlei' },
-  'IMG_6080.JPG':  { href: '/shop/p/dune',      title: 'Dune' },
-  'IMG_6103.JPG':  { href: '/shop/p/luderitz',  title: 'Luderitz' },
 };
 
 const isOpen = () =>
