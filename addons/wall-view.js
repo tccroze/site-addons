@@ -29,8 +29,8 @@ const RED = '#e23318';
 // drift. 120x98in is a shade over 3m wide and 2.5m tall.
 const WALL_W = 120, WALL_H = 98;
 const FLOOR = 94;              // skirting top, measured down from the ceiling
-const SOFA_W = 79, SOFA_H = 30, SOFA_CX = 45;
-const FIGURE_H = 67;           // 170cm
+// Centred on the wall now that the standing figure is gone.
+const SOFA_W = 79, SOFA_H = 30, SOFA_CX = 60;
 const HANG_CENTRE = 57;        // 145cm off the floor, where pictures hang
 
 const pct = (n, of) => `${((n / of) * 100).toFixed(3)}%`;
@@ -52,12 +52,22 @@ defineAddon('wall-view', () => {
 
   const mount = (select, cart) => {
 
-  // The product photograph: the largest one the page has, which is the one the
-  // gallery is showing.
-  const photo = [...document.querySelectorAll('img')]
-    .filter((i) => (i.currentSrc || i.src) && i.naturalWidth > 400)
-    .sort((a, b) => b.naturalWidth - a.naturalWidth)[0];
-  if (!photo) return false;
+  /* THE PHOTOGRAPH, NOT A MOCK-UP OF IT.
+   *
+   * Picking "the largest image on the page" was wrong, and wrong in a way that
+   * only showed on some products. Every print here has two gallery slides: the
+   * photograph, and a PNG of that photograph already framed on somebody's wall.
+   * On /shop/p/cover the real picture is 750x1125 and the mock-up is 1500x938,
+   * so "largest" chose the mock-up — a framed print hung inside a drawing of a
+   * framed print. It also had the orientation wrong, because cover.jpg is
+   * portrait and the mock-up is landscape.
+   *
+   * The gallery marks its primary slide as .selected, and that is the
+   * photograph on every product. */
+  const photo = document.querySelector('.pdp-gallery-slides.selected .pdp-gallery-slides-image')
+    || document.querySelector('.pdp-gallery-slides-image')
+    || null;
+  if (!photo || !(photo.currentSrc || photo.src)) return false;
 
   /** "16x24in" -> {short: 16, long: 24}. Anything unparseable is skipped. */
   const sizes = [...select.options]
@@ -98,7 +108,7 @@ defineAddon('wall-view', () => {
       background: rgba(36, 50, 48, 0.10);
       border-top: 1px solid rgba(36, 50, 48, 0.22);
     }
-    .taro-wv__sofa, .taro-wv__figure {
+    .taro-wv__sofa {
       position: absolute; bottom: ${pct(WALL_H - FLOOR, WALL_H)};
       fill: rgba(36, 50, 48, 0.20);
     }
@@ -106,15 +116,13 @@ defineAddon('wall-view', () => {
       left: ${pct(SOFA_CX - SOFA_W / 2, WALL_W)};
       width: ${pct(SOFA_W, WALL_W)}; height: ${pct(SOFA_H, WALL_H)};
     }
-    .taro-wv__figure {
-      right: ${pct(6, WALL_W)};
-      width: ${pct(18, WALL_W)}; height: ${pct(FIGURE_H, WALL_H)};
-    }
+    /* No mount, no frame: the print as the photograph itself, with just enough
+       shadow to sit on the wall rather than float in it. */
     .taro-wv__print {
       position: absolute;
-      background: #fff;
-      padding: 0.9%;
-      box-shadow: 0 1.2% 2.4% rgba(36, 50, 48, 0.28);
+      background: transparent;
+      padding: 0;
+      box-shadow: 0 0.8% 1.8% rgba(36, 50, 48, 0.30);
       transition: left 420ms cubic-bezier(0.33,1,0.68,1), top 420ms cubic-bezier(0.33,1,0.68,1),
                   width 420ms cubic-bezier(0.33,1,0.68,1), height 420ms cubic-bezier(0.33,1,0.68,1);
     }
@@ -144,12 +152,6 @@ defineAddon('wall-view', () => {
         '<rect x="20" y="49" width="7" height="11" rx="2"/>' +
         '<rect x="131" y="49" width="7" height="11" rx="2"/>' +
       '</svg>' +
-      '<svg class="taro-wv__figure" viewBox="0 0 34 134" aria-hidden="true">' +
-        '<circle cx="17" cy="12" r="9"/>' +
-        '<path d="M17 23c8 0 13 5 13 12v29c0 3-2 5-5 5h-16c-3 0-5-2-5-5V35c0-7 5-12 13-12z"/>' +
-        '<rect x="9" y="66" width="7" height="66" rx="3"/>' +
-        '<rect x="19" y="66" width="7" height="66" rx="3"/>' +
-      '</svg>' +
       '<figure class="taro-wv__print"><img alt=""></figure>' +
     '</div>' +
     '<p class="taro-wv__note"></p>';
@@ -176,7 +178,7 @@ defineAddon('wall-view', () => {
 
     sizeEl.textContent = `${size.long} × ${size.short} in`;
     note.textContent = chosen
-      ? `Shown to scale on a 3 m wall. The sofa is 2 m across and the figure is 1.7 m tall.`
+      ? `Shown to scale on a 3 m wall. The sofa is 2 m across.`
       : `Showing ${size.label} — choose a size above to see the one you want, to scale.`;
   };
 
