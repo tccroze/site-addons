@@ -176,7 +176,8 @@ defineAddon('wall-view', () => {
     print.style.left = pct(SOFA_CX - w / 2, WALL_W);
     print.style.top = pct(FLOOR - HANG_CENTRE - h / 2, WALL_H);
 
-    sizeEl.textContent = `${size.long} × ${size.short} in`;
+    // Width by height, in the orientation it actually hangs.
+    sizeEl.textContent = `${w} × ${h} in`;
     note.textContent = chosen
       ? `Shown to scale on a 3 m wall. The sofa is 2 m across.`
       : `Showing ${size.label} — choose a size above to see the one you want, to scale.`;
