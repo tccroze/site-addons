@@ -194,6 +194,20 @@ defineAddon('mobile-polish', () => {
   forward(document.querySelector('.taro-cl-head'), '.taro-cl-all');
   document.querySelectorAll('.plyr__controls').forEach((c) => forward(c, '.plyr__control'));
 
+  /* WHEN A PHONE REFUSES TO PLAY IT.
+   *
+   * The homepage MOTION tile is a muted, looping, playsinline video, which is
+   * everything iOS asks for — and iOS will still refuse it in Low Power Mode,
+   * which is on by default under 20% battery. Data Saver does the same. What
+   * the visitor gets then is not the tile: it is Safari's own player furniture,
+   * a transport bar and a play button sitting where a photograph should be.
+   *
+   * There is no overriding that, and trying would be the wrong instinct — the
+   * phone is saving its battery on purpose. What can be fixed is the fallback:
+   * load enough of the file to decode one frame, and if playback is refused,
+   * park on that frame. A still from the film is a perfectly good tile. An
+   * empty player with a scrub bar is not.
+   */
   const reels = [...document.querySelectorAll('video')]
     .filter((v) => /IMG_1748/i.test(v.currentSrc || v.src || '')
                 || v.closest('.taro-reel, .taro-tile'));
@@ -207,10 +221,34 @@ defineAddon('mobile-polish', () => {
       entries.forEach((e) => {
         if (!e.isIntersecting) return;
         const v = e.target;
-        v.preload = 'auto';
-        v.muted = true;                 // or a phone will refuse to start it
-        v.play?.().catch(() => {});
         io.unobserve(v);
+
+        // Everything iOS wants before it will play a video in place.
+        v.muted = true;
+        v.defaultMuted = true;
+        v.setAttribute('muted', '');
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+        v.loop = true;
+        v.controls = false;
+        v.removeAttribute('controls');
+        v.preload = 'auto';
+        try { v.load(); } catch (_) { /* already loading */ }
+
+        const frame = () => {
+          // Nudge off zero so a frame is decoded and painted. Some builds show
+          // nothing at all at currentTime 0 with a paused video.
+          try { if (v.readyState >= 1 && v.currentTime < 0.05) v.currentTime = 0.05; } catch (_) {}
+        };
+        v.addEventListener('loadeddata', frame, { once: true });
+
+        const go = () => v.play?.().catch(frame);
+        if (v.readyState >= 2) go();
+        else v.addEventListener('canplay', go, { once: true });
+
+        // If it is still not running shortly after it could be, playback was
+        // refused rather than slow: settle on the frame and stop asking.
+        setTimeout(() => { if (v.paused) frame(); }, 1800);
       });
     }, { rootMargin: '200px' });
     reels.forEach((v) => io.observe(v));

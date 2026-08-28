@@ -8,16 +8,21 @@
 // this person is starting from, what they want to be able to do, what they will
 // be holding, and when they are free.
 //
-// WHERE IT SENDS. The answers are composed into a structured message and handed
-// to the visitor's mail client, which is what the buttons did before — except
-// that a mailto can fail silently, with no error and nowhere to go, for anyone
-// without a mail client configured. So it never relies on that alone: the
-// finished enquiry is shown on the page with a copy button and the address
-// beside it, so a failed handoff is still a completed enquiry the visitor can
-// paste anywhere.
+// WHERE IT SENDS. Into the Form block on /learn, which is a real Squarespace
+// form with its own inbox: the answers are written into its Name, Email,
+// Subject and Message fields and it is submitted for the visitor. That block is
+// hidden from view, because two forms asking the same person the same thing is
+// worse than one — but it is hidden, never removed, so it still validates,
+// still submits and still records the enquiry exactly as Squarespace expects.
 //
-// To collect these on the site instead, with their own inbox, a Form block on
-// /learn is all that is missing — this form binds to it the moment one exists.
+// Its inputs are React-controlled, so each value goes in through the native
+// setter followed by an input event. Assigning .value directly updates the DOM
+// node and leaves React's state untouched: the text appears, vanishes on the
+// next render, and never reaches the submission.
+//
+// If that block is ever removed the form falls back to composing the enquiry
+// into the visitor's mail client, and shows it on the page with a copy button
+// either way — a handoff that silently fails should not cost an enquiry.
 //
 // UPCOMING DATES are read from the page, not written here: any text block that
 // begins "Dates:" becomes the list of dates people can pick from. Nothing to
@@ -292,6 +297,53 @@ defineAddon('class-form', () => {
   host.appendChild(wrap);
   log('class-form: booking enquiry built');
 
+  /* ---- the real form, filled and submitted on the visitor's behalf ------ */
+  const block = [...document.querySelectorAll('.sqs-block-form')]
+    .find((b) => b.querySelector('form')) || null;
+  if (block) {
+    block.setAttribute('aria-hidden', 'true');
+    block.style.position = 'absolute';
+    block.style.width = '1px';
+    block.style.height = '1px';
+    block.style.overflow = 'hidden';
+    block.style.clip = 'rect(0 0 0 0)';
+    block.style.whiteSpace = 'nowrap';
+    log('class-form: bound to the form block on this page');
+  }
+
+  /** React owns these inputs; only the native setter reaches its state. */
+  const setNative = (el, v) => {
+    const proto = el.tagName === 'TEXTAREA'
+      ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    if (setter) setter.call(el, v); else el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  const submitViaBlock = (subject, body, first, last, email) => {
+    if (!block) return false;
+    const item = (re) => [...block.querySelectorAll('.field-list > .form-item')]
+      .find((f) => re.test((f.querySelector('.title, .caption') || {}).textContent || ''));
+    const nameItem = item(/name/i);
+    const names = nameItem ? [...nameItem.querySelectorAll('input')] : [];
+    const emailEl = (item(/email/i) || block).querySelector('input[type="email"], input');
+    const subjEl = (item(/subject/i) || {}).querySelector?.('input');
+    const msgEl = block.querySelector('textarea');
+    if (!emailEl || !msgEl) return false;
+
+    if (names[0]) setNative(names[0], first || 'Class');
+    if (names[1]) setNative(names[1], last || 'enquiry');
+    setNative(emailEl, email);
+    if (subjEl) setNative(subjEl, subject);
+    setNative(msgEl, body);
+
+    const btn = block.querySelector('.form-submit-button, [type="submit"]');
+    if (!btn) return false;
+    btn.click();
+    return true;
+  };
+
   /* ---- compose and send ------------------------------------------------ */
   const value = (k) => {
     const nodes = [...form.querySelectorAll(`[name="${k}"]`)];
@@ -340,12 +392,16 @@ defineAddon('class-form', () => {
     const subject = `Camera class — ${value('class') || 'enquiry'}`;
     const body = `${summary}\n\n— sent from tarocroze.com/learn`;
 
+    // Into the real form if there is one; otherwise the mail client.
+    const sent = submitViaBlock(subject, body, value('first'), value('last'), email);
+
     form.hidden = true;
     done.hidden = false;
     done.innerHTML = '';
-    const t = mk('h3', null, 'Your enquiry is ready');
-    const p1 = mk('p', null,
-      `Your mail app should have opened with this already written. If it did not, copy it below and send it to ${EMAIL} — it will reach me either way.`);
+    const t = mk('h3', null, sent ? 'Sent — thank you' : 'Your enquiry is ready');
+    const p1 = mk('p', null, sent
+      ? 'That has come straight through to me. I read every one of these and will come back to you shortly. A copy is below if you want it.'
+      : `Your mail app should have opened with this already written. If it did not, copy it below and send it to ${EMAIL} — it will reach me either way.`);
     const pre = mk('div', 'taro-cf__summary', `To: ${EMAIL}\nSubject: ${subject}\n\n${body}`);
     const copy = mk('button', 'taro-cf__copy', 'Copy enquiry');
     copy.type = 'button';
@@ -365,10 +421,12 @@ defineAddon('class-form', () => {
     done.scrollIntoView({ block: 'center',
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 
-    // The handoff, after the page already shows everything, so a mail client
-    // that never opens cannot lose the enquiry.
-    window.location.href =
-      `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // Only when there was no form block to submit into. The page already shows
+    // the whole enquiry, so a mail client that never opens cannot lose it.
+    if (!sent) {
+      window.location.href =
+        `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
   });
 
   /* Arriving from a class card selects that class and jumps to the form. */
