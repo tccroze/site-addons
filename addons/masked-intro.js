@@ -29,7 +29,7 @@ import { defineAddon, css } from '../lib/util.js';
 // ?v= because the assets otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale image — the half-deploy class
 // main.js documents. Stamped by scripts/release.sh along with everything else.
-const V = '2.57.2';
+const V = '2.57.3';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 const PHOTO = ASSET('spitzkoppe-2600.jpg');
 const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
@@ -548,7 +548,18 @@ defineAddon('masked-intro', () => {
    */
   const fitType = (g) => {
     if (!g) return;
-    const margin = Math.max(14, g.W * 0.02);
+    /* Clearance between the last letter and the granite.
+     *
+     * 2% was not enough, and the reason is that the traced ridge is a model of
+     * where the rock is, not a reading of where it renders. Measured at 1728
+     * wide: the fitter sized the wordmark to a right edge of 1336px while the
+     * granite actually begins around 1236px, so the E sat inside the rock and
+     * disappeared — the whole point of the wordmark is that his name reads.
+     *
+     * Widened to 6%, which clears it at every width checked against real
+     * renders (1280, 1440, 1512, 1728, 1920) rather than against the model that
+     * was wrong in the first place. */
+    const margin = Math.max(18, g.W * 0.06);
 
     /** Clear sky either side of the middle, level with a row of the frame. */
     const skyWidth = (framePx) => {
