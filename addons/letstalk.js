@@ -203,6 +203,32 @@ defineAddon('letstalk', () => {
        you need, the details — so they are divided, numbered, and each reports
        when it is satisfied. Nothing is hidden or gated: every field is on the
        page at all times, exactly as before. */
+    /* ---- the light trail, drawn along the top ---------------------------
+       The hero is a photograph of a light being drawn through the dark, and a
+       long form is the one place on this site that benefits from telling you
+       how much is left. So the trail continues along the top of the window:
+       scrolling advances it, and answering the required questions advances it
+       too, whichever is further. Red rather than the trail's own warm white,
+       because white on cream paper is not a line at all. */
+    .taro-lt-trail {
+      position: fixed; top: 0; left: 0; right: 0; height: 3px;
+      z-index: 10000; pointer-events: none;
+      background: rgba(36, 50, 48, 0.08);
+    }
+    .taro-lt-trail__fill {
+      height: 100%; width: 100%;
+      transform: scaleX(var(--taro-trail, 0)); transform-origin: left center;
+      background: #e23318;
+      box-shadow: 0 0 8px rgba(226, 51, 24, 0.55);
+      transition: transform 220ms cubic-bezier(0.33, 1, 0.68, 1), box-shadow 300ms ease;
+    }
+    .taro-lt-trail.is-done .taro-lt-trail__fill {
+      box-shadow: 0 0 14px rgba(226, 51, 24, 0.9), 0 0 30px rgba(247, 148, 29, 0.5);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .taro-lt-trail__fill { transition: none; }
+    }
+
     /* ---- after it is sent ------------------------------------------------
        Squarespace drops the configured message into
        .sqs-form-block-submission-html and hides the form, which left a small
@@ -740,6 +766,42 @@ defineAddon('letstalk', () => {
     stepsMo.observe(document.body, { childList: true, subtree: true });
     setTimeout(() => stepsMo.disconnect(), 15000);
   }
+
+  /* ---- the light trail along the top ----------------------------------
+   * Scroll advances it; answering the required questions advances it too, and
+   * whichever is further is what shows — so somebody who fills the form without
+   * scrolling still watches it complete. It glows when the last required answer
+   * lands, which is the only moment on this page worth marking.
+   */
+  const trail = document.createElement('div');
+  trail.className = 'taro-lt-trail';
+  trail.innerHTML = '<div class="taro-lt-trail__fill"></div>';
+  document.body.appendChild(trail);
+
+  let trailQueued = false;
+  const drawTrail = () => {
+    trailQueued = false;
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const byScroll = Math.min(1, window.scrollY / max);
+
+    const required = [...document.querySelectorAll('.form-wrapper .field-list .form-item.required')];
+    let byForm = 0;
+    if (required.length) {
+      const done = required.filter((f) => [...f.querySelectorAll('input, select, textarea')]
+        .filter((el) => el.type !== 'hidden' && el.offsetParent !== null)
+        .every((el) => String(el.value || '').trim() !== '')).length;
+      byForm = done / required.length;
+    }
+    const p = Math.max(byScroll, byForm);
+    trail.style.setProperty('--taro-trail', p.toFixed(4));
+    trail.classList.toggle('is-done', required.length > 0 && byForm >= 1);
+  };
+  const askTrail = () => { if (!trailQueued) { trailQueued = true; requestAnimationFrame(drawTrail); } };
+  addEventListener('scroll', askTrail, { passive: true });
+  addEventListener('resize', askTrail);
+  document.addEventListener('input', askTrail);
+  document.addEventListener('change', askTrail);
+  askTrail();
 
   const raw = new URLSearchParams(location.search).get('ref');
   const ref = raw ? raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) : '';
