@@ -29,7 +29,7 @@ import { defineAddon, css } from '../lib/util.js';
 // ?v= because the assets otherwise ride GitHub Pages' independent ten-minute
 // cache, which can pair fresh JS with a stale image — the half-deploy class
 // main.js documents. Stamped by scripts/release.sh along with everything else.
-const V = '2.57.3';
+const V = '2.57.4';
 const ASSET = (name) => `${new URL(`../assets/${name}`, import.meta.url).href}?v=${V}`;
 const PHOTO = ASSET('spitzkoppe-2600.jpg');
 const PHOTO_SET = [1600, 2600, 4000].map((w) => `${ASSET(`spitzkoppe-${w}.jpg`)} ${w}w`).join(', ');
@@ -533,10 +533,18 @@ defineAddon('masked-intro', () => {
     return 0;
   };
 
-  // Below this the wordmark would be shrunk past the point of being a wordmark.
-  // Rather than go smaller it is allowed to run into the granite, which is the
-  // effect anyway — the type is meant to end up behind the rock.
-  const MIN_SCALE = 0.84;
+  // How far the wordmark may be shrunk to clear the granite.
+  //
+  // This was 0.84, and it was the reason the E kept disappearing. At 1440 the
+  // CSS size is 123.8px and 0.84 of that is 104.0px — exactly what was being
+  // rendered, which is the signature of a floor doing the deciding rather than
+  // the measurement. fitType would ask for smaller, get refused, and hand back
+  // a wordmark whose last letter sat inside the rock.
+  //
+  // The old comment argued the type is meant to end up behind the granite
+  // anyway. That is true of the SINK, once you scroll. At rest, at the top of
+  // his own homepage, his name has to read.
+  const MIN_SCALE = 0.6;
 
   /**
    * Size the centred wordmark to the clear sky. CSS can't do this on its own:
