@@ -106,6 +106,16 @@ defineAddon('shop', () => {
       border-radius: 6px !important;
       min-height: 44px;
     }
+    /* Same rem trap as the class form: the root font is 16px on a phone, so
+       0.72rem landed at 11.5px on the button that takes the money, and the
+       product title at 13px. Set in px below the breakpoint. */
+    @media (max-width: 799px) {
+      .product-list-item .sqs-add-to-cart-button,
+      .product-list-item .add-to-cart-text { font-size: 12.5px !important; }
+      .product-list-item-title,
+      .product-list-item-meta .product-list-title-price { font-size: 15px !important; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .product-list-item .sqs-add-to-cart-button { transition: none; }
       .product-list-item .sqs-add-to-cart-button:hover { transform: none; }

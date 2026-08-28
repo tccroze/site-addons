@@ -163,6 +163,18 @@ defineAddon('class-form', () => {
     .taro-cf__opt input:focus-visible + span { outline: 2px solid ${INK}; outline-offset: 3px; }
     .taro-cf__two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
     @media (max-width: 560px) { .taro-cf__two { grid-template-columns: 1fr; } }
+    /* Labels were set in rem, and the root font is 16px on a phone against 18px
+       on a desktop — so 0.7rem arrived at 11.2px, which is too small for
+       letterspaced uppercase on a screen held at arm's length. Set in px below
+       the breakpoint so the size is the size. */
+    @media (max-width: 799px) {
+      .taro-cf__label { font-size: 12.5px; letter-spacing: 0.12em; }
+      .taro-cf__step-label { font-size: 12.5px; letter-spacing: 0.14em; }
+      .taro-cf__eyebrow { font-size: 12px; }
+      .taro-cf__opt span { font-size: 15px; }
+      .taro-cf__send { font-size: 13px; }
+      .taro-cf__copy { font-size: 12.5px; }
+    }
 
     .taro-cf__send {
       display: block; width: 100%; margin-top: 2rem;
