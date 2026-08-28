@@ -42,6 +42,28 @@ const NAMES = {
   '/panoramas': 'Panoramas',
 };
 
+// Gallery photographs that are also sold as prints.
+//
+// There is nothing in the markup that connects the two: the shop's files are
+// named for the work (warning.jpg, deadvlei.jpg) and the galleries' are named
+// by the camera (9S0A9692.jpg, IMG_6080.JPG), so no string comparison finds
+// them. These pairs were established by hashing every gallery frame against
+// every print and then confirming each one by eye — the prints are
+// black-and-white conversions of colour originals, which is why they look only
+// loosely similar to a machine and obviously identical to a person.
+//
+// Keyed on the gallery filename rather than the frame's position, so reordering
+// a gallery or adding to it cannot silently point a photograph at the wrong
+// print. A frame that is not listed simply has no buy link.
+const PRINTS = {
+  '9S0A9692.jpg':  { href: '/shop/p/warning',   title: 'The Warning' },
+  'IMG_6082.jpg':  { href: '/shop/p/cover',     title: 'Under Cover' },
+  'IMG_9412-2.jpg':{ href: '/shop/p/territory', title: 'Territory' },
+  'IMG_6088.JPG':  { href: '/shop/p/deadvlei',  title: 'Deadvlei' },
+  'IMG_6080.JPG':  { href: '/shop/p/dune',      title: 'Dune' },
+  'IMG_6103.JPG':  { href: '/shop/p/luderitz',  title: 'Luderitz' },
+};
+
 const isOpen = () =>
   document.documentElement.classList.contains('gallery-lightbox-body-hide-overflow');
 
@@ -89,6 +111,24 @@ defineAddon('lightbox-frame', () => {
       text-shadow: 0 0 2px rgba(247, 148, 29, 0.45);
       white-space: nowrap;
     }
+    .taro-lf__acts { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
+    /* The buy link leads, because someone looking at a photograph they like is
+       closer to buying it than to writing about it. */
+    .taro-lf__buy {
+      pointer-events: auto;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; text-decoration: none;
+      color: #f6eed5; background: #e23318;
+      border: 2px solid #e23318; border-radius: 300px;
+      padding: 0.6rem 1.4rem; min-height: 44px;
+      display: inline-flex; align-items: center; white-space: nowrap;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+    @media (hover: hover) {
+      .taro-lf__buy:hover { background: #243230; border-color: #243230; }
+    }
+    .taro-lf__buy:focus-visible { outline: 2px solid #f6eed5; outline-offset: 3px; }
+    .taro-lf__buy[hidden] { display: none; }
     .taro-lf__ask {
       pointer-events: auto;
       font-size: 0.68rem;
@@ -114,9 +154,13 @@ defineAddon('lightbox-frame', () => {
   const bar = document.createElement('div');
   bar.className = 'taro-lf';
   bar.innerHTML = `<span class="taro-lf__ref" aria-hidden="true"></span>` +
-                  `<a class="taro-lf__ask" href="/letstalk"></a>`;
+                  `<span class="taro-lf__acts">` +
+                    `<a class="taro-lf__buy" hidden></a>` +
+                    `<a class="taro-lf__ask" href="/letstalk"></a>` +
+                  `</span>`;
   const refEl = bar.querySelector('.taro-lf__ref');
   const askEl = bar.querySelector('.taro-lf__ask');
+  const buyEl = bar.querySelector('.taro-lf__buy');
   document.body.appendChild(bar);
 
   const lb = () => document.querySelector('.gallery-lightbox');
@@ -171,6 +215,23 @@ defineAddon('lightbox-frame', () => {
     askEl.textContent = 'Enquire about this frame';
     askEl.setAttribute('aria-label', `Enquire about ${gallery} frame ${frame}`);
     askEl.href = `/letstalk?ref=${encodeURIComponent(`${gallery} — frame ${frame}`)}`;
+
+    // If this photograph is sold, say so here rather than making someone go and
+    // look for it.
+    const shown = [...(lb()?.querySelectorAll('.gallery-lightbox-item') || [])].find((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 50 && getComputedStyle(el).opacity !== '0';
+    });
+    const print = PRINTS[assetOf(shown?.querySelector('img')) || ''];
+    if (print) {
+      buyEl.hidden = false;
+      buyEl.href = print.href;
+      buyEl.textContent = 'Buy this print';
+      buyEl.setAttribute('aria-label', `Buy ${print.title} as a print`);
+    } else {
+      buyEl.hidden = true;
+      buyEl.removeAttribute('href');
+    }
     bar.classList.add('is-on');
   };
 
