@@ -211,22 +211,38 @@ defineAddon('letstalk', () => {
        too, whichever is further. Red rather than the trail's own warm white,
        because white on cream paper is not a line at all. */
     .taro-lt-trail {
-      position: fixed; top: 0; left: 0; right: 0; height: 3px;
+      position: fixed; top: 0; left: 0; right: 0; height: 4px;
       z-index: 10000; pointer-events: none;
-      background: rgba(36, 50, 48, 0.08);
+      background: rgba(36, 50, 48, 0.12);
     }
     .taro-lt-trail__fill {
       height: 100%; width: 100%;
       transform: scaleX(var(--taro-trail, 0)); transform-origin: left center;
-      background: #e23318;
-      box-shadow: 0 0 8px rgba(226, 51, 24, 0.55);
+      background: linear-gradient(90deg, #e23318, #f7941d);
+      box-shadow: 0 0 10px rgba(226, 51, 24, 0.6);
       transition: transform 220ms cubic-bezier(0.33, 1, 0.68, 1), box-shadow 300ms ease;
+    }
+    /* The head of the trail — the lit tip being drawn. It is the reason there
+       is anything to see at the top of the page: at zero progress the fill has
+       no width at all, so the first version of this was an invisible 3px line
+       until you scrolled, which is not a progress indicator, it is a rumour. */
+    .taro-lt-trail__head {
+      position: absolute; top: 50%; left: 0;
+      width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px;
+      border-radius: 50%;
+      background: #ffe9c7;
+      box-shadow: 0 0 8px 2px rgba(247, 148, 29, 0.95), 0 0 18px 6px rgba(226, 51, 24, 0.45);
+      transform: translateX(calc(var(--taro-trail, 0) * 100vw));
+      transition: transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
     }
     .taro-lt-trail.is-done .taro-lt-trail__fill {
       box-shadow: 0 0 14px rgba(226, 51, 24, 0.9), 0 0 30px rgba(247, 148, 29, 0.5);
     }
+    .taro-lt-trail.is-done .taro-lt-trail__head {
+      box-shadow: 0 0 12px 3px rgba(247, 148, 29, 1), 0 0 26px 10px rgba(226, 51, 24, 0.6);
+    }
     @media (prefers-reduced-motion: reduce) {
-      .taro-lt-trail__fill { transition: none; }
+      .taro-lt-trail__fill, .taro-lt-trail__head { transition: none; }
     }
 
     /* ---- after it is sent ------------------------------------------------
@@ -775,7 +791,8 @@ defineAddon('letstalk', () => {
    */
   const trail = document.createElement('div');
   trail.className = 'taro-lt-trail';
-  trail.innerHTML = '<div class="taro-lt-trail__fill"></div>';
+  trail.innerHTML = '<div class="taro-lt-trail__fill"></div>'
+                  + '<div class="taro-lt-trail__head"></div>';
   document.body.appendChild(trail);
 
   let trailQueued = false;
