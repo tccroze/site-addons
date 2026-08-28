@@ -63,10 +63,17 @@ defineAddon('shop', () => {
     }
     .product-list-item-meta { gap: 0.15rem; }
 
-    /* The button that takes the money. Outlined at rest so nine of them in a
-       grid do not shout over the photographs, solid on hover so the one being
-       considered is unmistakable. */
-    .sqs-add-to-cart-button {
+    /* SCOPED TO THE GRID, deliberately. Applied to every add-to-cart button on
+       the site, this shape broke the one on the product page: that button's
+       wrapper computes to zero width, so padding and letter-spacing squeezed
+       "Add to cart" into a 44px box that truncated to "ADD TO…". The grid
+       buttons sit in a column that gives them room; the product page's does
+       not, and it is the single control that takes the money, so it keeps
+       Squarespace's own geometry and only gains the typeface.
+
+       Outlined at rest so nine of them do not shout over the photographs, solid
+       on hover so the one being considered is unmistakable. */
+    .product-list-item .sqs-add-to-cart-button {
       font-size: 0.72rem !important;
       font-weight: 700 !important;
       letter-spacing: 0.18em !important;
@@ -81,13 +88,13 @@ defineAddon('shop', () => {
       transition: background 200ms ease, color 200ms ease, transform 220ms cubic-bezier(0.33, 1, 0.68, 1);
     }
     @media (hover: hover) {
-      .sqs-add-to-cart-button:hover {
+      .product-list-item .sqs-add-to-cart-button:hover {
         background: ${RED} !important;
         color: ${CREAM} !important;
         transform: translateY(-2px);
       }
     }
-    .sqs-add-to-cart-button:focus-visible {
+    .product-list-item .sqs-add-to-cart-button:focus-visible {
       outline: 2px solid ${INK} !important;
       outline-offset: 3px;
     }
@@ -100,8 +107,8 @@ defineAddon('shop', () => {
       min-height: 44px;
     }
     @media (prefers-reduced-motion: reduce) {
-      .sqs-add-to-cart-button { transition: none; }
-      .sqs-add-to-cart-button:hover { transform: none; }
+      .product-list-item .sqs-add-to-cart-button { transition: none; }
+      .product-list-item .sqs-add-to-cart-button:hover { transform: none; }
     }
   `);
 });
