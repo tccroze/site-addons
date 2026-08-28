@@ -103,19 +103,26 @@ defineAddon('contact-sheet', () => {
     }
     .taro-cs__frame--print .taro-cs__edge { color: ${RING}; text-shadow: none; }
 
-    /* The grease pencil ring. Drawn as an ellipse with a hand-wobbled stroke,
-       sitting over the frame rather than inside it, the way a chinagraph sits
-       on the sleeve above the emulsion. */
-    .taro-cs__ring { position: absolute; inset: -4% -3%; pointer-events: none; }
-    .taro-cs__ring ellipse {
-      fill: none; stroke: ${RING}; stroke-width: 2.6; stroke-linecap: round;
-      opacity: 0.92;
-      stroke-dasharray: 300; stroke-dashoffset: 300;
-      transition: stroke-dashoffset 900ms cubic-bezier(0.33, 1, 0.68, 1);
+    /* The grease pencil ring.
+       A perfect 2.6px ellipse at full opacity read as a marker circle drawn by
+       a child, which is fair — a chinagraph is a soft wax pencil held at speed,
+       and it does none of those things. It wobbles, it thins where the hand
+       moves fastest, it does not close, and it overshoots where it started.
+       So the ring is now an open, uneven path, a third of the weight and
+       waxy rather than solid, sitting inside the frame instead of spilling
+       over it. */
+    .taro-cs__ring { position: absolute; inset: 0; pointer-events: none; }
+    .taro-cs__ring path {
+      fill: none; stroke: ${RING}; stroke-width: 1.7;
+      stroke-linecap: round; stroke-linejoin: round;
+      opacity: 0.78;
+      stroke-dasharray: 340; stroke-dashoffset: 340;
+      transition: stroke-dashoffset 1100ms cubic-bezier(0.33, 1, 0.68, 1);
+      vector-effect: non-scaling-stroke;
     }
-    .taro-cs.is-on .taro-cs__ring ellipse { stroke-dashoffset: 0; }
+    .taro-cs.is-on .taro-cs__ring path { stroke-dashoffset: 0; }
     @media (prefers-reduced-motion: reduce) {
-      .taro-cs__ring ellipse { transition: none; stroke-dashoffset: 0; }
+      .taro-cs__ring path { transition: none; stroke-dashoffset: 0; }
       .taro-cs__shot img { transition: none; }
     }
 
@@ -126,6 +133,40 @@ defineAddon('contact-sheet', () => {
     }
     .taro-cs__note b { color: ${RING}; font-weight: 700; }
   `);
+
+  /** One grease-pencil ring, drawn rather than described.
+   *
+   *  An ellipse walked in twelve steps with the radius nudged at each one, so
+   *  the line is never quite round; it starts at a different angle on every
+   *  frame and stops a little short of a full turn, then overshoots past its
+   *  own beginning — which is what a hand does with a wax pencil and what a
+   *  perfect ellipse never does. Seeded from the frame index, so a given
+   *  photograph gets the same ring every time rather than a new one on each
+   *  page load.
+   */
+  const ringPath = (seed) => {
+    const rnd = (n) => {
+      const x = Math.sin((seed + 1) * 97.13 + n * 31.77) * 10000;
+      return x - Math.floor(x);
+    };
+    const cx = 50, cy = 35, rx = 45, ry = 30, N = 12;
+    const from = rnd(0) * Math.PI * 2;
+    const sweep = Math.PI * 2 * (1.03 + rnd(1) * 0.06);     // just past closing
+    const pts = [];
+    for (let i = 0; i <= N; i += 1) {
+      const a = from + sweep * (i / N);
+      const wob = 1 + (rnd(i + 2) - 0.5) * 0.075;
+      pts.push([cx + Math.cos(a) * rx * wob, cy + Math.sin(a) * ry * wob]);
+    }
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i += 1) {
+      const [x0, y0] = pts[i - 1];
+      const [x1, y1] = pts[i];
+      d += ` Q ${x0.toFixed(1)} ${y0.toFixed(1)} ` +
+           `${((x0 + x1) / 2).toFixed(1)} ${((y0 + y1) / 2).toFixed(1)}`;
+    }
+    return d;
+  };
 
   /* ---- the sheet ------------------------------------------------------ */
   const sheet = document.createElement('div');
@@ -167,11 +208,9 @@ defineAddon('contact-sheet', () => {
       svg.setAttribute('viewBox', '0 0 100 70');
       svg.setAttribute('preserveAspectRatio', 'none');
       svg.setAttribute('aria-hidden', 'true');
-      const el = document.createElementNS(ns, 'ellipse');
-      el.setAttribute('cx', '50'); el.setAttribute('cy', '35');
-      el.setAttribute('rx', '47'); el.setAttribute('ry', '32');
-      el.setAttribute('transform', `rotate(${(i % 5) - 2} 50 35)`);   // never twice the same
-      svg.appendChild(el);
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('d', ringPath(i));
+      svg.appendChild(path);
       shot.appendChild(svg);
     }
 
