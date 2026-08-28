@@ -298,17 +298,34 @@ defineAddon('class-form', () => {
   log('class-form: booking enquiry built');
 
   /* ---- the real form, filled and submitted on the visitor's behalf ------ */
-  const block = [...document.querySelectorAll('.sqs-block-form')]
+  /* Squarespace renders the form block after this add-on runs, so looking for
+   * it once at start-up finds nothing and leaves two forms on the page asking
+   * the same person the same questions. It is looked up when needed, and taken
+   * out of view as soon as it appears. */
+  const findBlock = () => [...document.querySelectorAll('.sqs-block-form')]
     .find((b) => b.querySelector('form')) || null;
-  if (block) {
-    block.setAttribute('aria-hidden', 'true');
-    block.style.position = 'absolute';
-    block.style.width = '1px';
-    block.style.height = '1px';
-    block.style.overflow = 'hidden';
-    block.style.clip = 'rect(0 0 0 0)';
-    block.style.whiteSpace = 'nowrap';
+
+  const hideBlock = () => {
+    const b = findBlock();
+    if (!b || b.dataset.taroBound) return false;
+    b.dataset.taroBound = '1';
+    b.setAttribute('aria-hidden', 'true');
+    // Taken off the page, never removed: it still validates and still submits.
+    b.style.position = 'absolute';
+    b.style.width = '1px';
+    b.style.height = '1px';
+    b.style.overflow = 'hidden';
+    b.style.clip = 'rect(0 0 0 0)';
+    b.style.whiteSpace = 'nowrap';
+    b.style.pointerEvents = 'none';
     log('class-form: bound to the form block on this page');
+    return true;
+  };
+
+  if (!hideBlock()) {
+    const blockMo = new MutationObserver(() => { if (hideBlock()) blockMo.disconnect(); });
+    blockMo.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => blockMo.disconnect(), 20000);
   }
 
   /** React owns these inputs; only the native setter reaches its state. */
@@ -322,6 +339,7 @@ defineAddon('class-form', () => {
   };
 
   const submitViaBlock = (subject, body, first, last, email) => {
+    const block = findBlock();
     if (!block) return false;
     const item = (re) => [...block.querySelectorAll('.field-list > .form-item')]
       .find((f) => re.test((f.querySelector('.title, .caption') || {}).textContent || ''));
