@@ -26,7 +26,7 @@ const CLAMP_LINES = 8;
 const MIN_CHARS = 300;
 
 defineAddon('testimonials', () => {
-  css(`
+  css('testimonials', `
     .taro-quote {
       display: -webkit-box;
       -webkit-line-clamp: ${CLAMP_LINES};
