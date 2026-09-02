@@ -308,12 +308,27 @@ defineAddon('paint', () => {
         const open = body.classList.toggle('is-open');
         more.textContent = open ? 'Read less' : 'Read more';
         more.setAttribute('aria-expanded', String(open));
+        window.dispatchEvent(new Event('resize'));   // the slide has changed height
       });
       q.append(body, more);
     });
   };
-  clampQuotes();
-  new MutationObserver(clampQuotes).observe(document.body, { childList: true, subtree: true });
+  /* The carousel measures its slides once and holds that height, so a clamp
+   * applied afterwards shortens the text and leaves the empty space behind.
+   * A resize is the event it already listens to for exactly this. */
+  const remeasure = () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    }));
+  };
+  const clampAndSettle = () => {
+    const before = document.querySelectorAll('.taro-quote').length;
+    clampQuotes();
+    if (document.querySelectorAll('.taro-quote').length !== before) remeasure();
+  };
+  clampAndSettle();
+  new MutationObserver(clampAndSettle).observe(document.body, { childList: true, subtree: true });
+  addEventListener('load', clampAndSettle, { once: true });
 
   /* ---- the wash drifts ------------------------------------------------ */
   let queued = false;
