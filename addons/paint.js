@@ -173,7 +173,7 @@ defineAddon('paint', () => {
   const paintings = () => [...document.querySelectorAll('img')].filter((img) => {
     if (img.closest('#header') || img.closest('footer')) return false;
     if (/logo/i.test(img.currentSrc || img.src || '')) return false;
-    if (img.classList.contains('taro-pt')) return false;
+    if (img.dataset.taroPainted) return false;
     const r = img.getBoundingClientRect();
     return r.width > 120 && r.height > 120;
   });
@@ -188,17 +188,42 @@ defineAddon('paint', () => {
       }, { rootMargin: '0px 0px -12% 0px' })
     : null;
 
+  /** The element whose box is the painting you can actually see.
+   *
+   *  Squarespace's carousel crops with object-fit: cover inside a container
+   *  that hides its overflow, so the <img> box is larger than the frame on
+   *  screen — and a torn edge drawn on the image falls outside the frame and
+   *  gets sliced flat by the container. On a phone, where the crop is
+   *  tightest, that showed as torn sides and cut top and bottom. The mask goes
+   *  on the cropping box instead, where the edge it draws is the edge you see.
+   */
+  const maskTarget = (img) => {
+    const cs = getComputedStyle(img);
+    if (cs.objectFit !== 'cover' && cs.position !== 'absolute') return img;
+    let el = img.parentElement;
+    for (let i = 0; i < 3 && el; i += 1) {
+      if (getComputedStyle(el).overflow !== 'visible') return el;
+      el = el.parentElement;
+    }
+    return img;
+  };
+
   const dress = () => {
     paintings().forEach((img) => {
-      img.classList.add('taro-pt');
+      const target = maskTarget(img);
+      target.classList.add('taro-pt');
+      img.dataset.taroPainted = '1';
       // The host carries the bloom, so the halo sits behind the torn edge
       // rather than inside it — a glow clipped to the paper is not a bloom.
-      const host = img.parentElement;
+      const host = target.parentElement || img.parentElement;
       if (host && !host.classList.contains('taro-pt-host')) {
         host.classList.add('taro-pt-host');
         host.style.setProperty('--taro-pigment', PIGMENT[assetOf(img)] || NEUTRAL);
       }
-      if (io) { img.classList.add('taro-pt--wet'); io.observe(img); }
+      if (io && !target.classList.contains('taro-pt--wet')) {
+        target.classList.add('taro-pt--wet');
+        io.observe(target);
+      }
     });
   };
   dress();
