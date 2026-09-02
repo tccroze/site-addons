@@ -64,6 +64,10 @@ const CARD_NAMES = {
   '/portraits': 'People',
   '/astro': 'Astro',
   '/spaces': 'Spaces',
+  // The eighth tile on /stills, and the only one that was never named:
+  // it sits apart from the grid at the foot of the page, which is how it
+  // came to be missed when this list was built from the grid links.
+  '/pacific-air-show': 'Pacific Air Show',
 };
 
 defineAddon('link-repair', () => {

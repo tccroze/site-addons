@@ -41,6 +41,7 @@ const NAMES = {
   '/portraits': 'People',
   '/vroom': 'Automotive',
   '/panoramas': 'Panoramas',
+  '/pacific-air-show': 'Pacific Air Show',
 };
 
 const isOpen = () =>
