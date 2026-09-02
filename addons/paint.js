@@ -165,6 +165,22 @@ defineAddon('paint', () => {
     #page, footer { position: relative; z-index: 1; }
 
     /* ---- the testimonials -------------------------------------------- */
+    /* The pictures beside the quotes run from 1px to 772px tall, and a carousel
+       sizes every slide to its tallest — so three oversized thumbnails were
+       setting the height of all ten. Capped to a consistent band, and contained
+       rather than cropped, because these are paintings and a painting with its
+       edges cut off is not a thumbnail of that painting. */
+    .taro-quotes-sec .user-items-list-carousel__media-container {
+      max-height: 150px !important;
+    }
+    .taro-quotes-sec .user-items-list-carousel__media-inner,
+    .taro-quotes-sec .user-items-list-carousel__media {
+      max-height: 150px !important;
+    }
+    .taro-quotes-sec .user-items-list-carousel__media {
+      object-fit: contain !important;
+    }
+
     .taro-quote {
       display: -webkit-box;
       -webkit-line-clamp: 8;
@@ -321,10 +337,24 @@ defineAddon('paint', () => {
       window.dispatchEvent(new Event('resize'));
     }));
   };
+  /* Mark the section the quotes live in, so the picture cap above reaches the
+   * testimonials and leaves the portfolio carousels alone — they share every
+   * class name. */
+  const markSection = () => {
+    const q = document.querySelector('.taro-quote');
+    const sec = q && q.closest('section[data-section-id]');
+    if (sec && !sec.classList.contains('taro-quotes-sec')) {
+      sec.classList.add('taro-quotes-sec');
+      return true;
+    }
+    return false;
+  };
+
   const clampAndSettle = () => {
     const before = document.querySelectorAll('.taro-quote').length;
     clampQuotes();
-    if (document.querySelectorAll('.taro-quote').length !== before) remeasure();
+    const grew = document.querySelectorAll('.taro-quote').length !== before;
+    if (markSection() || grew) remeasure();
   };
   clampAndSettle();
   new MutationObserver(clampAndSettle).observe(document.body, { childList: true, subtree: true });
