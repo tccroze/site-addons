@@ -177,10 +177,9 @@ defineAddon('paint', () => {
      * was drifting behind a solid rgb(246,238,213) and could never be seen.
      * The fill is the same cream as <body>, so dropping it changes nothing
      * except that the water below now shows through. */
-    .taro-paint-paper .section-border,
-    .taro-paint-paper .page-section > .section-background:not(:has(img, video)) {
-      background-color: transparent !important;
-    }
+    /* Which grounds give way is decided in script, not here: it depends on
+     * comparing each section's fill to the page's own, and CSS cannot ask
+     * that question. See openGround(). */
 
     /* ---- the testimonials -------------------------------------------- */
     /* The pictures beside the quotes run from 1px to 772px tall, and a carousel
@@ -320,9 +319,29 @@ defineAddon('paint', () => {
       }
     });
   };
+  /* ONLY THE GROUNDS THAT REPEAT THE PAGE'S OWN CREAM GIVE WAY.
+   *
+   * The wash needs the opaque fill above it gone, but a blanket rule is wrong:
+   * eight of the nine sections here repaint the same rgb(246,238,213) as
+   * <body> and are safe to open, while the ninth is a deliberate dark green
+   * band. Blanking that one turned a designed section into background — so
+   * each fill is compared to the body's before it is cleared.
+   */
+  const openGround = () => {
+    const ground = getComputedStyle(document.body).backgroundColor;
+    document.querySelectorAll('.section-border').forEach((el) => {
+      if (el.dataset.taroGround) return;
+      if (getComputedStyle(el).backgroundColor !== ground) return;
+      el.dataset.taroGround = '1';
+      el.style.setProperty('background-color', 'transparent', 'important');
+    });
+  };
+  openGround();
+
   dress();
   // Carousels and lazy galleries bring their images in late.
-  new MutationObserver(dress).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(() => { dress(); openGround(); })
+    .observe(document.body, { childList: true, subtree: true });
   addEventListener('load', dress, { once: true });
 
   /* ---- the testimonials ------------------------------------------------
