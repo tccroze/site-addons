@@ -93,9 +93,13 @@ defineAddon('paint', () => {
        completely and the galleries came up empty. A self-contained SVG scaled
        to the element cannot fail that way, and it is what the homepage's torn
        print already uses. */
+    /* The tear eats into the frame, so the picture is pushed out very slightly
+       to meet it: without this the deckle bit into the painting itself and took
+       a visible slice off portraits that run close to their edges. */
+    .taro-pt img { transform: scale(1.045); transform-origin: center; }
     .taro-pt {
-      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cfilter id='d' x='-12%' y='-12%' width='124%' height='124%' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.022 0.055' numOctaves='4' seed='7' result='c'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='c' scale='13' xChannelSelector='R' yChannelSelector='G' result='t'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18 0.34' numOctaves='3' seed='3' result='f'/%3E%3CfeDisplacementMap in='t' in2='f' scale='4' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='5' y='5' width='190' height='190' fill='%23fff' filter='url(%23d)'/%3E%3C/svg%3E");
-              mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cfilter id='d' x='-12%' y='-12%' width='124%' height='124%' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.022 0.055' numOctaves='4' seed='7' result='c'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='c' scale='13' xChannelSelector='R' yChannelSelector='G' result='t'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18 0.34' numOctaves='3' seed='3' result='f'/%3E%3CfeDisplacementMap in='t' in2='f' scale='4' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='5' y='5' width='190' height='190' fill='%23fff' filter='url(%23d)'/%3E%3C/svg%3E");
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cfilter id='d' x='-12%' y='-12%' width='124%' height='124%' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.022 0.055' numOctaves='4' seed='7' result='c'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='c' scale='9' xChannelSelector='R' yChannelSelector='G' result='t'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18 0.34' numOctaves='3' seed='3' result='f'/%3E%3CfeDisplacementMap in='t' in2='f' scale='4' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='3' y='3' width='194' height='194' fill='%23fff' filter='url(%23d)'/%3E%3C/svg%3E");
+              mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cfilter id='d' x='-12%' y='-12%' width='124%' height='124%' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.022 0.055' numOctaves='4' seed='7' result='c'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='c' scale='9' xChannelSelector='R' yChannelSelector='G' result='t'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18 0.34' numOctaves='3' seed='3' result='f'/%3E%3CfeDisplacementMap in='t' in2='f' scale='4' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='3' y='3' width='194' height='194' fill='%23fff' filter='url(%23d)'/%3E%3C/svg%3E");
       -webkit-mask-size: 100% 100%;  mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
       -webkit-mask-position: center;  mask-position: center;
@@ -108,8 +112,8 @@ defineAddon('paint', () => {
       opacity: 0;
       -webkit-clip-path: circle(6% at 50% 58%);
               clip-path: circle(6% at 50% 58%);
-      transition: opacity 700ms ease, -webkit-clip-path 1500ms cubic-bezier(0.22, 1, 0.36, 1),
-                  clip-path 1500ms cubic-bezier(0.22, 1, 0.36, 1);
+      transition: opacity 1100ms ease, -webkit-clip-path 2100ms cubic-bezier(0.16, 0.9, 0.24, 1),
+                  clip-path 2100ms cubic-bezier(0.16, 0.9, 0.24, 1);
     }
     .taro-pt--wet.is-wet {
       opacity: 1;
@@ -152,8 +156,13 @@ defineAddon('paint', () => {
       transform: translate3d(0, var(--taro-wash, 0px), 0) rotate(var(--taro-wash-r, 0deg));
       will-change: transform;
     }
-    /* Everything the visitor came for sits above both the tooth and the wash. */
-    #page, #header, footer { position: relative; z-index: 1; }
+    /* Everything the visitor came for sits above both the tooth and the wash.
+       NOT the header. Naming #header here set position:relative on an element
+       Squarespace fixes to the top, which dropped it back into the flow and
+       pushed the whole page down by its own height — 164px of empty paper
+       between the nav and the title. It is already above these layers at
+       z-index 10 and needs nothing from this rule. */
+    #page, footer { position: relative; z-index: 1; }
 
     @media (prefers-reduced-motion: reduce) {
       .taro-pt--wet, .taro-pt-host::after { transition: none; }
@@ -178,11 +187,21 @@ defineAddon('paint', () => {
     return r.width > 120 && r.height > 120;
   });
 
+  /* THE BLOOM NEEDS A FRAME TO START FROM.
+   *
+   * Adding the starting state and the finishing state in the same frame gives
+   * the browser nothing to interpolate between, so the painting simply appeared
+   * — "it just flashes and shows". Two animation frames are allowed to pass
+   * between the two, which is the difference between a transition and a swap.
+   */
+  const bloom = (el) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-wet')));
+  };
   const io = 'IntersectionObserver' in window
     ? new IntersectionObserver((entries) => {
         entries.forEach((e) => {
           if (!e.isIntersecting) return;
-          e.target.classList.add('is-wet');
+          bloom(e.target);
           io.unobserve(e.target);
         });
       }, { rootMargin: '0px 0px -12% 0px' })
