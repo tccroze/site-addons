@@ -141,11 +141,33 @@ function tearMask() {
   const f = fbm(TEAR_SEED);
   const steps = Math.round(TEAR_W / 2.5);
   const lo = 14, hi = TEAR_H - 2;   // clamps; see TEAR_MID/TEAR_AMP above
+  /* THE TEAR MUST CLOSE AT BOTH ENDS.
+   *
+   * Squarespace insets page content by a gutter — 23px of the 390 on a phone —
+   * so the strip this tear opens shows the photograph in the middle and bare
+   * page either side of it. The photograph's own edge is dead straight, and a
+   * torn line running into a straight vertical cut is the one join that reads
+   * as a mistake: a little line standing up out of the tear, at the same place
+   * on every page.
+   *
+   * So the tear closes. Across the outer twelfth at each end the edge is drawn
+   * down to the full depth of the strip, which keeps the sheet solid over both
+   * gutters and hides the cut entirely. Smoothstep, not a straight ramp — the
+   * paper has to arrive at the corner rather than turn towards it.
+   */
+  const CLOSE = 0.085;                       // fraction of the width per side
+  const smooth = (u) => u * u * (3 - 2 * u);
+  const taper = (t) => {
+    const d = Math.min(t, 1 - t);            // distance from the nearer end
+    return d >= CLOSE ? 0 : 1 - smooth(d / CLOSE);
+  };
   const pts = [];
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const y = Math.min(hi, Math.max(lo, TEAR_H * (TEAR_MID + TEAR_AMP * f(t))));
-    pts.push(`${(t * TEAR_W).toFixed(1)},${y.toFixed(1)}`);
+    // 1 at the very ends, 0 once clear of them: pull the edge to the bottom.
+    const k = taper(t);
+    pts.push(`${(t * TEAR_W).toFixed(1)},${(y + (TEAR_H - y) * k).toFixed(1)}`);
   }
   const edge = pts.join(' L');
   const svg =
@@ -235,14 +257,20 @@ defineAddon('menu-paper', () => {
            sheet is a plain rectangle — no tear, but nothing clipped either. */
         -webkit-mask-image: linear-gradient(#000, #000), var(--taro-menu-tear);
                 mask-image: linear-gradient(#000, #000), var(--taro-menu-tear);
+        /* The strip is stretched to the sheet rather than tiled across it. It
+           has to be: the tear now closes at its two ends, and a tile repeated
+           across the width would close in the middle of the screen as well.
+           At 420px drawn into 390 the teeth are squashed by under a tenth,
+           which is not visible; a landscape phone stretches them and they stay
+           organic, which is the whole requirement. */
         -webkit-mask-size: 100% calc(100% - var(--taro-menu-tear-h) + ${TEAR_OVERLAP}px),
-                           auto var(--taro-menu-tear-h);
+                           100% var(--taro-menu-tear-h);
                 mask-size: 100% calc(100% - var(--taro-menu-tear-h) + ${TEAR_OVERLAP}px),
-                           auto var(--taro-menu-tear-h);
+                           100% var(--taro-menu-tear-h);
         -webkit-mask-position: 0 0, 0 100%;
                 mask-position: 0 0, 0 100%;
-        -webkit-mask-repeat: no-repeat, repeat-x;
-                mask-repeat: no-repeat, repeat-x;
+        -webkit-mask-repeat: no-repeat, no-repeat;
+                mask-repeat: no-repeat, no-repeat;
       }
 
       /* Squarespace's own background layer, if this template version still
