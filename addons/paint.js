@@ -124,6 +124,17 @@ defineAddon('paint', () => {
     /* ---- 5. the pigment bloom on hover ------------------------------- */
     .taro-pt-host {
       position: relative;
+      /* THE PAPER LIFTS OFF THE PAGE.
+       *
+       * A shadow on the painting itself would be a shadow of a rectangle: the
+       * filter is applied before the mask, so it never sees the torn outline.
+       * On the host it sees the finished, masked shape, and the shadow follows
+       * every tooth of the tear.
+       *
+       * Kept to a 2px offset and a 5px blur, at 14% — enough that the sheet
+       * sits a millimetre above the ground and no more. Watercolour paper set
+       * down on paper does not cast much. */
+      filter: drop-shadow(0 2px 5px rgba(58, 46, 32, 0.14));
       /* THE HALO WAS RENDERING AND INVISIBLE. At z-index -1 with no stacking
        * context of its own, it painted behind the nearest ancestor that had
        * one — which is Squarespace's .section-border, an opaque cream fill
@@ -198,31 +209,9 @@ defineAddon('paint', () => {
       object-fit: contain !important;
     }
 
-    .taro-quote {
-      display: -webkit-box;
-      -webkit-line-clamp: 8;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      /* The last line fades rather than stopping dead, so it reads as more
-         text continuing rather than as a sentence that was cut. */
-      -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
-              mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
-    }
-    .taro-quote.is-open {
-      -webkit-line-clamp: unset; display: block; overflow: visible;
-      -webkit-mask-image: none; mask-image: none;
-    }
-    .taro-quote__more {
-      -webkit-appearance: none; appearance: none;
-      background: none; border: 0; padding: 0.4rem 0; margin-top: 0.5rem;
-      font: inherit; font-size: 0.7rem; font-weight: 700;
-      letter-spacing: 0.16em; text-transform: uppercase;
-      color: #e23318; cursor: pointer;
-      border-bottom: 1px solid rgba(226, 51, 24, 0.4);
-    }
-    @media (hover: hover) { .taro-quote__more:hover { color: #243230; border-bottom-color: #243230; } }
-    .taro-quote__more:focus-visible { outline: 2px solid #243230; outline-offset: 3px; }
-    @media (max-width: 799px) { .taro-quote__more { font-size: 12.5px; } }
+    /* The clamp itself now lives in testimonials.js, which runs on every page
+       — the same long quotes appear elsewhere on the site. What stays here is
+       the picture cap above, which is tuned for paintings. */
 
     @media (prefers-reduced-motion: reduce) {
       .taro-pt--wet, .taro-pt-host::after { transition: none; }
@@ -300,20 +289,19 @@ defineAddon('paint', () => {
         host.style.setProperty('--taro-pigment', PIGMENT[assetOf(img)] || NEUTRAL);
       }
       if (io && !target.classList.contains('taro-pt--wet')) {
-        /* A REVEAL MUST FAIL VISIBLE.
+        /* THE REEL PARKS ITS SLIDES, IT DOES NOT HIDE THEM FOREVER.
          *
-         * The reveal starts a painting at opacity 0 and waits for it to enter
-         * the viewport. Squarespace's gallery reel parks every inactive slide
-         * at x: -9999px, so those paintings could never intersect anything —
-         * 19 of 22 on a phone sat at opacity 0 permanently. Not a reveal that
-         * failed to animate: paintings that were never shown at all.
+         * Squarespace's gallery reel holds every inactive slide at x: -9999px,
+         * so a scroll down the page leaves nineteen of twenty paintings
+         * un-bloomed and it looks as though the reveal has failed. It has not:
+         * advancing the reel brings each slide back into the viewport and the
+         * observer fires then — measured, one intersection becomes eleven over
+         * ten advances. Showing them up front instead only removed the reveal
+         * from the twenty paintings that most needed it.
          *
-         * Anything the observer cannot reach is shown at once. A painting
-         * arriving without ceremony is a small loss; a blank slide is not.
+         * If IntersectionObserver is missing, io is null and the hiding class
+         * is never applied, so the paintings simply arrive already visible.
          */
-        const parked = target.closest('.gallery-reel, .gallery-strips, .gallery-slideshow')
-          || target.getBoundingClientRect().left < -1000;
-        if (parked) { target.classList.add('taro-pt--wet', 'is-wet'); return; }
         target.classList.add('taro-pt--wet');
         io.observe(target);
       }
@@ -355,59 +343,9 @@ defineAddon('paint', () => {
    * out, and opens in place. Someone skimming sees a tidy row; someone
    * interested in what a customer said still gets every word.
    */
-  const CLAMP_LINES = 8;
-  const clampQuotes = () => {
-    const quotes = [...document.querySelectorAll('.list-item-content__description')]
-      .filter((q) => !q.dataset.taroClamped);
-    quotes.forEach((q) => {
-      // Short ones are left alone; a "read more" on four lines is noise.
-      if (q.textContent.trim().length < 300) { q.dataset.taroClamped = 'skip'; return; }
-      q.dataset.taroClamped = '1';
-      const body = document.createElement('div');
-      body.className = 'taro-quote';
-      while (q.firstChild) body.appendChild(q.firstChild);
-      const more = document.createElement('button');
-      more.type = 'button';
-      more.className = 'taro-quote__more';
-      more.textContent = 'Read more';
-      more.setAttribute('aria-expanded', 'false');
-      more.addEventListener('click', () => {
-        const open = body.classList.toggle('is-open');
-        more.textContent = open ? 'Read less' : 'Read more';
-        more.setAttribute('aria-expanded', String(open));
-        window.dispatchEvent(new Event('resize'));   // the slide has changed height
-      });
-      q.append(body, more);
-    });
-  };
-  /* The carousel measures its slides once and holds that height, so a clamp
-   * applied afterwards shortens the text and leaves the empty space behind.
-   * A resize is the event it already listens to for exactly this. */
-  const remeasure = () => {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('resize'));
-    }));
-  };
-  /* Mark the section the quotes live in, so the picture cap above reaches the
-   * testimonials and leaves the portfolio carousels alone — they share every
-   * class name. */
-  const markSection = () => {
-    const q = document.querySelector('.taro-quote');
-    const sec = q && q.closest('section[data-section-id]');
-    if (sec && !sec.classList.contains('taro-quotes-sec')) {
-      sec.classList.add('taro-quotes-sec');
-      return true;
-    }
-    return false;
-  };
-
-  const clampAndSettle = () => {
-    const before = document.querySelectorAll('.taro-quote').length;
-    clampQuotes();
-    const grew = document.querySelectorAll('.taro-quote').length !== before;
-    if (markSection() || grew) remeasure();
-  };
-  clampAndSettle();
+  /* The quotes are clamped by testimonials.js. This page only needs to know
+   * which section they landed in, so the picture cap above can find it — and
+   * that class is applied there too, so there is nothing left to do here. */
   new MutationObserver(clampAndSettle).observe(document.body, { childList: true, subtree: true });
   addEventListener('load', clampAndSettle, { once: true });
 
