@@ -164,6 +164,33 @@ defineAddon('paint', () => {
        z-index 10 and needs nothing from this rule. */
     #page, footer { position: relative; z-index: 1; }
 
+    /* ---- the testimonials -------------------------------------------- */
+    .taro-quote {
+      display: -webkit-box;
+      -webkit-line-clamp: 8;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      /* The last line fades rather than stopping dead, so it reads as more
+         text continuing rather than as a sentence that was cut. */
+      -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+    }
+    .taro-quote.is-open {
+      -webkit-line-clamp: unset; display: block; overflow: visible;
+      -webkit-mask-image: none; mask-image: none;
+    }
+    .taro-quote__more {
+      -webkit-appearance: none; appearance: none;
+      background: none; border: 0; padding: 0.4rem 0; margin-top: 0.5rem;
+      font: inherit; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: #e23318; cursor: pointer;
+      border-bottom: 1px solid rgba(226, 51, 24, 0.4);
+    }
+    @media (hover: hover) { .taro-quote__more:hover { color: #243230; border-bottom-color: #243230; } }
+    .taro-quote__more:focus-visible { outline: 2px solid #243230; outline-offset: 3px; }
+    @media (max-width: 799px) { .taro-quote__more { font-size: 12.5px; } }
+
     @media (prefers-reduced-motion: reduce) {
       .taro-pt--wet, .taro-pt-host::after { transition: none; }
       .taro-pt--wet { opacity: 1; -webkit-clip-path: none; clip-path: none; }
@@ -249,6 +276,44 @@ defineAddon('paint', () => {
   // Carousels and lazy galleries bring their images in late.
   new MutationObserver(dress).observe(document.body, { childList: true, subtree: true });
   addEventListener('load', dress, { once: true });
+
+  /* ---- the testimonials ------------------------------------------------
+   * A carousel sizes every slide to its tallest, so one long testimonial sets
+   * the height of all thirteen. Measured: the longest runs 687 characters and
+   * forced every slide to 1,366px, leaving something like a thousand pixels of
+   * empty paper under the 154-character ones — and a section 1,510px tall to
+   * scroll past.
+   *
+   * Nothing is cut: each is clamped to eight lines with the last one fading
+   * out, and opens in place. Someone skimming sees a tidy row; someone
+   * interested in what a customer said still gets every word.
+   */
+  const CLAMP_LINES = 8;
+  const clampQuotes = () => {
+    const quotes = [...document.querySelectorAll('.list-item-content__description')]
+      .filter((q) => !q.dataset.taroClamped);
+    quotes.forEach((q) => {
+      // Short ones are left alone; a "read more" on four lines is noise.
+      if (q.textContent.trim().length < 300) { q.dataset.taroClamped = 'skip'; return; }
+      q.dataset.taroClamped = '1';
+      const body = document.createElement('div');
+      body.className = 'taro-quote';
+      while (q.firstChild) body.appendChild(q.firstChild);
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'taro-quote__more';
+      more.textContent = 'Read more';
+      more.setAttribute('aria-expanded', 'false');
+      more.addEventListener('click', () => {
+        const open = body.classList.toggle('is-open');
+        more.textContent = open ? 'Read less' : 'Read more';
+        more.setAttribute('aria-expanded', String(open));
+      });
+      q.append(body, more);
+    });
+  };
+  clampQuotes();
+  new MutationObserver(clampQuotes).observe(document.body, { childList: true, subtree: true });
 
   /* ---- the wash drifts ------------------------------------------------ */
   let queued = false;
