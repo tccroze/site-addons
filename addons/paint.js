@@ -122,7 +122,15 @@ defineAddon('paint', () => {
     }
 
     /* ---- 5. the pigment bloom on hover ------------------------------- */
-    .taro-pt-host { position: relative; }
+    .taro-pt-host {
+      position: relative;
+      /* THE HALO WAS RENDERING AND INVISIBLE. At z-index -1 with no stacking
+       * context of its own, it painted behind the nearest ancestor that had
+       * one — which is Squarespace's .section-border, an opaque cream fill
+       * across the whole section. Isolating the host keeps the bloom inside
+       * it: above the host's own ground, still beneath the painting. */
+      isolation: isolate;
+    }
     .taro-pt-host::after {
       content: '';
       position: absolute; inset: -14%;
@@ -163,6 +171,16 @@ defineAddon('paint', () => {
        between the nav and the title. It is already above these layers at
        z-index 10 and needs nothing from this rule. */
     #page, footer { position: relative; z-index: 1; }
+
+    /* THE WASH WAS BEHIND AN OPAQUE WALL. Squarespace paints each section's
+     * ground on .section-border, not on the section, so the wash at z-index 0
+     * was drifting behind a solid rgb(246,238,213) and could never be seen.
+     * The fill is the same cream as <body>, so dropping it changes nothing
+     * except that the water below now shows through. */
+    .taro-paint-paper .section-border,
+    .taro-paint-paper .page-section > .section-background:not(:has(img, video)) {
+      background-color: transparent !important;
+    }
 
     /* ---- the testimonials -------------------------------------------- */
     /* The pictures beside the quotes run from 1px to 772px tall, and a carousel
@@ -283,6 +301,20 @@ defineAddon('paint', () => {
         host.style.setProperty('--taro-pigment', PIGMENT[assetOf(img)] || NEUTRAL);
       }
       if (io && !target.classList.contains('taro-pt--wet')) {
+        /* A REVEAL MUST FAIL VISIBLE.
+         *
+         * The reveal starts a painting at opacity 0 and waits for it to enter
+         * the viewport. Squarespace's gallery reel parks every inactive slide
+         * at x: -9999px, so those paintings could never intersect anything —
+         * 19 of 22 on a phone sat at opacity 0 permanently. Not a reveal that
+         * failed to animate: paintings that were never shown at all.
+         *
+         * Anything the observer cannot reach is shown at once. A painting
+         * arriving without ceremony is a small loss; a blank slide is not.
+         */
+        const parked = target.closest('.gallery-reel, .gallery-strips, .gallery-slideshow')
+          || target.getBoundingClientRect().left < -1000;
+        if (parked) { target.classList.add('taro-pt--wet', 'is-wet'); return; }
         target.classList.add('taro-pt--wet');
         io.observe(target);
       }
