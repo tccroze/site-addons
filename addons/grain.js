@@ -123,7 +123,7 @@ import { defineAddon, css } from '../lib/util.js';
 // caches every file independently for ten minutes, so a regenerated tile can
 // otherwise be served against fresh JS. The value is owned by
 // scripts/release.sh, which rewrites `const V` across addons/ on every deploy.
-const V = '2.66.0';
+const V = '2.66.1';
 const TILE = `${new URL('../assets/grain.png', import.meta.url).href}?v=${V}`;
 
 // Drawn at one fleck per CSS pixel. On a retina screen that upsamples 2x with

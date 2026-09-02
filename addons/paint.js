@@ -68,32 +68,9 @@ defineAddon('paint', () => {
    * photograph itself and soften the brushwork, which is the one thing on this
    * page that must stay sharp.
    */
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('width', '0');
-  svg.setAttribute('height', '0');
-  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-  svg.innerHTML =
-    '<defs>' +
-      '<filter id="taro-paint-deckle" x="-8%" y="-8%" width="116%" height="116%" ' +
-              'color-interpolation-filters="sRGB">' +
-        '<feTurbulence type="fractalNoise" baseFrequency="0.013 0.038" numOctaves="4" ' +
-                      'seed="7" result="coarse"/>' +
-        '<feDisplacementMap in="SourceGraphic" in2="coarse" scale="17" ' +
-                           'xChannelSelector="R" yChannelSelector="G" result="torn"/>' +
-        '<feTurbulence type="fractalNoise" baseFrequency="0.10 0.26" numOctaves="3" ' +
-                      'seed="3" result="fine"/>' +
-        '<feDisplacementMap in="torn" in2="fine" scale="5" ' +
-                           'xChannelSelector="R" yChannelSelector="G"/>' +
-      '</filter>' +
-      '<mask id="taro-paint-edge" maskUnits="objectBoundingBox" ' +
-            'maskContentUnits="objectBoundingBox">' +
-        '<rect x="0.012" y="0.012" width="0.976" height="0.976" fill="#fff" ' +
-              'filter="url(#taro-paint-deckle)"/>' +
-      '</mask>' +
-    '</defs>';
-  document.body.appendChild(svg);
-
+  /* The deckle now lives in a data-URI mask in the stylesheet below — see the
+   * note there for why the in-document <mask> approach was abandoned.
+   */
   css('paint', `
     /* ---- 2. the ground: cold-press tooth ----------------------------- */
     /* Two turbulences at different frequencies: the coarse one is the grain of
@@ -109,12 +86,19 @@ defineAddon('paint', () => {
     }
 
     /* ---- 1 + 3. torn edge, and the bloom it arrives with -------------- */
+    /* A DATA-URI MASK, not a reference to an SVG <mask> in the document.
+       The first version used <mask maskContentUnits="objectBoundingBox"> with a
+       filtered rect inside it, and the filter rendered nothing in that
+       coordinate system — so every painting on the page was masked out
+       completely and the galleries came up empty. A self-contained SVG scaled
+       to the element cannot fail that way, and it is what the homepage's torn
+       print already uses. */
     .taro-pt {
-      -webkit-mask-image: var(--taro-pt-bloom, none);
-              mask-image: var(--taro-pt-bloom, none);
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cfilter id='d' x='-12%' y='-12%' width='124%' height='124%' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.022 0.055' numOctaves='4' seed='7' result='c'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='c' scale='13' xChannelSelector='R' yChannelSelector='G' result='t'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18 0.34' numOctaves='3' seed='3' result='f'/%3E%3CfeDisplacementMap in='t' in2='f' scale='4' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='5' y='5' width='190' height='190' fill='%23fff' filter='url(%23d)'/%3E%3C/svg%3E");
+              mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cfilter id='d' x='-12%' y='-12%' width='124%' height='124%' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.022 0.055' numOctaves='4' seed='7' result='c'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='c' scale='13' xChannelSelector='R' yChannelSelector='G' result='t'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18 0.34' numOctaves='3' seed='3' result='f'/%3E%3CfeDisplacementMap in='t' in2='f' scale='4' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect x='5' y='5' width='190' height='190' fill='%23fff' filter='url(%23d)'/%3E%3C/svg%3E");
       -webkit-mask-size: 100% 100%;  mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-      mask: url(#taro-paint-edge);
+      -webkit-mask-position: center;  mask-position: center;
       transition: opacity 900ms ease;
     }
     /* The wash spreading into damp paper. The image is revealed by a radial
