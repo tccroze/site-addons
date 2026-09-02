@@ -155,11 +155,19 @@ function tearMask() {
    * gutters and hides the cut entirely. Smoothstep, not a straight ramp — the
    * paper has to arrive at the corner rather than turn towards it.
    */
-  const CLOSE = 0.085;                       // fraction of the width per side
+  /* Two distances, not one. The first attempt eased from the very edge and so
+   * was only a fifth of the way down by the time it reached the gutter, which
+   * left most of the cut still showing — measured, 20px of line became 15px.
+   * The closure is now already complete when it crosses the gutter (HOLD) and
+   * only then eases back out to the open tear (CLOSE). */
+  const HOLD = 0.085;                        // solid to here: 33px of 390
+  const CLOSE = 0.20;                        // fully open again by here
   const smooth = (u) => u * u * (3 - 2 * u);
   const taper = (t) => {
     const d = Math.min(t, 1 - t);            // distance from the nearer end
-    return d >= CLOSE ? 0 : 1 - smooth(d / CLOSE);
+    if (d <= HOLD) return 1;
+    if (d >= CLOSE) return 0;
+    return 1 - smooth((d - HOLD) / (CLOSE - HOLD));
   };
   const pts = [];
   for (let i = 0; i <= steps; i++) {
