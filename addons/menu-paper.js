@@ -179,7 +179,22 @@ function tearMask() {
   }
   const edge = pts.join(' L');
   const svg =
+    // preserveAspectRatio="none" IS LOad-BEARING. The strip is drawn 420x72 and
+    // painted into 100% x --taro-menu-tear-h, which on a phone is 390x60 — a
+    // different ratio. Left at its default of xMidYMid meet, the SVG letterboxes
+    // itself inside that box: it scales by min(390/420, 60/72) = 0.833, renders
+    // 350px wide, centres, and leaves 20px at each end carrying no mask at all.
+    // That is not a soft edge, it is a rectangular hole the full depth of the
+    // strip, punched through the corner of the sheet.
+    //
+    // It only appears on a short viewport, which is why it survived a round of
+    // testing: at 844px tall the tear is 67.5px and the width ratio wins
+    // (0.929 vs 0.938), so there is no horizontal gap. Real iOS Safari keeps
+    // its toolbar over the bottom ~90px, so a phone is where it shows.
+    // Tiling hid it too — the neighbouring tile filled the gap — so it arrived
+    // with the switch to a single stretched strip.
     `<svg xmlns="http://www.w3.org/2000/svg" width="${TEAR_W}" height="${TEAR_H}" `
+    + `preserveAspectRatio="none" `
     + `viewBox="0 0 ${TEAR_W} ${TEAR_H}">`
     + `<path d="M0,0 L${edge} L${TEAR_W},0 Z" fill="#fff"/>`
     + `<path d="M${edge}" fill="none" stroke="#fff" stroke-opacity=".38" `
