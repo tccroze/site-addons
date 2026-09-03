@@ -43,6 +43,7 @@ const NAMES = {
   '/panoramas': 'Panoramas',
   '/pacific-air-show': 'Pacific Air Show',
   '/pacificairshow': 'Pacific Air Show',
+  '/goldcoaststreet': 'Gold Coast',
 };
 
 const isOpen = () =>

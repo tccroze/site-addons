@@ -1,49 +1,52 @@
-// The Pacific Air Show tile, given the title every other tile already has.
+// Gallery tiles that Squarespace's Custom CSS never learned about.
 //
-// The gallery tiles on /stills and /venues carry a hover title: the picture
-// darkens under a 40% wash and the gallery's name comes up in TAN Nimbus,
-// centred. It is built in Squarespace's Custom CSS as a ::after on the image
-// link, and the rule names each block by id — ten of them, one per tile.
+// The tiles on /stills and /venues carry a hover title: the picture darkens
+// under a 40% wash and the gallery's name comes up in TAN Nimbus, centred.
+// That is built in the site's Custom CSS as a ::after on the image link, and
+// the rule names each block by id — ten of them, one per tile, spread across
+// four selector lists plus a content line each.
 //
-// The Pacific Air Show tile is in none of those lists. It sits apart from the
-// grid at the foot of /stills, which is how it came to be missed, and it is
-// the only photograph on the page that stays silent when you point at it.
+// Which means every tile added after those lists were written arrives silent.
+// Two have: the Pacific Air Show tile at the foot of /stills, and the Gold
+// Coast street photography tile below it. This file is where they are named,
+// in the same voice as the other ten: same font, size, tracking, wash and
+// timing, read off the live stylesheet rather than guessed.
 //
-// This is the one rule, written to match the other ten exactly: same font,
-// size, tracking, wash and timing, read straight off the live stylesheet.
+// Keyed to the href, not the block id. Every rule of this kind in the Custom
+// CSS names #block-0bcfef0df8e11de67cb5 and the like, which is an id
+// Squarespace mints when a block is created and mints afresh if that block is
+// ever deleted and re-added — at which point the title silently disappears. A
+// tile's destination cannot change without it ceasing to be that tile, so the
+// href is the stabler handle by some distance.
 //
-// Keyed to the href, not the block id. Every other rule of this kind names
-// #block-0bcfef0df8e11de67cb5, which is an id Squarespace mints when the block
-// is created and mints afresh if the block is ever deleted and re-added — at
-// which point the title silently disappears. The destination cannot change
-// without the tile ceasing to be the Pacific Air Show tile, so the href is the
-// stabler handle by some distance.
-//
-// If these are ever easier to keep in one place, this rule can move into the
-// Custom CSS beside the other ten: add the block id to each of that group's
-// four selector lists and give it its own content line. Nothing here would
-// need to change except deleting the file and its import.
+// To name the next one: add a line to TITLES. To fold these back into the
+// Custom CSS instead, add each block id to that group's four selector lists,
+// give it a content line, and delete this file and its import.
 
 import { defineAddon, css } from '../lib/util.js';
 
-// Both paths. The tile is authored with the hyphenated path, which 404s, and
-// link-repair rewrites it to the real one — so which href this rule has to
-// match depends on whether that rewrite has run yet. Matching both means the
-// title never blinks out in the moment between the two.
-const TILES = [
-  'a.sqs-block-image-link[href="/pacific-air-show"]',
-  'a.sqs-block-image-link[href="/pacificairshow"]',
-];
+const TITLES = {
+  // The air show tile is authored with a path that 404s and link-repair
+  // rewrites it, so both spellings are listed: which one this rule has to
+  // match depends on whether that rewrite has run yet, and covering both
+  // means the title never blinks out in the moment between them.
+  '/pacific-air-show': 'Pacific Air Show',
+  '/pacificairshow': 'Pacific Air Show',
+  '/goldcoaststreet': 'Gold Coast Street Photography',
+};
 
-/* Each selector gets its own suffix and the list is joined afterwards.
- * Interpolating a comma-separated list straight into a rule silently breaks
- * it: a rule written as "LIST .fluidImageOverlay" reads as "the first tile,
- * OR an overlay inside the second", so the first selector would style the
- * link itself rather than the wash inside it. */
-const sel = (suffix) => TILES.map((t) => t + suffix).join(', ');
+const linkFor = (href) => `a.sqs-block-image-link[href="${href}"]`;
+
+/* Each selector takes its suffix before the list is joined. Interpolating a
+ * comma-separated list straight into a rule silently breaks it: written as
+ * "LIST .fluidImageOverlay" it reads as "the first tile, OR an overlay inside
+ * the second", so the first selector styles the link instead of the wash. */
+const sel = (suffix) => Object.keys(TITLES)
+  .map((href) => linkFor(href) + suffix).join(', ');
 
 defineAddon('tile-title', () => {
-  if (!document.querySelector(TILES.join(', '))) return;
+  const present = Object.keys(TITLES).filter((h) => document.querySelector(linkFor(h)));
+  if (!present.length) return;
 
   css('tile-title', `
     /* The wash. Squarespace ships this overlay on every fluid image and leaves
@@ -55,7 +58,6 @@ defineAddon('tile-title', () => {
     }
 
     ${sel('::after')} {
-      content: "Pacific Air Show";
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -67,9 +69,10 @@ defineAddon('tile-title', () => {
       letter-spacing: 0.08em;
       line-height: 1.4;
       /* The /stills group sets white-space: nowrap, which is safe for one
-         word. Three words at 1.1rem would run past the edge of a phone, so
-         this follows the /venues group instead — the one written for names
-         like THE MILKMAN'S DAUGHTER — and is allowed to wrap. */
+         word. "Gold Coast Street Photography" at the phone size would run well
+         past the edge, so this follows the /venues group instead — the rule
+         written for names like THE MILKMAN'S DAUGHTER — and is allowed to
+         wrap inside 90% of the tile. */
       text-align: center;
       white-space: normal;
       width: 90%;
@@ -78,6 +81,10 @@ defineAddon('tile-title', () => {
       z-index: 2;
       pointer-events: none;
     }
+
+    ${Object.entries(TITLES)
+      .map(([href, name]) => `${linkFor(href)}::after { content: "${name}"; }`)
+      .join('\n    ')}
 
     ${sel(':hover .fluidImageOverlay')},
     ${sel(':focus-visible .fluidImageOverlay')} { opacity: 1 !important; }

@@ -75,6 +75,7 @@ const CARD_NAMES = {
   // came to be missed when this list was built from the grid links.
   '/pacific-air-show': 'Pacific Air Show',
   '/pacificairshow': 'Pacific Air Show',
+  '/goldcoaststreet': 'Gold Coast Street Photography',
 };
 
 defineAddon('link-repair', () => {
