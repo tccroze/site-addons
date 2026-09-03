@@ -26,21 +26,35 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-const TILE = 'a.sqs-block-image-link[href="/pacific-air-show"]';
+// Both paths. The tile is authored with the hyphenated path, which 404s, and
+// link-repair rewrites it to the real one — so which href this rule has to
+// match depends on whether that rewrite has run yet. Matching both means the
+// title never blinks out in the moment between the two.
+const TILES = [
+  'a.sqs-block-image-link[href="/pacific-air-show"]',
+  'a.sqs-block-image-link[href="/pacificairshow"]',
+];
+
+/* Each selector gets its own suffix and the list is joined afterwards.
+ * Interpolating a comma-separated list straight into a rule silently breaks
+ * it: a rule written as "LIST .fluidImageOverlay" reads as "the first tile,
+ * OR an overlay inside the second", so the first selector would style the
+ * link itself rather than the wash inside it. */
+const sel = (suffix) => TILES.map((t) => t + suffix).join(', ');
 
 defineAddon('tile-title', () => {
-  if (!document.querySelector(TILE)) return;
+  if (!document.querySelector(TILES.join(', '))) return;
 
   css('tile-title', `
     /* The wash. Squarespace ships this overlay on every fluid image and leaves
        it transparent; the site's own rule is what gives it the 40% black. */
-    ${TILE} .fluidImageOverlay {
+    ${sel(' .fluidImageOverlay')} {
       opacity: 0 !important;
       background-color: rgba(0, 0, 0, 0.4) !important;
       transition: opacity 0.3s ease;
     }
 
-    ${TILE}::after {
+    ${sel('::after')} {
       content: "Pacific Air Show";
       position: absolute;
       top: 50%; left: 50%;
@@ -65,16 +79,16 @@ defineAddon('tile-title', () => {
       pointer-events: none;
     }
 
-    ${TILE}:hover .fluidImageOverlay,
-    ${TILE}:focus-visible .fluidImageOverlay { opacity: 1 !important; }
-    ${TILE}:hover::after,
-    ${TILE}:focus-visible::after { opacity: 1 !important; }
+    ${sel(':hover .fluidImageOverlay')},
+    ${sel(':focus-visible .fluidImageOverlay')} { opacity: 1 !important; }
+    ${sel(':hover::after')},
+    ${sel(':focus-visible::after')} { opacity: 1 !important; }
 
     /* A phone has no hover, so the other ten simply show their titles all the
        time below 768px. This does the same, at the same size. */
     @media screen and (max-width: 767px) {
-      ${TILE} .fluidImageOverlay { opacity: 1 !important; }
-      ${TILE}::after { opacity: 1 !important; font-size: 1.1rem !important; }
+      ${sel(' .fluidImageOverlay')} { opacity: 1 !important; }
+      ${sel('::after')} { opacity: 1 !important; font-size: 1.1rem !important; }
     }
   `);
 });

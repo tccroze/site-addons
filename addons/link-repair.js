@@ -34,6 +34,12 @@ import { defineAddon, log } from '../lib/util.js';
 // dead path -> where it should have gone
 const REDIRECTS = {
   '/contact': '/letstalk',
+  // The /stills tile for the air show points at a page that does not exist.
+  // The gallery is published at /pacificairshow, with no hyphens; the tile was
+  // built with them and returns Squarespace's 404. It is the only reference to
+  // the hyphenated path anywhere on the site, and the only broken destination
+  // on /stills.
+  '/pacific-air-show': '/pacificairshow',
 };
 
 // Links that go nowhere and should not pretend to.
@@ -68,6 +74,7 @@ const CARD_NAMES = {
   // it sits apart from the grid at the foot of the page, which is how it
   // came to be missed when this list was built from the grid links.
   '/pacific-air-show': 'Pacific Air Show',
+  '/pacificairshow': 'Pacific Air Show',
 };
 
 defineAddon('link-repair', () => {
