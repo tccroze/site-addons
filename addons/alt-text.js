@@ -25,17 +25,17 @@ const FRAMED = (title) => `${title}, framed in white and hung on a pale grey wal
 
 const ALT = {
   // The photographic prints, and each one's framed mock-up.
-  'warning.jpg':   'The Warning — a leopard snarling from the fork of an acacia tree, in black and white.',
+  'warning.jpg':   'The Warning. A leopard snarling from the fork of an acacia tree, in black and white.',
   'IMG_2712.PNG':  FRAMED('The Warning'),
-  'cover.jpg':     'Under Cover — a leopard lying in grass behind cactus spines, watching the camera, in black and white.',
+  'cover.jpg':     'Under Cover. A leopard lying in grass behind cactus spines, watching the camera, in black and white.',
   'IMG_2710.PNG':  FRAMED('Under Cover'),
-  'territory.jpg': 'Territory — a leopard on a rock at sunset, the sun breaking through cloud behind it, in black and white.',
+  'territory.jpg': 'Territory. A leopard on a rock at sunset, the sun breaking through cloud behind it, in black and white.',
   'IMG_2711.PNG':  FRAMED('Territory'),
-  'deadvlei.jpg':  'Deadvlei — dead camelthorn trees on the white pan at Deadvlei, Namibia, against an orange dune and deep blue sky.',
+  'deadvlei.jpg':  'Deadvlei. Dead camelthorn trees on the white pan at Deadvlei, Namibia, against an orange dune and deep blue sky.',
   'IMG_2713.PNG':  FRAMED('Deadvlei'),
-  'dune.jpg':      'Dune — two figures walking the ridge of a red sand dune in Namibia under a deep blue sky.',
+  'dune.jpg':      'Dune. Two figures walking the ridge of a red sand dune in Namibia under a deep blue sky.',
   'IMG_2708.PNG':  FRAMED('Dune'),
-  'luderitz.jpg':  'Luderitz — two figures standing on an abandoned steam locomotive in the Namibian desert.',
+  'luderitz.jpg':  'Luderitz. Two figures standing on an abandoned steam locomotive in the Namibian desert.',
   'IMG_2707.PNG':  FRAMED('Luderitz'),
 
   // The painted work.
@@ -54,8 +54,8 @@ const ALT = {
     'Painted portrait of a woman in blue and orange, her face split between warm and cool light.',
   'IMG_1872+2.jpg': 'Pen-and-ink lilies drawn over a red watercolour ground.',
   'b8ef5ec4-735b-4fb7-97d0-e103b6262433.jpg':
-    'Four ink studies of leopards — stalking, lying, sitting and turning.',
-  'IMG_6922.jpg': 'An open sketchbook — a black-and-white pattern on one page, an ink portrait over green, red and blue panels on the other.',
+    'Four ink studies of leopards: stalking, lying, sitting and turning.',
+  'IMG_6922.jpg': 'An open sketchbook with a black-and-white pattern on one page and an ink portrait over green, red and blue panels on the other.',
 };
 
 /** The file's own name, however Squarespace has encoded it into the URL. */

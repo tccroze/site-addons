@@ -213,7 +213,7 @@ defineAddon('film-strip', () => {
       // them off the site; a screen reader is no better served by a confident
       // wrong description than a visitor is. The frame number is true, so that
       // is what identifies the link.
-      a.setAttribute('aria-label', `Frame ${num} — open the film gallery`);
+      a.setAttribute('aria-label', `Frame ${num}, open the film gallery`);
     }
     const img = document.createElement('img');
     img.loading = 'lazy';

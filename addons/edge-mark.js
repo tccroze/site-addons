@@ -65,7 +65,7 @@
 
 import { defineAddon, css } from '../lib/util.js';
 
-const TEXT = 'TARO CROZE — NAIROBI';
+const TEXT = 'TARO CROZE · NAIROBI';
 
 // Desktop pointer only, and only in a window with room for it. Written once and
 // used by BOTH the stylesheet and the JS gate, so the two can never disagree

@@ -71,7 +71,7 @@ const STEPS = [
     ] },
     { k: 'body', label: 'Model, if you know it (optional)', type: 'text', placeholder: 'R6, A7 III, X-T4…' },
     { k: 'bring', label: 'Do you have a camera to bring?', type: 'radio', required: true, options: [
-      'Yes, my own', 'No — I would need to borrow one', 'I am about to buy one and want advice',
+      'Yes, my own', 'No, I would need to borrow one', 'I am about to buy one and want advice',
     ] },
   ] },
   { n: '04', title: 'When you are free', fields: [
@@ -101,7 +101,7 @@ defineAddon('class-form', () => {
     .map((t) => (t || '').trim())
     .filter(Boolean);
   if (!classNames.length) return;
-  STEPS[0].fields[0].options = classNames.concat('Not sure — help me choose');
+  STEPS[0].fields[0].options = classNames.concat('Not sure, help me choose');
 
   /* Dates come from the page so they can be changed without touching code: any
    * text block starting "Dates:" is read as the list, separated by · , or |. */
@@ -112,7 +112,7 @@ defineAddon('class-form', () => {
     ? dateSource.replace(/^dates\s*:/i, '').split(/[·|,]/).map((d) => d.trim()).filter(Boolean)
     : [];
   STEPS[3].fields[0].options = (dates.length ? dates : FALLBACK_DATES).concat(
-    dates.length ? ['None of these — ask me'] : []);
+    dates.length ? ['None of these, ask me'] : []);
 
   css('class-form', `
     .taro-cf { margin: clamp(3rem,8vw,5rem) 0 0; }
@@ -412,15 +412,15 @@ defineAddon('class-form', () => {
       return;
     }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      err.textContent = 'That email address does not look right — could you check it?';
+      err.textContent = 'That email address does not look right. Could you check it?';
       form.querySelector('[name="email"]').focus();
       return;
     }
     err.textContent = '';
 
     const summary = compose();
-    const subject = `Camera class — ${value('class') || 'enquiry'}`;
-    const body = `${summary}\n\n— sent from tarocroze.com/learn`;
+    const subject = `Camera class: ${value('class') || 'enquiry'}`;
+    const body = `${summary}\n\nSent from tarocroze.com/learn`;
 
     // Into the real form if there is one; otherwise the mail client.
     const sent = submitViaBlock(subject, body, value('first'), value('last'), email);
@@ -428,10 +428,10 @@ defineAddon('class-form', () => {
     form.hidden = true;
     done.hidden = false;
     done.innerHTML = '';
-    const t = mk('h3', null, sent ? 'Sent — thank you' : 'Your enquiry is ready');
+    const t = mk('h3', null, sent ? 'Sent. Thank you' : 'Your enquiry is ready');
     const p1 = mk('p', null, sent
       ? 'That has come straight through to me. I read every one of these and will come back to you shortly. A copy is below if you want it.'
-      : `Your mail app should have opened with this already written. If it did not, copy it below and send it to ${EMAIL} — it will reach me either way.`);
+      : `Your mail app should have opened with this already written. If it did not, copy it below and send it to ${EMAIL} and it will reach me either way.`);
     const pre = mk('div', 'taro-cf__summary', `To: ${EMAIL}\nSubject: ${subject}\n\n${body}`);
     const copy = mk('button', 'taro-cf__copy', 'Copy enquiry');
     copy.type = 'button';
@@ -444,7 +444,7 @@ defineAddon('class-form', () => {
         r.selectNodeContents(pre);
         const sel = window.getSelection();
         sel.removeAllRanges(); sel.addRange(r);
-        copy.textContent = 'Selected — press ⌘C';
+        copy.textContent = 'Selected. Press ⌘C';
       }
     });
     done.append(t, p1, pre, copy);

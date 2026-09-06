@@ -170,7 +170,7 @@ defineAddon('edge-print', () => {
 
       const code = document.createElement('span');
       code.className = 'taro-edge-print-code';
-      code.textContent = `${STOCK} — FRAME ${FRAME_BASE + shot}A`;
+      code.textContent = `${STOCK} · FRAME ${FRAME_BASE + shot}A`;
       strip.appendChild(code);
 
       // NO CAPTION. The alt text on these galleries is auto-generated — a

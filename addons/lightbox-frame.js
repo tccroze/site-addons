@@ -193,10 +193,10 @@ defineAddon('lightbox-frame', () => {
     const { i, total } = current();
     if (i < 0) return;
     const frame = `${FRAME_BASE + i}A`;
-    refEl.textContent = `${STOCK} — FRAME ${frame}  ·  ${i + 1}/${total}`;
+    refEl.textContent = `${STOCK} · FRAME ${frame}  ·  ${i + 1}/${total}`;
     askEl.textContent = 'Enquire about this frame';
     askEl.setAttribute('aria-label', `Enquire about ${gallery} frame ${frame}`);
-    askEl.href = `/letstalk?ref=${encodeURIComponent(`${gallery} — frame ${frame}`)}`;
+    askEl.href = `/letstalk?ref=${encodeURIComponent(`${gallery} frame ${frame}`)}`;
 
     // If this photograph is sold, say so here rather than making someone go and
     // look for it.

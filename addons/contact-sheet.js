@@ -227,8 +227,8 @@ defineAddon('contact-sheet', () => {
 
     btn.append(shot, edge);
     btn.setAttribute('aria-label', print
-      ? `Frame ${10 + i} — open, available as the print ${print.title}`
-      : `Frame ${10 + i} — open`);
+      ? `Frame ${10 + i}, open. Available as the print ${print.title}`
+      : `Frame ${10 + i}, open`);
 
     // The masonry tile owns the lightbox; this only asks it to open.
     btn.addEventListener('click', () => {

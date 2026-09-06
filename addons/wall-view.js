@@ -180,7 +180,7 @@ defineAddon('wall-view', () => {
     sizeEl.textContent = `${w} × ${h} in`;
     note.textContent = chosen
       ? `Shown to scale on a 3 m wall. The sofa is 2 m across.`
-      : `Showing ${size.label} — choose a size above to see the one you want, to scale.`;
+      : `Showing ${size.label}. Choose a size above to see the one you want, to scale.`;
   };
 
   const current = () => {
