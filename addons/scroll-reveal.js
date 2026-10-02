@@ -100,23 +100,17 @@ defineAddon('scroll-reveal', () => {
        a 90ms linear transition over them made a coarse wheel notch play as a
        visible catch-up stutter: double smoothing. */
 
-    /* The card labels. Styled after the MOTION overlay so the four tiles speak
-       with one voice; each fades in as its own wipe completes, so the reveal
-       ends on a name instead of an unnamed rectangle. */
+    /* THE CARD LABELS ARE NOT OURS ANY MORE.
+       This file used to add a VENUES / STILLS / PAINT label to each tile,
+       because at the time they were unnamed rectangles. The site's own CSS now
+       names them too, from a ::after on the image link, in the same face — so
+       every tile carried its title twice, both visible at once on a tile that
+       had been scrolled past and was then hovered.
+       The site's version is the one kept: it is what the other ten tiles use,
+       and it names on hover like the rest of them. Only the positioning rule
+       stays, because that ::after is absolutely positioned and needs a
+       positioned anchor to sit inside. */
     .taro-tiles .fe-block a { position: relative; }
-    .taro-tile-label {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff;
-      font-size: clamp(1rem, 1.5vw, 1.5rem);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      text-shadow: 0 1px 26px rgba(0, 0, 0, 0.6);
-      opacity: 0;
-      transition: opacity 600ms ease 150ms;
-      pointer-events: none;
-    }
-    [data-taro-tile-done] .taro-tile-label { opacity: 1; }
 
     /* The MOTION overlay is the model the labels copy — but it rested at
        opacity 0, so the only named tile had its name on hover only. Visible by
@@ -169,28 +163,8 @@ defineAddon('scroll-reveal', () => {
         opacity: 1; transform: none; filter: none; transition: none;
       }
       .taro-reveal-on [data-taro-wipe] { clip-path: none !important; }
-      .taro-tile-label { opacity: 1; transition: none; }
     }
   `);
-
-  // The labels themselves. Keyed off the card's own destination, so a renamed
-  // or reordered card in the editor stays truthful without touching this file.
-  // Set in the same face as the MOTION overlay, read from it live — the four
-  // tiles should speak in one voice, and hard-coding the font here would break
-  // the moment Squarespace re-hashes the uploaded family name.
-  if (tiles) {
-    const overlay = tiles.querySelector('.video-overlay');
-    const overlayFont = overlay && getComputedStyle(overlay).fontFamily;
-    ['venues', 'stills', 'paint'].forEach((name) => {
-      const a = tiles.querySelector(`.fe-block a[href*="/${name}"]`);
-      if (!a || a.querySelector('.taro-tile-label')) return;
-      const label = document.createElement('span');
-      label.className = 'taro-tile-label';
-      label.textContent = name.toUpperCase();
-      if (overlayFont) label.style.fontFamily = overlayFont;
-      a.appendChild(label);
-    });
-  }
 
   // ---- text: staggered per section in VISUAL order, revealed once ----
   // Fluid Engine's DOM order is not its visual order, and its hidden breakpoint
